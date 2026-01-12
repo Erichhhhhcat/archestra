@@ -1,0 +1,11 @@
+{{- if .Values.routes.config }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kafka-archestra-bridge.fullname" . }}-routes
+  labels:
+    {{- include "kafka-archestra-bridge.labels" . | nindent 4 }}
+data:
+  routes.json: |
+    {{- .Values.routes.config | toJson | nindent 4 }}
+{{- end }}

@@ -1,0 +1,24 @@
+apiVersion: v2
+name: kafka-archestra-bridge
+description: A Helm chart for deploying the Kafka-to-Archestra bridge service
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+keywords:
+  - kafka
+  - archestra
+  - bridge
+  - llm
+  - ai
+  - agent
+
+home: https://archestra.ai
+sources:
+  - https://github.com/Archestra-ai/archestra
+
+maintainers:
+  - name: Archestra Team
+    url: https://archestra.ai
+
+dependencies: []

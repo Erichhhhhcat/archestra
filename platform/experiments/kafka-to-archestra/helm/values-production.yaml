@@ -1,0 +1,97 @@
+# Production values for kafka-archestra-bridge
+# Usage: helm install kafka-bridge ./helm -f values-production.yaml
+
+replicaCount: 3
+
+image:
+  repository: archestra/kafka-bridge
+  pullPolicy: Always
+  tag: "1.0.0"
+
+# Use an existing secret for Archestra token
+archestra:
+  url: "https://archestra.your-company.com"
+  existingSecret: "archestra-credentials"
+  secretKey: "api-token"
+
+# Kafka with SASL authentication
+kafka:
+  bootstrapServers: "kafka-0.kafka:9092,kafka-1.kafka:9092,kafka-2.kafka:9092"
+  groupId: "archestra-bridge-prod"
+  topics: "customer.events,orders.events,analytics.events"
+  securityProtocol: "SASL_SSL"
+  saslMechanism: "SCRAM-SHA-256"
+  existingSecret: "kafka-credentials"
+  secretUsernameKey: "username"
+  secretPasswordKey: "password"
+
+# Configure prompt IDs for your production agents
+prompts:
+  customerSupport:
+    id: "your-production-customer-support-prompt-id"
+  orderProcessing:
+    id: "your-production-order-processing-prompt-id"
+  analytics:
+    id: "your-production-analytics-prompt-id"
+
+# Routes configuration
+routes:
+  config:
+    - name: customer-support
+      topic_pattern: customer.events
+      prompt_id: "your-production-customer-support-prompt-id"
+      transform_template: |
+        Customer Support Request
+        ========================
+        Customer ID: {customer_id}
+        Issue Type: {issue_type}
+        Priority: {priority}
+        
+        Message:
+        {message}
+    - name: order-processing
+      topic_pattern: orders.*
+      prompt_id: "your-production-order-processing-prompt-id"
+    - name: analytics
+      topic_pattern: analytics.events
+      prompt_id: "your-production-analytics-prompt-id"
+
+# Resource limits for production
+resources:
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Pod anti-affinity for high availability
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - kafka-archestra-bridge
+          topologyKey: kubernetes.io/hostname
+
+# Pod disruption budget (create separately)
+# Consider creating a PodDisruptionBudget with minAvailable: 2
+
+# Production logging
+logging:
+  level: INFO
+
+# Retry configuration
+retry:
+  maxRetries: 5
+  delay: 2.0
+
+# Annotations for monitoring
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"

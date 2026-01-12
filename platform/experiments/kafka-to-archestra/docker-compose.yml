@@ -1,0 +1,183 @@
+# Docker Compose for Kafka-to-Archestra Integration Example
+#
+# This stack includes:
+# - Zookeeper (Kafka coordination)
+# - Kafka broker
+# - Kafka UI (optional, for debugging)
+# - Kafka-Archestra Bridge service
+# - Archestra Platform (optional - comment out if using external instance)
+#
+# Usage:
+#   docker-compose up -d                    # Start all services
+#   docker-compose logs -f kafka-bridge     # View bridge logs
+#   docker-compose exec kafka kafka-console-producer --topic customer.events --bootstrap-server localhost:9092
+
+version: "3.8"
+
+services:
+  # ============================================
+  # Kafka Infrastructure
+  # ============================================
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    hostname: zookeeper
+    container_name: archestra-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    hostname: kafka
+    container_name: archestra-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Kafka UI for debugging and monitoring
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: archestra-kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: archestra-kafka
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    profiles:
+      - debug
+
+  # ============================================
+  # Topic Initialization
+  # ============================================
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: archestra-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      echo 'Creating Kafka topics...'
+
+      # Create topics for the 3 different agent types
+      kafka-topics --create --if-not-exists --topic customer.events --partitions 3 --replication-factor 1 --bootstrap-server kafka:29092
+      kafka-topics --create --if-not-exists --topic orders.events --partitions 3 --replication-factor 1 --bootstrap-server kafka:29092
+      kafka-topics --create --if-not-exists --topic analytics.events --partitions 3 --replication-factor 1 --bootstrap-server kafka:29092
+
+      echo 'Topics created successfully!'
+      kafka-topics --list --bootstrap-server kafka:29092
+      "
+
+  # ============================================
+  # Kafka-Archestra Bridge Service
+  # ============================================
+
+  kafka-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: archestra-kafka-bridge
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      # Archestra connection (update with your Archestra instance)
+      ARCHESTRA_URL: ${ARCHESTRA_URL:-http://host.docker.internal:9000}
+      ARCHESTRA_TOKEN: ${ARCHESTRA_TOKEN}
+
+      # Kafka connection
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_GROUP_ID: archestra-bridge
+
+      # Topics to consume from
+      KAFKA_TOPICS: customer.events,orders.events,analytics.events
+
+      # Agent Prompt IDs (configure these after creating agents in Archestra)
+      CUSTOMER_SUPPORT_PROMPT_ID: ${CUSTOMER_SUPPORT_PROMPT_ID:-}
+      ORDER_PROCESSING_PROMPT_ID: ${ORDER_PROCESSING_PROMPT_ID:-}
+      ANALYTICS_PROMPT_ID: ${ANALYTICS_PROMPT_ID:-}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+      # Retry configuration
+      MAX_RETRIES: 3
+      RETRY_DELAY: 1.0
+    volumes:
+      - ./config:/config:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # ============================================
+  # Archestra Platform (Optional)
+  # ============================================
+  # Uncomment this section if you want to run Archestra locally as part of this stack.
+  # Otherwise, point ARCHESTRA_URL to your existing Archestra instance.
+
+  # archestra:
+  #   image: archestra/platform:latest
+  #   container_name: archestra-platform
+  #   ports:
+  #     - "9000:9000"
+  #     - "3000:3000"
+  #   volumes:
+  #     - archestra-postgres-data:/var/lib/postgresql/data
+  #     - archestra-app-data:/app/data
+  #   environment:
+  #     - ARCHESTRA_AUTH_SECRET=${ARCHESTRA_AUTH_SECRET:-auth-secret-must-be-at-least-32-chars-long}
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+
+volumes:
+  zookeeper-data:
+  zookeeper-logs:
+  kafka-data:
+  archestra-postgres-data:
+  archestra-app-data:
+
+networks:
+  default:
+    name: archestra-kafka-network

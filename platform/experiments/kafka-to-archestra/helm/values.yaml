@@ -1,0 +1,135 @@
+# Default values for kafka-archestra-bridge
+# This is a YAML-formatted file.
+
+replicaCount: 1
+
+image:
+  repository: archestra/kafka-bridge
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Archestra Configuration
+archestra:
+  # URL of the Archestra API server
+  url: "http://archestra-backend:9000"
+  # Token for authentication (set via secret)
+  # token: ""
+  existingSecret: ""
+  secretKey: "token"
+
+# Kafka Configuration
+kafka:
+  bootstrapServers: "kafka:9092"
+  groupId: "archestra-bridge"
+  # Topics to consume from (comma-separated)
+  topics: "customer.events,orders.events,analytics.events"
+  # Optional: Security configuration
+  securityProtocol: ""  # e.g., SASL_SSL
+  saslMechanism: ""     # e.g., PLAIN, SCRAM-SHA-256
+  # For SASL auth, reference a secret
+  existingSecret: ""
+  secretUsernameKey: "username"
+  secretPasswordKey: "password"
+
+# Agent/Prompt Configuration
+# Configure the prompt IDs for routing Kafka messages to specific agents
+prompts:
+  customerSupport:
+    id: ""
+    # Or reference from a secret/configmap
+  orderProcessing:
+    id: ""
+  analytics:
+    id: ""
+
+# Routes configuration (overrides default routes)
+# Can be provided as JSON string or reference a ConfigMap
+routes:
+  # Inline routes configuration
+  config: []
+  # Or reference an existing ConfigMap
+  existingConfigMap: ""
+  configMapKey: "routes.json"
+
+# Service account configuration
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}
+
+# Pod security context
+podSecurityContext: {}
+
+# Container security context
+securityContext: {}
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Liveness probe
+livenessProbe:
+  enabled: false
+  # The bridge doesn't expose HTTP by default
+  # exec:
+  #   command: ["python", "-c", "print('healthy')"]
+
+# Readiness probe
+readinessProbe:
+  enabled: false
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+
+# Additional environment variables
+extraEnv: []
+# - name: LOG_LEVEL
+#   value: DEBUG
+
+# Additional environment variables from secrets/configmaps
+extraEnvFrom: []
+# - secretRef:
+#     name: my-secret
+
+# Extra volumes
+extraVolumes: []
+
+# Extra volume mounts
+extraVolumeMounts: []
+
+# Logging configuration
+logging:
+  level: INFO
+
+# Retry configuration
+retry:
+  maxRetries: 3
+  delay: 1.0
+
+# Metrics (for future Prometheus integration)
+metrics:
+  enabled: false
+  port: 8080
