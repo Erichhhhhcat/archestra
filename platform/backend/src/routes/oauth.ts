@@ -343,10 +343,18 @@ export async function refreshOAuthToken(
         oauthConfig.token_endpoint || `${oauthConfig.server_url}/token`;
     }
 
-    // Use client credentials from stored secret (when using dynamic oauth client registration)
-    //  or fall back to values from the config.
-    const clientId = currentTokens.client_id || oauthConfig.client_id;
-    const clientSecret = currentTokens.client_secret || oauthConfig.client_secret;
+    // Use client credentials from OAuth config first (source of truth),
+    // fall back to stored values (for dynamic client registration cases)
+    const clientId = oauthConfig.client_id || currentTokens.client_id;
+    const clientSecret = oauthConfig.client_secret || currentTokens.client_secret;
+
+    if (!clientId) {
+      logger.warn(
+        { secretId, catalogId },
+        "refreshOAuthToken: No client_id available for token refresh",
+      );
+      return null;
+    }
 
     logger.info(
       {
@@ -406,19 +414,19 @@ export async function refreshOAuthToken(
       return null;
     }
 
-    // Build updated secret payload:
-    // 1. Start with existing secret (preserves client_id, client_secret, registration_result, etc.)
-    // 2. Overlay new token response (preserves any provider-specific fields)
-    // 3. Ensure refresh_token is kept if provider didn't return a new one
-    // 4. Add computed expires_at for reliable expiration checking
+    // Store entire OAuth response to preserve provider-specific fields (scope, id_token, etc.)
     const updatedSecretPayload = {
       ...currentTokens,
       ...tokenData,
       // Use new refresh token if provided, otherwise keep the old one
       refresh_token: tokenData.refresh_token || currentTokens.refresh_token,
+      // Add computed expiration timestamp for reliable expiration checking
       ...(tokenData.expires_in && {
         expires_at: Date.now() + tokenData.expires_in * 1000,
       }),
+      // Store client credentials for token refresh (config takes precedence, fallback to stored)
+      ...(clientId && { client_id: clientId }),
+      ...(clientSecret && { client_secret: clientSecret }),
     };
 
     // Update the secret in storage
@@ -905,10 +913,6 @@ const oauthRoutes: FastifyPluginAsyncZod = async (fastify) => {
         // Store client credentials for token refresh (may come from dynamic registration)
         ...(clientId && { client_id: clientId }),
         ...(clientSecret && { client_secret: clientSecret }),
-        // Store full registration result for debugging/future use
-        ...(oauthState.registrationResult && {
-          registration_result: oauthState.registrationResult,
-        }),
       };
 
       logger.info(
