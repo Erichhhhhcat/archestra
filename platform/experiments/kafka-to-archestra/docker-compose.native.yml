@@ -1,12 +1,29 @@
 # Docker Compose for Native Kafka Connect HTTP Sink approach
 #
-# This uses Kafka Connect with the HTTP Sink Connector to route Kafka events
-# directly to Archestra without an additional bridge service.
+# This uses Kafka Connect with HTTP Sink Connectors to route Kafka events
+# directly to Archestra AI agents without an additional bridge service.
+#
+# Architecture:
+#   [Kafka Topics] -> [Kafka Connect + SMT] -> [Archestra A2A Endpoints]
+#
+# Each topic gets its own connector that:
+#   1. Consumes messages from a specific Kafka topic
+#   2. Transforms the message to A2A JSON-RPC format using SMT
+#   3. POSTs to the corresponding Archestra agent endpoint
 #
 # Usage:
+#   # Start infrastructure
 #   docker-compose -f docker-compose.native.yml up -d
-#   # Wait for services to be healthy, then deploy connector:
+#
+#   # Wait for Kafka Connect to be healthy, then deploy connectors
+#   export ARCHESTRA_TOKEN=your-a2a-token
+#   export CUSTOMER_SUPPORT_PROMPT_ID=your-prompt-id
+#   export ORDER_PROCESSING_PROMPT_ID=your-prompt-id
+#   export ANALYTICS_PROMPT_ID=your-prompt-id
 #   ./scripts/deploy-connector.sh
+#
+#   # Optional: Start Kafka UI for debugging
+#   docker-compose -f docker-compose.native.yml --profile debug up -d
 
 version: "3.8"
 
@@ -78,6 +95,8 @@ services:
       kafka-topics --create --if-not-exists --topic customer.events --partitions 3 --replication-factor 1 --bootstrap-server kafka:29092
       kafka-topics --create --if-not-exists --topic orders.events --partitions 3 --replication-factor 1 --bootstrap-server kafka:29092
       kafka-topics --create --if-not-exists --topic analytics.events --partitions 3 --replication-factor 1 --bootstrap-server kafka:29092
+      kafka-topics --create --if-not-exists --topic archestra-responses --partitions 1 --replication-factor 1 --bootstrap-server kafka:29092
+      kafka-topics --create --if-not-exists --topic archestra-errors --partitions 1 --replication-factor 1 --bootstrap-server kafka:29092
       echo 'Topics created successfully!'
       kafka-topics --list --bootstrap-server kafka:29092
       "
@@ -85,6 +104,16 @@ services:
   # ============================================
   # Kafka Connect with HTTP Sink
   # ============================================
+  #
+  # This container runs Kafka Connect with:
+  # - Aiven HTTP Sink Connector (open source, Apache 2.0)
+  # - Supports Mustache templating for request body transformation
+  # - One connector instance per topic/agent routing
+  #
+  # Why Aiven HTTP Sink instead of Confluent HTTP Sink?
+  # - Open source (no license required for production)
+  # - Native request body templating (no custom SMT needed)
+  # - Supports OAuth2, API keys, and custom headers
 
   kafka-connect:
     image: confluentinc/cp-kafka-connect:7.5.0
@@ -109,32 +138,45 @@ services:
       CONNECT_STATUS_STORAGE_TOPIC: archestra-connect-status
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
-      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.storage.StringConverter
       CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
-      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
-      # Install HTTP Sink connector on startup
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components,/opt/kafka-connect-plugins"
       CONNECT_CONNECTOR_CLIENT_CONFIG_OVERRIDE_POLICY: All
     volumes:
       - connect-plugins:/usr/share/confluent-hub-components
+      - ./connect-plugins:/opt/kafka-connect-plugins
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/connectors"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8083/connectors || exit 1"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 20
+      start_period: 90s
     command:
       - bash
       - -c
       - |
-        echo "Installing HTTP Sink Connector..."
-        confluent-hub install --no-prompt confluentinc/kafka-connect-http:1.7.3
+        echo "============================================"
+        echo "Installing Kafka Connect plugins..."
+        echo "============================================"
+
+        # Install Aiven HTTP Sink Connector (open source)
+        # This connector supports Mustache templating for request body
+        echo "Installing Aiven HTTP Connector..."
+        confluent-hub install --no-prompt aiven/aiven-kafka-connect-http:0.6.0 || true
+
+        # Also install Confluent HTTP Sink for comparison/fallback
+        echo "Installing Confluent HTTP Connector..."
+        confluent-hub install --no-prompt confluentinc/kafka-connect-http:1.7.3 || true
+
+        echo "============================================"
         echo "Starting Kafka Connect..."
+        echo "============================================"
         /etc/confluent/docker/run
 
   # ============================================
-  # Kafka UI (Optional)
+  # Kafka UI (Optional - use --profile debug)
   # ============================================
 
   kafka-ui:

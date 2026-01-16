@@ -1,8 +1,68 @@
 # Kafka to Archestra Integration Guide
 
-This guide explains how to route Apache Kafka events to Archestra AI agents using the A2A (Agent-to-Agent) protocol.
+This guide explains how to route Apache Kafka events to Archestra AI agents using the A2A (Agent-to-Agent) protocol. Two integration approaches are supported:
+
+1. **Native Kafka Connect** (Recommended for production) - Uses Kafka Connect HTTP Sink with SMT
+2. **Python Bridge Service** - Lightweight custom bridge for development/testing
+
+## Quick Navigation
+
+- [Architecture Overview](#architecture-overview)
+- [Option 1: Native Kafka Connect](#option-1-native-kafka-connect-recommended)
+- [Option 2: Python Bridge Service](#option-2-python-bridge-service)
+- [Testing the Integration](#testing-the-integration)
+- [Troubleshooting](#troubleshooting)
+
+---
 
 ## Architecture Overview
+
+### Option 1: Native Kafka Connect (Recommended)
+
+```mermaid
+flowchart LR
+    subgraph Producers["Event Producers"]
+        P1[Application 1]
+        P2[Application 2]
+        P3[Application N]
+    end
+
+    subgraph Kafka["Apache Kafka"]
+        T1[customer.events]
+        T2[orders.events]
+        T3[analytics.events]
+    end
+
+    subgraph Connect["Kafka Connect"]
+        direction TB
+        C1["HTTP Sink Connector 1<br/>+ A2A SMT"]
+        C2["HTTP Sink Connector 2<br/>+ A2A SMT"]
+        C3["HTTP Sink Connector 3<br/>+ A2A SMT"]
+    end
+
+    subgraph Archestra["Archestra Platform"]
+        direction TB
+        A2A["A2A Endpoints"]
+        AG1["Customer Support<br/>Agent"]
+        AG2["Order Processing<br/>Agent"]
+        AG3["Analytics<br/>Agent"]
+        A2A --> AG1
+        A2A --> AG2
+        A2A --> AG3
+    end
+
+    P1 --> T1
+    P2 --> T2
+    P3 --> T3
+    T1 --> C1
+    T2 --> C2
+    T3 --> C3
+    C1 -->|"POST /v1/a2a/{promptId}"| A2A
+    C2 -->|"POST /v1/a2a/{promptId}"| A2A
+    C3 -->|"POST /v1/a2a/{promptId}"| A2A
+```
+
+### Option 2: Python Bridge Service
 
 ```mermaid
 flowchart LR
@@ -20,9 +80,6 @@ flowchart LR
 
     subgraph Bridge["Kafka-Archestra Bridge"]
         B[Python Service]
-        B -->|"Consumes messages"| B
-        B -->|"Routes by topic"| B
-        B -->|"Transforms payload"| B
     end
 
     subgraph Archestra["Archestra Platform"]
@@ -45,37 +102,34 @@ flowchart LR
     B -->|"HTTP POST<br/>JSON-RPC 2.0"| A2A
 ```
 
-### Sequence Diagram
+### How Multi-Topic Routing Works
 
 ```mermaid
 sequenceDiagram
     participant Producer as Event Producer
     participant Kafka as Apache Kafka
-    participant Bridge as Kafka Bridge
+    participant Connect as Kafka Connect
     participant Archestra as Archestra A2A
     participant Agent as AI Agent
 
-    Producer->>Kafka: Publish event to topic
-    Kafka->>Bridge: Consume message
-    Bridge->>Bridge: Match route by topic
-    Bridge->>Bridge: Transform message
-    Bridge->>Archestra: POST /v1/a2a/{promptId}
-    Archestra->>Agent: Forward to configured agent
-    Agent->>Agent: Process with LLM
-    Agent->>Archestra: Return response
-    Archestra->>Bridge: JSON-RPC response
-    Bridge->>Bridge: Log agent response
+    Note over Connect: One connector per topic
+
+    Producer->>Kafka: Publish to customer.events
+    Kafka->>Connect: Connector 1 consumes
+    Connect->>Connect: Apply A2A SMT transform
+    Connect->>Archestra: POST /v1/a2a/{customer-prompt-id}
+    Archestra->>Agent: Route to Customer Support Agent
+    Agent->>Archestra: AI Response
+
+    Producer->>Kafka: Publish to orders.events
+    Kafka->>Connect: Connector 2 consumes
+    Connect->>Connect: Apply A2A SMT transform
+    Connect->>Archestra: POST /v1/a2a/{order-prompt-id}
+    Archestra->>Agent: Route to Order Processing Agent
+    Agent->>Archestra: AI Response
 ```
 
-## Message Flow
-
-1. **Event Producer** sends a message to a Kafka topic (e.g., `customer.events`)
-2. **Kafka** stores the message in the appropriate topic partition
-3. **Kafka-Archestra Bridge** consumes the message from Kafka
-4. **Bridge** matches the topic to a configured route
-5. **Bridge** transforms the message using the route's template
-6. **Bridge** sends the transformed message to Archestra via A2A protocol
-7. **Archestra Agent** processes the message and returns a response
+---
 
 ## Prerequisites
 
@@ -83,9 +137,25 @@ sequenceDiagram
 - Archestra platform running locally (port 9000 for API, port 3000 for UI)
 - LLM API keys configured in Archestra (Anthropic, OpenAI, or Google)
 
-## Quick Start
+---
 
-### 1. Create Archestra Agents
+## Option 1: Native Kafka Connect (Recommended)
+
+This approach uses Kafka Connect with HTTP Sink connectors to route messages directly to Archestra. Each Kafka topic gets its own connector that transforms messages to A2A JSON-RPC format using Single Message Transforms (SMT).
+
+### Why Use Native Kafka Connect?
+
+| Benefit | Description |
+|---------|-------------|
+| **Production-ready** | Built-in offset management, retries, and monitoring |
+| **Scalable** | Add more connector tasks to scale horizontally |
+| **No custom code** | Uses standard Kafka Connect infrastructure |
+| **Fault-tolerant** | Automatic rebalancing and failover |
+| **Open source** | Uses Aiven HTTP Connector (Apache 2.0 license) |
+
+> **Important**: The Aiven HTTP Connector supports request body templating for A2A JSON-RPC format. The Confluent HTTP Sink Connector (commercial) does NOT support body templating and will send raw Kafka messages, causing 400 errors from the A2A endpoint. If using Confluent's connector, you'll need a custom SMT or consider using the Python bridge instead.
+
+### Step 1: Create Archestra Agents
 
 1. Navigate to http://localhost:3000/profiles and create profiles:
    - **Customer Support Agent** - for handling customer support requests
@@ -101,14 +171,112 @@ sequenceDiagram
    - The **Prompt ID** (UUID in the A2A endpoint URL)
    - The **A2A Token** (click "Expose token" to see the full token)
 
-### 2. Configure the Bridge
+### Step 2: Start Kafka Connect Infrastructure
+
+```bash
+cd experiments/kafka-to-archestra
+
+# Start Kafka + Kafka Connect
+docker-compose -f docker-compose.native.yml up -d
+
+# Wait for Kafka Connect to be healthy (may take 1-2 minutes)
+docker-compose -f docker-compose.native.yml logs -f kafka-connect
+# Wait for: "Kafka Connect started"
+```
+
+### Step 3: Deploy HTTP Sink Connectors
+
+Set environment variables with your agent configuration:
+
+```bash
+# Get these from Archestra UI → Agents → A2A Connect
+export ARCHESTRA_TOKEN=archestra_your_token_here
+export CUSTOMER_SUPPORT_PROMPT_ID=your-customer-support-prompt-id
+export ORDER_PROCESSING_PROMPT_ID=your-order-processing-prompt-id
+export ANALYTICS_PROMPT_ID=your-analytics-prompt-id
+
+# Deploy the connectors
+./scripts/deploy-connector.sh
+```
+
+The script will:
+1. Wait for Kafka Connect to be ready
+2. Install the Aiven HTTP Sink connector (if needed)
+3. Create one connector per topic/agent mapping
+4. Display connector status
+
+### How the A2A Transformation Works
+
+Each HTTP Sink connector uses a request body template to transform Kafka messages into A2A JSON-RPC format:
+
+```
+Kafka Message:
+  {"customer_id": "123", "message": "Help me with my order"}
+
+A2A JSON-RPC Request:
+  {
+    "jsonrpc": "2.0",
+    "id": "customer.events-0-42",
+    "method": "message/send",
+    "params": {
+      "message": {
+        "parts": [
+          {"kind": "text", "text": "{\"customer_id\": \"123\", \"message\": \"Help me with my order\"}"}
+        ]
+      }
+    }
+  }
+```
+
+The template uses Mustache syntax:
+- `{{topic}}` - Kafka topic name
+- `{{partition}}` - Kafka partition number
+- `{{offset}}` - Kafka offset (used as unique request ID)
+- `{{value}}` - The original Kafka message content
+
+### Step 4: Verify Connectors
+
+```bash
+# List all connectors
+curl http://localhost:8083/connectors | jq
+
+# Check connector status
+curl http://localhost:8083/connectors/archestra-customer-support/status | jq
+
+# Expected output:
+# {
+#   "name": "archestra-customer-support",
+#   "connector": {"state": "RUNNING", ...},
+#   "tasks": [{"state": "RUNNING", ...}]
+# }
+```
+
+### Step 5: Optional - Start Kafka UI
+
+```bash
+docker-compose -f docker-compose.native.yml --profile debug up -d kafka-ui
+```
+
+Access at: http://localhost:8080
+
+---
+
+## Option 2: Python Bridge Service
+
+A lightweight Python service that consumes Kafka messages and routes them to Archestra agents. Good for development, testing, or when you need custom transformation logic.
+
+### Step 1: Create Archestra Agents
+
+Same as Step 1 in Option 1 above.
+
+### Step 2: Configure the Bridge
 
 Update `.env` with your values:
 
 ```bash
 # Archestra Configuration
 ARCHESTRA_URL=http://host.docker.internal:9000
-ARCHESTRA_TOKEN=archestra_your_token_here  # A2A token from step 1.3
+ARCHESTRA_TOKEN=archestra_your_token_here  # A2A token from step 1
 
 # Agent Prompt IDs (from A2A Connect dialog)
 CUSTOMER_SUPPORT_PROMPT_ID=your-customer-support-prompt-id
@@ -138,7 +306,7 @@ Update `config/routes.json` with the same prompt IDs:
 ]
 ```
 
-### 3. Start the Infrastructure
+### Step 3: Start the Infrastructure
 
 ```bash
 cd experiments/kafka-to-archestra
@@ -158,30 +326,62 @@ archestra-kafka-bridge   Up
 archestra-zookeeper      Up (healthy)
 ```
 
-### 4. Test the Integration
+---
 
-Send a test message to customer support:
+## Testing the Integration
+
+### Send Test Messages
+
+#### Customer Support Events
 
 ```bash
-echo '{"customer_id": "CUST-001", "issue_type": "refund", "priority": "high", "message": "I need a refund for my order."}' | \
+echo '{"customer_id": "CUST-123", "issue_type": "billing", "priority": "high", "message": "I was charged twice."}' | \
 docker exec -i archestra-kafka kafka-console-producer \
-  --topic customer.events \
-  --bootstrap-server localhost:9092
+  --topic customer.events --bootstrap-server localhost:9092
 ```
 
-Check the bridge logs:
+#### Order Events
 
 ```bash
-docker compose logs kafka-bridge --tail 20
+echo '{"order_id": "ORD-12345", "event_type": "shipped", "customer_email": "john@example.com", "details": "3 items shipped via UPS"}' | \
+docker exec -i archestra-kafka kafka-console-producer \
+  --topic orders.events --bootstrap-server localhost:9092
 ```
 
-You should see:
+#### Analytics Events
+
+```bash
+echo '{"metric_name": "daily_active_users", "value": 15234, "timestamp": "2026-01-15T22:30:00Z", "dimensions": {"region": "us-west"}}' | \
+docker exec -i archestra-kafka kafka-console-producer \
+  --topic analytics.events --bootstrap-server localhost:9092
 ```
-INFO - Routing message from topic 'customer.events' to agent via prompt '...' (route: customer-support)
-INFO - Agent response: ...
+
+### Verify Processing
+
+**For Native Kafka Connect:**
+```bash
+# Check connector task status
+curl http://localhost:8083/connectors/archestra-customer-support/status | jq '.tasks[0]'
+
+# View Kafka Connect logs
+docker logs archestra-kafka-connect --tail 50
 ```
+
+**For Python Bridge:**
+```bash
+# Check bridge logs
+docker compose logs kafka-bridge --tail 50
+```
+
+**In Archestra:**
+- Open http://localhost:3000/logs/llm-proxy
+- Verify events are being processed by the correct agents
+
+---
 
 ## Route Configuration
+
+### Python Bridge Routes
 
 Routes are configured in `config/routes.json`. Each route supports:
 
@@ -196,7 +396,7 @@ Routes are configured in `config/routes.json`. Each route supports:
 
 ### Transform Templates
 
-Transform templates use `{field_name}` placeholders that are replaced with values from the JSON message:
+Transform templates use `{field_name}` placeholders:
 
 ```json
 {
@@ -204,43 +404,30 @@ Transform templates use `{field_name}` placeholders that are replaced with value
 }
 ```
 
-## Testing Different Topics
+### Kafka Connect Routing
 
-### Customer Support Events
+With Kafka Connect, routing is configured via separate connector instances:
+- One connector per topic → agent mapping
+- Each connector has its own configuration
+- Connectors can be added/removed without restarting
 
-```bash
-echo '{
-  "customer_id": "CUST-123",
-  "issue_type": "billing",
-  "priority": "high",
-  "message": "I was charged twice for my subscription."
-}' | docker exec -i archestra-kafka kafka-console-producer \
-  --topic customer.events --bootstrap-server localhost:9092
-```
+---
 
-### Order Events
+## Comparison: Native Kafka Connect vs Python Bridge
 
-```bash
-echo '{
-  "order_id": "ORD-12345",
-  "event_type": "shipped",
-  "customer_email": "john@example.com",
-  "details": "3 items shipped via UPS"
-}' | docker exec -i archestra-kafka kafka-console-producer \
-  --topic orders.events --bootstrap-server localhost:9092
-```
+| Feature | Native Kafka Connect | Python Bridge |
+|---------|---------------------|---------------|
+| **Setup Complexity** | Medium | Low |
+| **Scalability** | High (horizontal) | Medium (vertical) |
+| **Customization** | Limited (SMT only) | Full (custom code) |
+| **Monitoring** | Built-in (Connect REST API) | Custom |
+| **Offset Management** | Automatic | Automatic |
+| **Retries** | Built-in | Built-in |
+| **License** | Open source (Aiven) | MIT |
+| **Dependencies** | Kafka Connect cluster | Python runtime |
+| **Best For** | Production | Development/Testing |
 
-### Analytics Events
-
-```bash
-echo '{
-  "metric_name": "daily_active_users",
-  "value": 15234,
-  "timestamp": "2026-01-15T22:30:00Z",
-  "dimensions": {"region": "us-west", "platform": "web"}
-}' | docker exec -i archestra-kafka kafka-console-producer \
-  --topic analytics.events --bootstrap-server localhost:9092
-```
+---
 
 ## Troubleshooting
 
@@ -254,6 +441,20 @@ echo '{
 - The A2A token is different from API keys
 - Get the correct token from: Agent → Three-dot menu → A2A Connect → Expose token
 
+### Kafka Connect: Connector in FAILED state
+
+```bash
+# Get detailed error
+curl http://localhost:8083/connectors/<name>/status | jq '.tasks[0].trace'
+
+# Restart connector
+curl -X POST http://localhost:8083/connectors/<name>/restart
+
+# Delete and recreate
+curl -X DELETE http://localhost:8083/connectors/<name>
+./scripts/deploy-connector.sh
+```
+
 ### Messages Not Being Consumed
 
 1. Check Kafka topics exist:
@@ -265,46 +466,47 @@ echo '{
    ```bash
    docker exec archestra-kafka kafka-consumer-groups \
      --bootstrap-server localhost:9092 \
-     --group archestra-bridge --describe
+     --group archestra-connect-group --describe
    ```
 
 ### Container Not Reading Updated .env
 
 Docker containers load `.env` at creation time. After updating `.env`:
 ```bash
+# For Python Bridge
 docker compose up -d kafka-bridge --force-recreate
+
+# For Kafka Connect (redeploy connectors)
+./scripts/deploy-connector.sh
 ```
 
-## Alternative Approaches
-
-### Native Kafka Connect HTTP Sink
-
-For production deployments, consider using Kafka Connect with the HTTP Sink connector. See `docker-compose.native.yml` and `scripts/deploy-connector.sh` for an example setup.
-
-Pros:
-- No custom bridge service to maintain
-- Built-in retry, offset management, and monitoring
-- Scales with Kafka Connect workers
-
-Cons:
-- Confluent HTTP Sink connector is commercial
-- Limited payload transformation capabilities
-- Requires JSON-RPC wrapping via SMT
+---
 
 ## Cleanup
 
-Stop and remove all containers:
+### Native Kafka Connect
+
+```bash
+# Stop and remove containers
+docker-compose -f docker-compose.native.yml down
+
+# Remove volumes (deletes Kafka data)
+docker-compose -f docker-compose.native.yml down -v
+```
+
+### Python Bridge
 
 ```bash
 docker compose down
-
-# Remove volumes (deletes Kafka data)
 docker compose down -v
 ```
+
+---
 
 ## Next Steps
 
 - Configure tool invocation policies in Archestra for agent security
-- Set up monitoring and alerting for the bridge service
-- Consider deploying to Kubernetes for production workloads
-- Explore using Archestra's built-in tools (MCP servers) with your agents
+- Set up monitoring and alerting
+- Consider deploying to Kubernetes for production
+- Explore using Archestra's built-in MCP tools with your agents
+- See [ALTERNATIVES.md](docs/ALTERNATIVES.md) for other integration options
