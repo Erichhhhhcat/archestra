@@ -18,6 +18,7 @@ import {
 import logger from "@/logging";
 import {
   AgentModel,
+  AgentTeamModel,
   InteractionModel,
   LimitValidationService,
   TokenPriceModel,
@@ -29,7 +30,8 @@ import {
   type InteractionResponse,
   type LLMProvider,
   type LLMStreamAdapter,
-  type ToonCompressionResult,
+  type ToolCompressionStats,
+  type ToonSkipReason,
 } from "@/types";
 import * as utils from "./utils";
 import type { SessionSource } from "./utils/session-id";
@@ -251,6 +253,9 @@ export async function handleLLMProxy<
     const globalToolPolicy =
       await utils.toolInvocation.getGlobalToolPolicy(resolvedAgentId);
 
+    // Fetch team IDs for policy evaluation context (needed for trusted data evaluation)
+    const teamIds = await AgentTeamModel.getTeamsForAgent(resolvedAgentId);
+
     // Evaluate trusted data policies
     logger.debug(
       {
@@ -270,6 +275,7 @@ export async function handleLLMProxy<
         providerName,
         resolvedAgent.considerContextUntrusted,
         globalToolPolicy,
+        { teamIds, externalAgentId },
         // Streaming callbacks for dual LLM progress
         requestAdapter.isStreaming()
           ? () => {
@@ -311,17 +317,27 @@ export async function handleLLMProxy<
     );
 
     // Apply TOON compression if enabled
-    let toonStats: ToonCompressionResult = {
-      tokensBefore: null,
-      tokensAfter: null,
-      costSavings: null,
+    let toonStats: ToolCompressionStats = {
+      tokensBefore: 0,
+      tokensAfter: 0,
+      costSavings: 0,
+      wasEffective: false,
+      hadToolResults: false,
     };
+    let toonSkipReason: ToonSkipReason | null = null;
 
     const shouldApplyToonCompression =
       await utils.toonConversion.shouldApplyToonCompression(resolvedAgentId);
 
     if (shouldApplyToonCompression) {
       toonStats = await requestAdapter.applyToonCompression(actualModel);
+      if (!toonStats.hadToolResults) {
+        toonSkipReason = "no_tool_results";
+      } else if (!toonStats.wasEffective) {
+        toonSkipReason = "not_effective";
+      }
+    } else {
+      toonSkipReason = "not_enabled";
     }
 
     logger.info(
@@ -330,6 +346,7 @@ export async function handleLLMProxy<
         toonTokensBefore: toonStats.tokensBefore,
         toonTokensAfter: toonStats.tokensAfter,
         toonCostSavings: toonStats.costSavings,
+        toonSkipReason,
       },
       `${providerName} proxy: tool results compression completed`,
     );
@@ -359,6 +376,15 @@ export async function handleLLMProxy<
     // Extract enabled tool names for filtering in evaluatePolicies
     const enabledToolNames = new Set(tools.map((t) => t.name).filter(Boolean));
 
+    // Convert headers to Record<string, string> for policy evaluation context
+    const headersRecord: Record<string, string> = {};
+    const rawHeaders = headers as Record<string, unknown>;
+    for (const [key, value] of Object.entries(rawHeaders)) {
+      if (typeof value === "string") {
+        headersRecord[key] = value;
+      }
+    }
+
     if (requestAdapter.isStreaming()) {
       return handleStreaming(
         client,
@@ -372,12 +398,14 @@ export async function handleLLMProxy<
         actualModel,
         requestAdapter.getOriginalRequest(),
         toonStats,
+        toonSkipReason,
         enabledToolNames,
         globalToolPolicy,
         externalAgentId,
         context.userId,
         sessionId,
         sessionSource,
+        teamIds,
       );
     } else {
       return handleNonStreaming(
@@ -391,12 +419,14 @@ export async function handleLLMProxy<
         actualModel,
         requestAdapter.getOriginalRequest(),
         toonStats,
+        toonSkipReason,
         enabledToolNames,
         globalToolPolicy,
         externalAgentId,
         context.userId,
         sessionId,
         sessionSource,
+        teamIds,
       );
     }
   } catch (error) {
@@ -430,13 +460,15 @@ async function handleStreaming<
   baselineModel: string,
   actualModel: string,
   originalRequest: TRequest,
-  toonStats: ToonCompressionResult,
+  toonStats: ToolCompressionStats,
+  toonSkipReason: ToonSkipReason | null,
   enabledToolNames: Set<string>,
   globalToolPolicy: "permissive" | "restrictive",
   externalAgentId?: string,
   userId?: string,
   sessionId?: string | null,
   sessionSource?: SessionSource,
+  teamIds?: string[],
 ): Promise<FastifyReply> {
   const providerName = provider.provider;
   const streamStartTime = Date.now();
@@ -524,6 +556,10 @@ async function handleStreaming<
       toolInvocationRefusal = await utils.toolInvocation.evaluatePolicies(
         toolCallsForPolicy,
         agent.id,
+        {
+          teamIds: teamIds ?? [],
+          externalAgentId,
+        },
         contextIsTrusted,
         enabledToolNames,
         globalToolPolicy,
@@ -634,6 +670,7 @@ async function handleStreaming<
         response:
           streamAdapter.toProviderResponse() as unknown as InteractionResponse,
         model: actualModel,
+        baselineModel,
         inputTokens: usage.inputTokens,
         outputTokens: usage.outputTokens,
         cost: actualCost?.toFixed(10) ?? null,
@@ -641,6 +678,7 @@ async function handleStreaming<
         toonTokensBefore: toonStats.tokensBefore,
         toonTokensAfter: toonStats.tokensAfter,
         toonCostSavings: toonStats.costSavings?.toFixed(10) ?? null,
+        toonSkipReason,
       });
     }
   }
@@ -666,13 +704,15 @@ async function handleNonStreaming<
   baselineModel: string,
   actualModel: string,
   originalRequest: TRequest,
-  toonStats: ToonCompressionResult,
+  toonStats: ToolCompressionStats,
+  toonSkipReason: ToonSkipReason | null,
   enabledToolNames: Set<string>,
   globalToolPolicy: "permissive" | "restrictive",
   externalAgentId?: string,
   userId?: string,
   sessionId?: string | null,
   sessionSource?: SessionSource,
+  teamIds?: string[],
 ): Promise<FastifyReply> {
   const providerName = provider.provider;
 
@@ -715,6 +755,10 @@ async function handleNonStreaming<
             : JSON.stringify(tc.arguments),
       })),
       agent.id,
+      {
+        teamIds: teamIds ?? [],
+        externalAgentId,
+      },
       contextIsTrusted,
       enabledToolNames,
       globalToolPolicy,
@@ -773,6 +817,7 @@ async function handleNonStreaming<
         processedRequest: request as unknown as InteractionRequest,
         response: refusalResponse as unknown as InteractionResponse,
         model: actualModel,
+        baselineModel,
         inputTokens: usage.inputTokens,
         outputTokens: usage.outputTokens,
         cost: actualCost?.toFixed(10) ?? null,
@@ -780,6 +825,7 @@ async function handleNonStreaming<
         toonTokensBefore: toonStats.tokensBefore,
         toonTokensAfter: toonStats.tokensAfter,
         toonCostSavings: toonStats.costSavings?.toFixed(10) ?? null,
+        toonSkipReason,
       });
 
       return reply.send(refusalResponse);
@@ -827,6 +873,7 @@ async function handleNonStreaming<
     response:
       responseAdapter.getOriginalResponse() as unknown as InteractionResponse,
     model: actualModel,
+    baselineModel,
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
     cost: actualCost?.toFixed(10) ?? null,
@@ -834,6 +881,7 @@ async function handleNonStreaming<
     toonTokensBefore: toonStats.tokensBefore,
     toonTokensAfter: toonStats.tokensAfter,
     toonCostSavings: toonStats.costSavings?.toFixed(10) ?? null,
+    toonSkipReason,
   });
 
   return reply.send(responseAdapter.getOriginalResponse());
@@ -851,10 +899,20 @@ function handleError(
 ): FastifyReply | never {
   logger.error(error);
 
-  const statusCode =
-    error instanceof Error && "status" in error
-      ? (error.status as 400 | 403 | 404 | 429 | 500)
-      : 500;
+  // Extract status code from error, checking multiple common property names
+  // and ensuring the value is a valid number (not undefined/null)
+  let statusCode: number = 500;
+  if (error instanceof Error) {
+    const errorObj = error as Error & {
+      status?: number;
+      statusCode?: number;
+    };
+    if (typeof errorObj.status === "number") {
+      statusCode = errorObj.status;
+    } else if (typeof errorObj.statusCode === "number") {
+      statusCode = errorObj.statusCode;
+    }
+  }
 
   const errorMessage = extractErrorMessage(error);
 

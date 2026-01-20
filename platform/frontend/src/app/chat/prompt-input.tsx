@@ -1,10 +1,17 @@
 "use client";
 
 import type { ChatStatus } from "ai";
+import { PaperclipIcon } from "lucide-react";
 import type { FormEvent } from "react";
 import { useCallback, useRef } from "react";
 import {
   PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputAttachment,
+  PromptInputAttachments,
   PromptInputBody,
   PromptInputFooter,
   PromptInputHeader,
@@ -18,6 +25,7 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { ChatApiKeySelector } from "@/components/chat/chat-api-key-selector";
 import { ChatToolsDisplay } from "@/components/chat/chat-tools-display";
+import { KnowledgeGraphUploadIndicator } from "@/components/chat/knowledge-graph-upload-indicator";
 import { ModelSelector } from "@/components/chat/model-selector";
 import { ProfileSelector } from "@/components/chat/profile-selector";
 import type { SupportedChatProvider } from "@/lib/chat-settings.query";
@@ -44,12 +52,14 @@ interface ArchestraPromptInputProps {
   initialApiKeyId?: string | null;
   /** Callback for API key change in initial chat mode (no conversation) */
   onApiKeyChange?: (apiKeyId: string) => void;
-  /** Callback when user switches to a different provider's API key - should switch to first model of that provider */
-  onProviderChange?: (provider: SupportedChatProvider) => void;
   // Ref for autofocus
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   /** Callback for profile change in initial chat mode (no conversation) */
   onProfileChange?: (agentId: string) => void;
+  /** Whether file uploads are allowed (controlled by organization setting) */
+  allowFileUploads?: boolean;
+  /** Whether models are still loading - passed to API key selector */
+  isModelsLoading?: boolean;
 }
 
 // Inner component that has access to the controller context
@@ -66,9 +76,10 @@ const PromptInputContent = ({
   currentProvider,
   initialApiKeyId,
   onApiKeyChange,
-  onProviderChange,
   textareaRef: externalTextareaRef,
   onProfileChange,
+  allowFileUploads = false,
+  isModelsLoading = false,
 }: Omit<ArchestraPromptInputProps, "onSubmit"> & {
   onSubmit: ArchestraPromptInputProps["onSubmit"];
 }) => {
@@ -102,20 +113,41 @@ const PromptInputContent = ({
           </div>
         )}
       </PromptInputHeader>
+      {/* File attachments display - shown inline above textarea */}
+      <PromptInputAttachments className="px-3 pt-2 pb-0">
+        {(attachment) => <PromptInputAttachment data={attachment} />}
+      </PromptInputAttachments>
       <PromptInputBody>
         <PromptInputTextarea
           placeholder="Type a message..."
           ref={textareaRef}
           className="px-4"
-          disableEnterSubmit={status !== "ready"}
+          disableEnterSubmit={status !== "ready" && status !== "error"}
         />
       </PromptInputBody>
       <PromptInputFooter>
         <PromptInputTools>
+          {/* File attachment button - only shown when file uploads are enabled */}
+          {allowFileUploads && (
+            <PromptInputActionMenu>
+              <PromptInputActionMenuTrigger>
+                <PaperclipIcon className="size-4" />
+              </PromptInputActionMenuTrigger>
+              <PromptInputActionMenuContent>
+                <PromptInputActionAddAttachments label="Attach files" />
+              </PromptInputActionMenuContent>
+            </PromptInputActionMenu>
+          )}
           <ModelSelector
             selectedModel={selectedModel}
             onModelChange={onModelChange}
-            messageCount={messageCount}
+            onOpenChange={(open) => {
+              if (!open) {
+                setTimeout(() => {
+                  textareaRef.current?.focus();
+                }, 100);
+              }
+            }}
           />
           {(conversationId || onApiKeyChange) && (
             <ChatApiKeySelector
@@ -128,11 +160,21 @@ const PromptInputContent = ({
               }
               messageCount={messageCount}
               onApiKeyChange={onApiKeyChange}
-              onProviderChange={onProviderChange}
+              isModelsLoading={isModelsLoading}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setTimeout(() => {
+                    textareaRef.current?.focus();
+                  }, 100);
+                }
+              }}
             />
           )}
         </PromptInputTools>
         <div className="flex items-center gap-2">
+          <KnowledgeGraphUploadIndicator
+            attachmentCount={controller.attachments.files.length}
+          />
           <PromptInputSpeechButton
             textareaRef={textareaRef}
             onTranscriptionChange={handleTranscriptionChange}
@@ -157,9 +199,10 @@ const ArchestraPromptInput = ({
   currentProvider,
   initialApiKeyId,
   onApiKeyChange,
-  onProviderChange,
   textareaRef,
   onProfileChange,
+  allowFileUploads = false,
+  isModelsLoading = false,
 }: ArchestraPromptInputProps) => {
   return (
     <div className="flex size-full flex-col justify-end">
@@ -177,9 +220,10 @@ const ArchestraPromptInput = ({
           currentProvider={currentProvider}
           initialApiKeyId={initialApiKeyId}
           onApiKeyChange={onApiKeyChange}
-          onProviderChange={onProviderChange}
           textareaRef={textareaRef}
           onProfileChange={onProfileChange}
+          allowFileUploads={allowFileUploads}
+          isModelsLoading={isModelsLoading}
         />
       </PromptInputProvider>
     </div>

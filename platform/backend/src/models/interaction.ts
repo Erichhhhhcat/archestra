@@ -4,10 +4,13 @@ import {
   count,
   desc,
   eq,
+  gte,
   inArray,
   isNotNull,
+  lte,
   max,
   min,
+  or,
   type SQL,
   sql,
   sum,
@@ -27,6 +30,14 @@ import type {
 } from "@/types";
 import AgentTeamModel from "./agent-team";
 import LimitModel from "./limit";
+
+/**
+ * Escapes special LIKE pattern characters (%, _, \) to treat them as literals.
+ * This prevents users from crafting searches that behave unexpectedly.
+ */
+function escapeLikePattern(value: string): string {
+  return value.replace(/[%_\\]/g, "\\$&");
+}
 
 /**
  * Extracts text content from a message content field.
@@ -218,6 +229,8 @@ class InteractionModel {
       externalAgentId?: string;
       userId?: string;
       sessionId?: string;
+      startDate?: Date;
+      endDate?: Date;
     },
   ): Promise<PaginatedResult<Interaction>> {
     // Determine the ORDER BY clause based on sorting params
@@ -266,6 +279,16 @@ class InteractionModel {
       conditions.push(
         eq(schema.interactionsTable.sessionId, filters.sessionId),
       );
+    }
+
+    // Date range filter
+    if (filters?.startDate) {
+      conditions.push(
+        gte(schema.interactionsTable.createdAt, filters.startDate),
+      );
+    }
+    if (filters?.endDate) {
+      conditions.push(lte(schema.interactionsTable.createdAt, filters.endDate));
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -649,6 +672,9 @@ class InteractionModel {
       userId?: string;
       externalAgentId?: string;
       sessionId?: string;
+      startDate?: Date;
+      endDate?: Date;
+      search?: string;
     },
   ): Promise<
     PaginatedResult<{
@@ -660,6 +686,13 @@ class InteractionModel {
       totalOutputTokens: number;
       totalCost: string | null;
       totalBaselineCost: string | null;
+      totalToonCostSavings: string | null;
+      toonSkipReasonCounts: {
+        applied: number;
+        notEnabled: number;
+        notEffective: number;
+        noToolResults: number;
+      };
       firstRequestTime: Date;
       lastRequestTime: Date;
       models: string[];
@@ -718,6 +751,33 @@ class InteractionModel {
       );
     }
 
+    // Date range filter
+    if (filters?.startDate) {
+      conditions.push(
+        gte(schema.interactionsTable.createdAt, filters.startDate),
+      );
+    }
+    if (filters?.endDate) {
+      conditions.push(lte(schema.interactionsTable.createdAt, filters.endDate));
+    }
+
+    // Free-text search filter (case-insensitive)
+    // Searches across: request messages content, response content (for titles), and conversation titles
+    if (filters?.search) {
+      const searchPattern = `%${escapeLikePattern(filters.search)}%`;
+      const searchCondition = or(
+        // Search in request messages content (JSONB)
+        sql`${schema.interactionsTable.request}::text ILIKE ${searchPattern}`,
+        // Search in response content (for Claude Code titles)
+        sql`${schema.interactionsTable.response}::text ILIKE ${searchPattern}`,
+        // Search in conversation title (for Archestra Chat sessions)
+        sql`${schema.conversationsTable.title} ILIKE ${searchPattern}`,
+      );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
+    }
+
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     // For sessions, we use COALESCE to give null sessionIds a unique identifier
@@ -741,6 +801,13 @@ class InteractionModel {
           totalOutputTokens: sum(schema.interactionsTable.outputTokens),
           totalCost: sum(schema.interactionsTable.cost),
           totalBaselineCost: sum(schema.interactionsTable.baselineCost),
+          totalToonCostSavings: sum(schema.interactionsTable.toonCostSavings),
+          // Count interactions where TOON was applied (has savings)
+          toonAppliedCount: sql<number>`COUNT(*) FILTER (WHERE ${schema.interactionsTable.toonCostSavings} IS NOT NULL AND CAST(${schema.interactionsTable.toonCostSavings} AS NUMERIC) > 0)`,
+          // Count interactions by skip reason
+          toonNotEnabledCount: sql<number>`COUNT(*) FILTER (WHERE ${schema.interactionsTable.toonSkipReason} = 'not_enabled')`,
+          toonNotEffectiveCount: sql<number>`COUNT(*) FILTER (WHERE ${schema.interactionsTable.toonSkipReason} = 'not_effective')`,
+          toonNoToolResultsCount: sql<number>`COUNT(*) FILTER (WHERE ${schema.interactionsTable.toonSkipReason} = 'no_tool_results')`,
           firstRequestTime: min(schema.interactionsTable.createdAt),
           lastRequestTime: max(schema.interactionsTable.createdAt),
           models: sql<string>`STRING_AGG(DISTINCT ${schema.interactionsTable.model}, ',')`,
@@ -803,6 +870,11 @@ class InteractionModel {
       db
         .select({ total: sql<number>`COUNT(DISTINCT ${sessionGroupExpr})` })
         .from(schema.interactionsTable)
+        .leftJoin(
+          schema.conversationsTable,
+          // Only join when session_id is a valid UUID format (conversation IDs are UUIDs)
+          sql`CASE WHEN LENGTH(${schema.interactionsTable.sessionId}) = 36 THEN ${schema.interactionsTable.sessionId}::uuid END = ${schema.conversationsTable.id}`,
+        )
         .where(whereClause),
     ]);
 
@@ -829,6 +901,13 @@ class InteractionModel {
         totalOutputTokens: Number(s.totalOutputTokens) || 0,
         totalCost: s.totalCost,
         totalBaselineCost: s.totalBaselineCost,
+        totalToonCostSavings: s.totalToonCostSavings,
+        toonSkipReasonCounts: {
+          applied: Number(s.toonAppliedCount) || 0,
+          notEnabled: Number(s.toonNotEnabledCount) || 0,
+          notEffective: Number(s.toonNotEffectiveCount) || 0,
+          noToolResults: Number(s.toonNoToolResultsCount) || 0,
+        },
         firstRequestTime: s.firstRequestTime ?? new Date(),
         lastRequestTime: s.lastRequestTime ?? new Date(),
         models: s.models ? s.models.split(",").filter(Boolean) : [],

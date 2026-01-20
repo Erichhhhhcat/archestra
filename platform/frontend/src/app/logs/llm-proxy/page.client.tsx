@@ -1,13 +1,15 @@
 "use client";
 
 import type { archestraApiTypes } from "@shared";
-import { Layers, MessageSquare, User } from "lucide-react";
+import { Layers, MessageSquare, Search, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
+import { DebouncedInput } from "@/components/debounced-input";
 import { Savings } from "@/components/savings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Table,
@@ -24,7 +26,7 @@ import {
   useUniqueUserIds,
 } from "@/lib/interaction.query";
 import { DynamicInteraction } from "@/lib/interaction.utils";
-
+import { useDateTimeRangePicker } from "@/lib/use-date-time-range-picker";
 import { DEFAULT_TABLE_LIMIT, formatDate } from "@/lib/utils";
 import { ErrorBoundary } from "../../_parts/error-boundary";
 
@@ -240,22 +242,18 @@ function SessionRow({
         </div>
       </TableCell>
       <TableCell className="font-mono text-xs py-3">
-        <div className="flex flex-col gap-0.5">
-          <span>
-            {session.totalInputTokens.toLocaleString()} /{" "}
-            {session.totalOutputTokens.toLocaleString()}
-          </span>
-          {session.totalCost && session.totalBaselineCost && (
-            <TooltipProvider>
-              <Savings
-                cost={session.totalCost}
-                baselineCost={session.totalBaselineCost}
-                format="percent"
-                tooltip="hover"
-              />
-            </TooltipProvider>
-          )}
-        </div>
+        {session.totalCost && session.totalBaselineCost && (
+          <TooltipProvider>
+            <Savings
+              cost={session.totalCost}
+              baselineCost={session.totalBaselineCost}
+              toonCostSavings={session.totalToonCostSavings}
+              format="percent"
+              tooltip="hover"
+              variant="session"
+            />
+          </TooltipProvider>
+        )}
       </TableCell>
       <TableCell className="font-mono text-xs py-3">
         <div className="flex flex-col gap-0.5">
@@ -326,12 +324,16 @@ function SessionsTable({
   const pageSizeFromUrl = searchParams.get("pageSize");
   const profileIdFromUrl = searchParams.get("profileId");
   const userIdFromUrl = searchParams.get("userId");
+  const startDateFromUrl = searchParams.get("startDate");
+  const endDateFromUrl = searchParams.get("endDate");
+  const searchFromUrl = searchParams.get("search");
 
   const pageIndex = Number(pageFromUrl || "1") - 1;
   const pageSize = Number(pageSizeFromUrl || DEFAULT_TABLE_LIMIT);
 
   const [profileFilter, setProfileFilter] = useState(profileIdFromUrl || "all");
   const [userFilter, setUserFilter] = useState(userIdFromUrl || "all");
+  const [searchFilter, setSearchFilter] = useState(searchFromUrl || "");
 
   // Helper to update URL params
   const updateUrlParams = useCallback(
@@ -348,6 +350,22 @@ function SessionsTable({
     },
     [searchParams, router, pathname],
   );
+
+  // Date time range picker hook
+  const dateTimePicker = useDateTimeRangePicker({
+    startDateFromUrl,
+    endDateFromUrl,
+    onDateRangeChange: useCallback(
+      ({ startDate, endDate }) => {
+        updateUrlParams({
+          startDate,
+          endDate,
+          page: "1", // Reset to first page
+        });
+      },
+      [updateUrlParams],
+    ),
+  });
 
   const handlePaginationChange = useCallback(
     (newPagination: { pageIndex: number; pageSize: number }) => {
@@ -381,11 +399,25 @@ function SessionsTable({
     [updateUrlParams],
   );
 
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchFilter(value);
+      updateUrlParams({
+        search: value || null,
+        page: "1", // Reset to first page
+      });
+    },
+    [updateUrlParams],
+  );
+
   const { data: sessionsResponse } = useInteractionSessions({
     limit: pageSize,
     offset: pageIndex * pageSize,
     profileId: profileFilter !== "all" ? profileFilter : undefined,
     userId: userFilter !== "all" ? userFilter : undefined,
+    startDate: dateTimePicker.startDateParam,
+    endDate: dateTimePicker.endDateParam,
+    search: searchFilter || undefined,
   });
 
   const { data: agents } = useProfiles({
@@ -397,11 +429,26 @@ function SessionsTable({
   const sessions = sessionsResponse?.data ?? [];
   const paginationMeta = sessionsResponse?.pagination;
 
-  const hasFilters = profileFilter !== "all" || userFilter !== "all";
+  const hasFilters =
+    profileFilter !== "all" ||
+    userFilter !== "all" ||
+    dateTimePicker.dateRange !== undefined ||
+    searchFilter !== "";
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-4">
+        <div className="relative w-[250px]">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <DebouncedInput
+            initialValue={searchFromUrl || ""}
+            onChange={handleSearchChange}
+            placeholder="Search sessions..."
+            className="pl-9"
+            debounceMs={400}
+          />
+        </div>
+
         <SearchableSelect
           value={profileFilter}
           onValueChange={handleProfileFilterChange}
@@ -430,16 +477,34 @@ function SessionsTable({
           className="w-[200px]"
         />
 
+        <DateTimeRangePicker
+          dateRange={dateTimePicker.dateRange}
+          isDialogOpen={dateTimePicker.isDateDialogOpen}
+          tempDateRange={dateTimePicker.tempDateRange}
+          fromTime={dateTimePicker.fromTime}
+          toTime={dateTimePicker.toTime}
+          displayText={dateTimePicker.getDateRangeDisplay()}
+          onDialogOpenChange={dateTimePicker.setIsDateDialogOpen}
+          onTempDateRangeChange={dateTimePicker.setTempDateRange}
+          onFromTimeChange={dateTimePicker.setFromTime}
+          onToTimeChange={dateTimePicker.setToTime}
+          onOpenDialog={dateTimePicker.openDateDialog}
+          onApply={dateTimePicker.handleApplyDateRange}
+          idPrefix="llm-proxy-"
+        />
+
         {hasFilters && (
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
+              handleSearchChange("");
               handleProfileFilterChange("all");
               handleUserFilterChange("all");
+              dateTimePicker.clearDateRange();
             }}
           >
-            Clear filters
+            Clear all filters
           </Button>
         )}
       </div>
@@ -461,7 +526,7 @@ function SessionsTable({
                 </TableHead>
                 <TableHead className="w-[200px]">Models</TableHead>
                 <TableHead className="w-[140px] whitespace-nowrap">
-                  Tokens / Savings
+                  Cost
                 </TableHead>
                 <TableHead className="w-[160px]">Time</TableHead>
                 <TableHead className="min-w-[100px]">Details</TableHead>

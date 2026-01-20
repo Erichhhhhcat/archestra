@@ -26,6 +26,23 @@ class CacheManager {
     return this.cache.del(key);
   }
 
+  /**
+   * Delete all cache entries that start with the given prefix.
+   * This is useful for invalidating all related cache entries at once.
+   */
+  async deleteByPrefix(prefix: AllowedCacheKey): Promise<void> {
+    // https://www.npmjs.com/package/cache-manager#doing-iteration-on-stores
+    const store = this.cache.stores[0];
+
+    if (store?.iterator) {
+      for await (const [key] of store.iterator({})) {
+        if (key.startsWith(prefix)) {
+          await this.cache.del(key);
+        }
+      }
+    }
+  }
+
   async wrap<T>(
     key: AllowedCacheKey,
     fnc: () => Promise<T>,
@@ -38,6 +55,11 @@ class CacheManager {
 export const CacheKey = {
   GetChatModels: "get-chat-models",
   ChatMcpTools: "chat-mcp-tools",
+  ProcessedEmail: "processed-email",
+  WebhookRateLimit: "webhook-rate-limit",
+  OAuthState: "oauth-state",
+  McpSession: "mcp-session",
+  SsoGroups: "sso-groups",
 } as const;
 export type CacheKey = (typeof CacheKey)[keyof typeof CacheKey];
 

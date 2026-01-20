@@ -1,7 +1,7 @@
 "use client";
 
 import { providerDisplayNames, type SupportedProvider } from "@shared";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   ModelSelectorContent,
@@ -16,17 +16,7 @@ import {
   ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
 import { PromptInputButton } from "@/components/ai-elements/prompt-input";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useModelsByProvider } from "@/lib/chat-models.query";
+import { useModelsByProviderQuery } from "@/lib/chat-models.query";
 
 interface ModelSelectorProps {
   /** Currently selected model */
@@ -35,8 +25,8 @@ interface ModelSelectorProps {
   onModelChange: (model: string) => void;
   /** Whether the selector should be disabled */
   disabled?: boolean;
-  /** Number of messages in current conversation (for mid-conversation warning) */
-  messageCount?: number;
+  /** Callback when the selector opens or closes */
+  onOpenChange?: (open: boolean) => void;
 }
 
 /** Map our provider names to logo provider names */
@@ -44,8 +34,10 @@ const providerToLogoProvider: Record<SupportedProvider, string> = {
   openai: "openai",
   anthropic: "anthropic",
   gemini: "google",
+  cerebras: "cerebras",
   vllm: "vllm",
   ollama: "ollama",
+  zhipuai: "zhipuai",
 };
 
 /**
@@ -53,17 +45,20 @@ const providerToLogoProvider: Record<SupportedProvider, string> = {
  * - Models grouped by provider with provider name headers
  * - Search functionality to filter models
  * - Models filtered by configured API keys
- * - Mid-conversation warning when switching models
  */
 export function ModelSelector({
   selectedModel,
   onModelChange,
   disabled = false,
-  messageCount = 0,
+  onOpenChange: onOpenChangeProp,
 }: ModelSelectorProps) {
-  const { modelsByProvider } = useModelsByProvider();
-  const [pendingModel, setPendingModel] = useState<string | null>(null);
+  const { modelsByProvider, isLoading } = useModelsByProviderQuery();
   const [open, setOpen] = useState(false);
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    onOpenChangeProp?.(newOpen);
+  };
 
   // Get available providers from the fetched models
   const availableProviders = useMemo(() => {
@@ -100,28 +95,12 @@ export function ModelSelector({
   const handleSelectModel = (model: string) => {
     // If selecting the same model, just close the dialog
     if (model === selectedModel) {
-      setOpen(false);
+      handleOpenChange(false);
       return;
     }
 
-    // If there are messages, show warning dialog
-    if (messageCount > 0) {
-      setPendingModel(model);
-    } else {
-      onModelChange(model);
-    }
-    setOpen(false);
-  };
-
-  const handleConfirmChange = () => {
-    if (pendingModel) {
-      onModelChange(pendingModel);
-      setPendingModel(null);
-    }
-  };
-
-  const handleCancelChange = () => {
-    setPendingModel(null);
+    handleOpenChange(false);
+    onModelChange(model);
   };
 
   // Check if selectedModel is in the available models
@@ -134,18 +113,28 @@ export function ModelSelector({
   );
   const isModelAvailable = allAvailableModelIds.includes(selectedModel);
 
+  // If loading, show loading state
+  if (isLoading) {
+    return (
+      <PromptInputButton disabled>
+        <Loader2 className="size-4 animate-spin" />
+        <ModelSelectorName>Loading models...</ModelSelectorName>
+      </PromptInputButton>
+    );
+  }
+
   // If no providers configured, show disabled state
   if (availableProviders.length === 0) {
     return (
-      <PromptInputButton disabled className="min-w-40">
+      <PromptInputButton disabled>
         <ModelSelectorName>No models available</ModelSelectorName>
       </PromptInputButton>
     );
   }
 
   return (
-    <>
-      <ModelSelectorRoot open={open} onOpenChange={setOpen}>
+    <div>
+      <ModelSelectorRoot open={open} onOpenChange={handleOpenChange}>
         <ModelSelectorTrigger asChild>
           <PromptInputButton disabled={disabled}>
             {selectedModelLogo && (
@@ -156,7 +145,10 @@ export function ModelSelector({
             </ModelSelectorName>
           </PromptInputButton>
         </ModelSelectorTrigger>
-        <ModelSelectorContent title="Select Model">
+        <ModelSelectorContent
+          title="Select Model"
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <ModelSelectorInput placeholder="Search models..." />
           <ModelSelectorList>
             <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
@@ -205,29 +197,6 @@ export function ModelSelector({
           </ModelSelectorList>
         </ModelSelectorContent>
       </ModelSelectorRoot>
-
-      {/* Mid-conversation warning dialog */}
-      <AlertDialog
-        open={!!pendingModel}
-        onOpenChange={(open) => !open && handleCancelChange()}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Change model mid-conversation?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Switching models during a conversation may affect response quality
-              and consistency. The new model may not have the same context
-              understanding as the previous one.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmChange}>
-              Change Model
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    </div>
   );
 }

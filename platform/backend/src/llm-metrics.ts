@@ -431,10 +431,11 @@ export function getObservableFetch(
         }
         if (
           provider === "openai" ||
+          provider === "cerebras" ||
           provider === "vllm" ||
           provider === "ollama"
         ) {
-          // vLLM and Ollama use OpenAI-compatible API format
+          // Cerebras, vLLM and Ollama use OpenAI-compatible API format
           const { input, output } = utils.adapters.openai.getUsageTokens(
             data.usage,
           );
@@ -447,6 +448,17 @@ export function getObservableFetch(
           );
         } else if (provider === "anthropic") {
           const { input, output } = utils.adapters.anthropic.getUsageTokens(
+            data.usage,
+          );
+          reportLLMTokens(
+            provider,
+            profile,
+            { input, output },
+            model,
+            externalAgentId,
+          );
+        } else if (provider === "zhipuai") {
+          const { input, output } = utils.adapters.zhipuai.getUsageTokens(
             data.usage,
           );
           reportLLMTokens(

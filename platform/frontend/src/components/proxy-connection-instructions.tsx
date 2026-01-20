@@ -72,6 +72,13 @@ export function ProxyConnectionInstructions({
         >
           Anthropic
         </Button>
+        <Button
+          variant={selectedProvider === "cerebras" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setSelectedProvider("cerebras")}
+        >
+          Cerebras
+        </Button>
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -194,6 +201,38 @@ export function ProxyConnectionInstructions({
           </div>
         </div>
       )}
+      {selectedProvider === "cerebras" && (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Replace your Cerebras base URL:
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="bg-muted/50 rounded-md px-3 py-2 border border-dashed border-muted-foreground/30 shrink-0">
+              <CodeText className="text-xs line-through opacity-50 whitespace-nowrap">
+                https://api.cerebras.ai/v1/
+              </CodeText>
+            </div>
+            <span className="text-muted-foreground flex-shrink-0">→</span>
+            <div className="bg-primary/5 rounded-md px-3 py-2 border border-primary/20 flex items-center gap-2">
+              <CodeText className="text-xs text-primary whitespace-nowrap">
+                {proxyUrl}
+              </CodeText>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 flex-shrink-0"
+                onClick={handleCopy}
+              >
+                {copied ? (
+                  <Check className="h-3 w-3 text-green-500" />
+                ) : (
+                  <Copy className="h-3 w-3" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       {selectedProvider === "claude-code" && (
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
@@ -219,8 +258,8 @@ export function ProxyConnectionInstructions({
         </div>
       )}
       <p className="text-sm text-muted-foreground">
-        The host/port is configurable via the{" "}
-        <CodeText className="text-xs">ARCHESTRA_API_BASE_URL</CodeText>{" "}
+        The URL is configurable via the{" "}
+        <CodeText className="text-xs">ARCHESTRA_API_EXTERNAL_BASE_URL</CodeText>{" "}
         environment variable. See{" "}
         <a
           href="https://archestra.ai/docs/platform-deployment#environment-variables"

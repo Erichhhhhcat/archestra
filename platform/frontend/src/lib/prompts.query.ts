@@ -25,6 +25,17 @@ export function usePrompts(params?: {
   });
 }
 
+/**
+ * Non-suspense version of usePrompts.
+ * Use in components that need to show loading states instead of suspense boundaries.
+ */
+export function usePromptsQuery() {
+  return useQuery({
+    queryKey: ["prompts"],
+    queryFn: async () => (await getPrompts()).data ?? [],
+  });
+}
+
 export function usePrompt(id: string) {
   return useQuery({
     queryKey: ["prompts", id],
@@ -50,6 +61,7 @@ export function useCreatePrompt() {
       agentId: string;
       userPrompt?: string;
       systemPrompt?: string;
+      allowedChatops?: string[];
     }) => {
       const response = await createPrompt({ body: data });
       return response.data;
@@ -73,6 +85,7 @@ export function useUpdatePrompt() {
         agentId?: string;
         userPrompt?: string;
         systemPrompt?: string;
+        allowedChatops?: string[];
       };
     }) => {
       const response = await updatePrompt({ path: { id }, body: data });

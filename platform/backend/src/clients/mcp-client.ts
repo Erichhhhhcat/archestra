@@ -184,12 +184,24 @@ class McpClient {
         // Get or create client
         const client = await this.getOrCreateClient(connectionKey, transport);
 
-        // Strip prefix and execute (same for all transports!)
-        const prefixName = tool.catalogName || tool.mcpServerName || "unknown";
-        const mcpToolName = this.stripServerPrefix(toolCall.name, prefixName);
+        // Determine the actual tool name by stripping the server/catalog prefix.
+        // We prioritize the `catalogName` prefix, which is standard for local MCP servers.
+        // If the tool name doesn't match the catalog prefix, we fall back to the `mcpServerName` (typical for remote servers).
+        let targetToolName = this.stripServerPrefix(
+          toolCall.name,
+          tool.catalogName || "",
+        );
+
+        if (targetToolName === toolCall.name && tool.mcpServerName) {
+          // No prefix match with catalogName; attempt to strip using mcpServerName instead.
+          targetToolName = this.stripServerPrefix(
+            toolCall.name,
+            tool.mcpServerName,
+          );
+        }
 
         const result = await client.callTool({
-          name: mcpToolName,
+          name: targetToolName,
           arguments: toolCall.arguments,
         });
 
@@ -787,6 +799,8 @@ class McpClient {
         const headers: Record<string, string> = {};
         if (secrets.access_token) {
           headers.Authorization = `Bearer ${secrets.access_token}`;
+        } else if (secrets.raw_access_token) {
+          headers.Authorization = String(secrets.raw_access_token);
         }
 
         return new StreamableHTTPClientTransport(
@@ -804,7 +818,9 @@ class McpClient {
       }
 
       // Stdio transport - use K8s attach!
-      const k8sDeployment = McpServerRuntimeManager.getDeployment(
+      // Use getOrLoadDeployment to handle multi-replica scenarios where the deployment
+      // may have been created by a different replica
+      const k8sDeployment = await McpServerRuntimeManager.getOrLoadDeployment(
         targetLocalMcpServerId,
       );
       if (!k8sDeployment) {

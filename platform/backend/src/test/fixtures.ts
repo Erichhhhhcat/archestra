@@ -2,13 +2,15 @@
  * biome-ignore-all lint/correctness/noEmptyPattern: oddly enough in extend below this is required
  * see https://vitest.dev/guide/test-context.html#extend-test-context
  */
-import { MEMBER_ROLE_NAME } from "@shared";
+import { ARCHESTRA_MCP_CATALOG_ID, MEMBER_ROLE_NAME } from "@shared";
 import { beforeEach as baseBeforeEach, test as baseTest } from "vitest";
 import db, { schema } from "@/database";
 import {
   AgentModel,
   AgentToolModel,
+  ChatApiKeyModel,
   InternalMcpCatalogModel,
+  PromptModel,
   SessionModel,
   TeamModel,
   ToolInvocationPolicyModel,
@@ -20,6 +22,7 @@ import type {
   AgentTool,
   InsertAccount,
   InsertAgent,
+  InsertChatApiKey,
   InsertConversation,
   InsertInteraction,
   InsertInternalMcpCatalog,
@@ -28,10 +31,12 @@ import type {
   InsertMember,
   InsertOrganization,
   InsertOrganizationRole,
+  InsertPrompt,
   InsertSession,
   InsertTeam,
   InsertUser,
   OrganizationRole,
+  Prompt,
   TeamMember,
   Tool,
   ToolInvocation,
@@ -53,6 +58,7 @@ interface TestFixtures {
   makeTeam: typeof makeTeam;
   makeTeamMember: typeof makeTeamMember;
   makeAgent: typeof makeAgent;
+  makePrompt: typeof makePrompt;
   makeTool: typeof makeTool;
   makeAgentTool: typeof makeAgentTool;
   makeToolPolicy: typeof makeToolPolicy;
@@ -68,7 +74,9 @@ interface TestFixtures {
   makeConversation: typeof makeConversation;
   makeInteraction: typeof makeInteraction;
   makeSecret: typeof makeSecret;
+  makeChatApiKey: typeof makeChatApiKey;
   makeSsoProvider: typeof makeSsoProvider;
+  seedAndAssignArchestraTools: typeof seedAndAssignArchestraTools;
 }
 
 async function _makeUser(
@@ -178,6 +186,24 @@ async function makeAgent(overrides: Partial<InsertAgent> = {}): Promise<Agent> {
   };
   return await AgentModel.create({
     ...defaults,
+    ...overrides,
+  });
+}
+
+/**
+ * Creates a test prompt (UI "Agent") using the Prompt model.
+ * Note: In the DB, "prompts" are called "Agents" in the UI.
+ * Requires an organizationId and agentId (Profile in UI).
+ */
+async function makePrompt(params: {
+  organizationId: string;
+  agentId: string;
+  overrides?: Partial<InsertPrompt>;
+}): Promise<Prompt> {
+  const { organizationId, agentId, overrides = {} } = params;
+  return await PromptModel.create(organizationId, {
+    name: `Test Prompt ${crypto.randomUUID().substring(0, 8)}`,
+    agentId,
     ...overrides,
   });
 }
@@ -621,6 +647,29 @@ async function makeSecret(
 }
 
 /**
+ * Creates a test chat API key in the database.
+ * Used for testing features that require LLM API keys (e.g., auto-policy configuration).
+ */
+async function makeChatApiKey(
+  organizationId: string,
+  secretId: string,
+  overrides: Partial<
+    Pick<InsertChatApiKey, "name" | "provider" | "scope" | "userId" | "teamId">
+  > = {},
+) {
+  return await ChatApiKeyModel.create({
+    organizationId,
+    secretId,
+    name:
+      overrides.name ?? `Test API Key ${crypto.randomUUID().substring(0, 8)}`,
+    provider: overrides.provider ?? "anthropic",
+    scope: overrides.scope ?? "org_wide",
+    userId: overrides.userId ?? null,
+    teamId: overrides.teamId ?? null,
+  });
+}
+
+/**
  * Creates a test SSO provider in the database.
  * Bypasses Better Auth API for test simplicity.
  */
@@ -668,6 +717,34 @@ async function makeSsoProvider(
   return provider;
 }
 
+/**
+ * Seeds and assigns Archestra tools to an agent.
+ * Creates the Archestra catalog entry if it doesn't exist, then seeds tools.
+ * This is useful for tests that need Archestra tools to be available.
+ */
+async function seedAndAssignArchestraTools(agentId: string): Promise<void> {
+  // Create Archestra catalog entry if it doesn't exist
+  const existing = await InternalMcpCatalogModel.findById(
+    ARCHESTRA_MCP_CATALOG_ID,
+  );
+  if (!existing) {
+    await db.insert(schema.internalMcpCatalogTable).values({
+      id: ARCHESTRA_MCP_CATALOG_ID,
+      name: "Archestra",
+      description:
+        "Built-in Archestra tools for managing profiles, limits, policies, and MCP servers.",
+      serverType: "builtin",
+    });
+  }
+
+  // Seed and assign Archestra tools
+  await ToolModel.seedArchestraTools(ARCHESTRA_MCP_CATALOG_ID);
+  await ToolModel.assignArchestraToolsToAgent(
+    agentId,
+    ARCHESTRA_MCP_CATALOG_ID,
+  );
+}
+
 export const beforeEach = baseBeforeEach<TestFixtures>;
 export const test = baseTest.extend<TestFixtures>({
   makeUser: async ({}, use) => {
@@ -687,6 +764,9 @@ export const test = baseTest.extend<TestFixtures>({
   },
   makeAgent: async ({}, use) => {
     await use(makeAgent);
+  },
+  makePrompt: async ({}, use) => {
+    await use(makePrompt);
   },
   makeTool: async ({}, use) => {
     await use(makeTool);
@@ -733,7 +813,13 @@ export const test = baseTest.extend<TestFixtures>({
   makeSecret: async ({}, use) => {
     await use(makeSecret);
   },
+  makeChatApiKey: async ({}, use) => {
+    await use(makeChatApiKey);
+  },
   makeSsoProvider: async ({}, use) => {
     await use(makeSsoProvider);
+  },
+  seedAndAssignArchestraTools: async ({}, use) => {
+    await use(seedAndAssignArchestraTools);
   },
 });
