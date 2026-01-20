@@ -16,8 +16,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useProfiles } from "@/lib/agent.query";
 import { useUpdateConversation } from "@/lib/chat.query";
+import { useProfiles } from "@/lib/profile.query";
 import { cn } from "@/lib/utils";
 
 interface ProfileSelectorProps {

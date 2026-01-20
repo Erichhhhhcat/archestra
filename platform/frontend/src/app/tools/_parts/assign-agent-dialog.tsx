@@ -20,13 +20,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useProfiles } from "@/lib/agent.query";
-import { useAssignTool } from "@/lib/agent-tools.query";
 import { useInternalMcpCatalogSuspense } from "@/lib/internal-mcp-catalog.query";
+import { useProfiles } from "@/lib/profile.query";
+import { useAssignTool } from "@/lib/profile-tools.query";
 
 interface AssignProfileDialogProps {
   tool:
-    | archestraApiTypes.GetAllAgentToolsResponses["200"]["data"][number]
+    | archestraApiTypes.GetAllProfileToolsResponses["200"]["data"][number]
     | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -84,9 +84,9 @@ export function AssignProfileDialog({
       executionSourceMcpServerId === DYNAMIC_CREDENTIAL_VALUE;
 
     const results = await Promise.allSettled(
-      selectedProfileIds.map((agentId) =>
+      selectedProfileIds.map((profileId) =>
         assignMutation.mutateAsync({
-          agentId,
+          profileId,
           toolId: tool.tool.id,
           credentialSourceMcpServerId: isLocalServer
             ? null

@@ -498,13 +498,13 @@ function generateToolArguments(toolName: string): Record<string, unknown> {
  * Generate a single mock interaction
  */
 export function generateMockInteraction(
-  agentId: string,
+  profileId: string,
   tools: ToolInfo[],
   shouldBlock: boolean,
 ): InsertInteraction {
   if (tools.length === 0) {
     throw new Error(
-      `Cannot generate interaction for agent ${agentId}: agent has no tools`,
+      `Cannot generate interaction for profile ${profileId}: profile has no tools`,
     );
   }
 
@@ -644,7 +644,7 @@ export function generateMockInteraction(
   };
 
   return {
-    profileId: agentId,
+    profileId,
     type: "openai:chatCompletions",
     request,
     response,
@@ -656,38 +656,38 @@ export function generateMockInteraction(
  * Generate multiple mock interactions
  */
 export function generateMockInteractions(
-  agentIds: string[],
-  toolsByAgent: Map<string, ToolInfo[]>,
+  profileIds: string[],
+  toolsByProfile: Map<string, ToolInfo[]>,
   count: number,
   blockProbability = 0.3,
 ): InsertInteraction[] {
   const interactions: InsertInteraction[] = [];
 
-  // Filter to only agents that have tools
-  const agentsWithTools = agentIds.filter(
-    (agentId) => (toolsByAgent.get(agentId)?.length ?? 0) > 0,
+  // Filter to only profiles that have tools
+  const profilesWithTools = profileIds.filter(
+    (profileId) => (toolsByProfile.get(profileId)?.length ?? 0) > 0,
   );
 
-  if (agentsWithTools.length === 0) {
+  if (profilesWithTools.length === 0) {
     throw new Error(
-      "Cannot generate interactions: no agents have tools assigned",
+      "Cannot generate interactions: no profiles have tools assigned",
     );
   }
 
   for (let i = 0; i < count; i++) {
-    // Pick a random agent that has tools
-    const agentId = randomElement(agentsWithTools);
+    // Pick a random profile that has tools
+    const profileId = randomElement(profilesWithTools);
 
-    // Get tools for this agent (guaranteed to have at least one)
+    // Get tools for this profile (guaranteed to have at least one)
     // biome-ignore lint/style/noNonNullAssertion: ok in seed script
-    const agentTools = toolsByAgent.get(agentId)!;
+    const profileTools = toolsByProfile.get(profileId)!;
 
     // Randomly decide if this interaction should be blocked
     const shouldBlock = randomBool(blockProbability);
 
     const interaction = generateMockInteraction(
-      agentId,
-      agentTools,
+      profileId,
+      profileTools,
       shouldBlock,
     );
     interactions.push(interaction);

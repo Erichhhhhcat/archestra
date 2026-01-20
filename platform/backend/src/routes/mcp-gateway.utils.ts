@@ -21,10 +21,10 @@ import mcpClient, { type TokenAuthContext } from "@/clients/mcp-client";
 import config from "@/config";
 import logger from "@/logging";
 import {
-  AgentModel,
-  AgentTeamModel,
   isArchestraPrefixedToken,
   McpToolCallModel,
+  ProfileModel,
+  ProfileTeamModel,
   TeamModel,
   TeamTokenModel,
   ToolModel,
@@ -55,11 +55,11 @@ export interface SessionData {
   server: Server;
   transport: StreamableHTTPServerTransport;
   lastAccess: number;
-  agentId: string;
-  agent?: {
+  profileId: string;
+  profile?: {
     id: string;
     name: string;
-  }; // Cache agent data
+  }; // Cache profile data
   // Token auth info (only present for archestra_ token auth)
   tokenAuth?: {
     tokenId: string;
@@ -102,15 +102,15 @@ export function cleanupExpiredSessions(): void {
  * Create a fresh MCP server for a request
  * In stateless mode, we need to create new server instances per request
  */
-export async function createAgentServer(
-  agentId: string,
+export async function createProfileServer(
+  profileId: string,
   logger: { info: (obj: unknown, msg: string) => void },
-  cachedAgent?: { name: string; id: string },
+  cachedProfile?: { name: string; id: string },
   tokenAuth?: TokenAuthContext,
-): Promise<{ server: Server; agent: { name: string; id: string } }> {
+): Promise<{ server: Server; profile: { name: string; id: string } }> {
   const server = new Server(
     {
-      name: `archestra-agent-${agentId}`,
+      name: `archestra-profile-${profileId}`,
       version: config.api.version,
     },
     {
@@ -120,14 +120,14 @@ export async function createAgentServer(
     },
   );
 
-  // Use cached agent data if available, otherwise fetch it
-  let agent = cachedAgent;
-  if (!agent) {
-    const fetchedAgent = await AgentModel.findById(agentId);
-    if (!fetchedAgent) {
-      throw new Error(`Agent not found: ${agentId}`);
+  // Use cached profile data if available, otherwise fetch it
+  let profile = cachedProfile;
+  if (!profile) {
+    const fetchedProfile = await ProfileModel.findById(profileId);
+    if (!fetchedProfile) {
+      throw new Error(`Profile not found: ${profileId}`);
     }
-    agent = fetchedAgent;
+    profile = fetchedProfile;
   }
 
   // Create a map of Archestra tool names to their titles
@@ -141,7 +141,7 @@ export async function createAgentServer(
     // Get MCP tools (from connected MCP servers + Archestra built-in tools)
     // Excludes proxy-discovered tools
     // Fetch fresh on every request to ensure we get newly assigned tools
-    const mcpTools = await ToolModel.getMcpToolsByAgent(agentId);
+    const mcpTools = await ToolModel.getMcpToolsByProfile(profileId);
 
     const toolsList = mcpTools.map(({ name, description, parameters }) => ({
       name,
@@ -155,7 +155,7 @@ export async function createAgentServer(
     // Log tools/list request
     try {
       await McpToolCallModel.create({
-        agentId,
+        profileId,
         mcpServerName: "mcp-gateway",
         method: "tools/list",
         toolCall: null,
@@ -163,7 +163,7 @@ export async function createAgentServer(
         toolResult: { tools: toolsList } as any,
       });
       logger.info(
-        { agentId, toolsCount: toolsList.length },
+        { profileId, toolsCount: toolsList.length },
         "✅ Saved tools/list request",
       );
     } catch (dbError) {
@@ -182,7 +182,7 @@ export async function createAgentServer(
         if (name.startsWith(archestraToolPrefix)) {
           logger.info(
             {
-              agentId,
+              profileId,
               toolName: name,
             },
             "Archestra MCP tool call received",
@@ -190,12 +190,12 @@ export async function createAgentServer(
 
           // Handle Archestra tools directly
           const archestraResponse = await executeArchestraTool(name, args, {
-            profile: { id: agent.id, name: agent.name },
+            profile: { id: profile.id, name: profile.name },
           });
 
           logger.info(
             {
-              agentId,
+              profileId,
               toolName: name,
             },
             "Archestra MCP tool call completed",
@@ -206,7 +206,7 @@ export async function createAgentServer(
 
         logger.info(
           {
-            agentId,
+            profileId,
             toolName: name,
             argumentKeys: args ? Object.keys(args) : [],
             argumentsSize: JSON.stringify(args || {}).length,
@@ -227,14 +227,14 @@ export async function createAgentServer(
         // Execute the tool call via McpClient (pass tokenAuth for dynamic credential resolution)
         const result = await mcpClient.executeToolCall(
           toolCall,
-          agentId,
+          profileId,
           tokenAuth,
         );
 
         const contentLength = estimateToolResultContentLength(result.content);
         logger.info(
           {
-            agentId,
+            profileId,
             toolName: name,
             resultContentLength: contentLength.length,
             resultContentLengthEstimated: contentLength.isEstimated,
@@ -268,8 +268,8 @@ export async function createAgentServer(
     },
   );
 
-  logger.info({ agentId }, "MCP server instance created");
-  return { server, agent };
+  logger.info({ profileId }, "MCP server instance created");
+  return { server, profile };
 }
 
 /**
@@ -277,11 +277,14 @@ export async function createAgentServer(
  * We use session-based mode as required by the SDK for JSON responses
  */
 export function createTransport(
-  agentId: string,
+  profileId: string,
   clientSessionId: string | undefined,
   logger: { info: (obj: unknown, msg: string) => void },
 ): StreamableHTTPServerTransport {
-  logger.info({ agentId, clientSessionId }, "Creating new transport instance");
+  logger.info(
+    { profileId, clientSessionId },
+    "Creating new transport instance",
+  );
 
   // Create transport with session management
   // If client provides a session ID, we'll use it; otherwise generate one
@@ -290,7 +293,7 @@ export function createTransport(
       const sessionId =
         clientSessionId || `session-${Date.now()}-${randomUUID()}`;
       logger.info(
-        { agentId, sessionId, wasClientProvided: !!clientSessionId },
+        { profileId, sessionId, wasClientProvided: !!clientSessionId },
         "Using session ID",
       );
       return sessionId;
@@ -298,7 +301,7 @@ export function createTransport(
     enableJsonResponse: true, // Use JSON responses instead of SSE
   });
 
-  logger.info({ agentId }, "Transport instance created");
+  logger.info({ profileId }, "Transport instance created");
   return transport;
 }
 
@@ -372,7 +375,7 @@ export async function validateTeamToken(
   // Check if profile is accessible via this token
   if (!token.isOrganizationToken) {
     // Team token: profile must be assigned to this team
-    const profileTeamIds = await AgentTeamModel.getTeamsForAgent(profileId);
+    const profileTeamIds = await ProfileTeamModel.getTeamsForProfile(profileId);
     const hasAccess = token.teamId && profileTeamIds.includes(token.teamId);
     logger.debug(
       { profileId, tokenTeamId: token.teamId, profileTeamIds, hasAccess },
@@ -442,7 +445,7 @@ export async function validateUserToken(
 
   // Non-admin: user can access profile if they are a member of any team assigned to the profile
   const userTeamIds = await TeamModel.getUserTeamIds(token.userId);
-  const profileTeamIds = await AgentTeamModel.getTeamsForAgent(profileId);
+  const profileTeamIds = await ProfileTeamModel.getTeamsForProfile(profileId);
   const hasAccess = userTeamIds.some((teamId) =>
     profileTeamIds.includes(teamId),
   );
@@ -503,34 +506,34 @@ export async function validateMCPGatewayToken(
 }
 
 /**
- * Clear all active sessions for a specific agent
+ * Clear all active sessions for a specific profile
  */
-export function clearAgentSessions(agentId: string): void {
+export function clearProfileSessions(profileId: string): void {
   const sessionsToClear: string[] = [];
 
-  // Find all sessions for this agent
+  // Find all sessions for this profile
   for (const [sessionId, sessionData] of activeSessions.entries()) {
-    if (sessionData.agentId === agentId) {
+    if (sessionData.profileId === profileId) {
       sessionsToClear.push(sessionId);
     }
   }
 
   // Delete all matching sessions
   for (const sessionId of sessionsToClear) {
-    logger.info({ agentId, sessionId }, "Clearing agent session");
+    logger.info({ profileId, sessionId }, "Clearing profile session");
     activeSessions.delete(sessionId);
   }
 
   logger.info(
-    { agentId, clearedCount: sessionsToClear.length },
+    { profileId, clearedCount: sessionsToClear.length },
     "All sessions cleared, now clearing cached MCP client",
   );
 
   // Also clear the cached MCP client so it will reconnect with a new session
-  clearChatMcpClient(agentId);
+  clearChatMcpClient(profileId);
 
   logger.info(
-    { agentId, clearedCount: sessionsToClear.length },
-    "✅ Cleared agent sessions and client cache - next request will create fresh session",
+    { profileId, clearedCount: sessionsToClear.length },
+    "✅ Cleared profile sessions and client cache - next request will create fresh session",
   );
 }

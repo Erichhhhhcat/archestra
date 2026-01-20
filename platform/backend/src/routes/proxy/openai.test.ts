@@ -5,7 +5,7 @@ import {
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 import config from "@/config";
-import { AgentModel, TokenPriceModel } from "@/models";
+import { ProfileModel, TokenPriceModel } from "@/models";
 import { afterEach, beforeEach, describe, expect, test } from "@/test";
 import type { OpenAi } from "@/types";
 import openAiProxyRoutes from "./openai";
@@ -76,15 +76,15 @@ describe("OpenAI cost tracking", () => {
       pricePerMillionOutput: "10.00",
     });
 
-    // Create a test agent with cost optimization enabled
-    const agent = await AgentModel.create({
-      name: "Test Cost Agent",
+    // Create a test profile with cost optimization enabled
+    const profile = await ProfileModel.create({
+      name: "Test Cost Profile",
       teams: [],
     });
 
     const response = await app.inject({
       method: "POST",
-      url: `/v1/openai/${agent.id}/chat/completions`,
+      url: `/v1/openai/${profile.id}/chat/completions`,
       headers: {
         "content-type": "application/json",
         authorization: "Bearer test-key",
@@ -102,7 +102,7 @@ describe("OpenAI cost tracking", () => {
     // Find the created interaction
     const { InteractionModel } = await import("@/models");
     const interactions = await InteractionModel.getAllInteractionsForProfile(
-      agent.id,
+      profile.id,
     );
     expect(interactions.length).toBeGreaterThan(0);
 
@@ -131,9 +131,9 @@ describe("OpenAI streaming mode", () => {
       pricePerMillionOutput: "10.00",
     });
 
-    // Create a test agent
-    const agent = await AgentModel.create({
-      name: "Test Streaming Agent",
+    // Create a test profile
+    const profile = await ProfileModel.create({
+      name: "Test Streaming Profile",
       teams: [],
     });
 
@@ -141,12 +141,12 @@ describe("OpenAI streaming mode", () => {
 
     // Get initial interaction count
     const initialInteractions =
-      await InteractionModel.getAllInteractionsForProfile(agent.id);
+      await InteractionModel.getAllInteractionsForProfile(profile.id);
     const initialCount = initialInteractions.length;
 
     const response = await app.inject({
       method: "POST",
-      url: `/v1/openai/${agent.id}/chat/completions`,
+      url: `/v1/openai/${profile.id}/chat/completions`,
       headers: {
         "content-type": "application/json",
         authorization: "Bearer test-key",
@@ -171,7 +171,7 @@ describe("OpenAI streaming mode", () => {
 
     // Find the created interaction
     const interactions = await InteractionModel.getAllInteractionsForProfile(
-      agent.id,
+      profile.id,
     );
     expect(interactions.length).toBe(initialCount + 1);
 
@@ -215,9 +215,9 @@ describe("OpenAI streaming mode", () => {
           pricePerMillionOutput: "10.00",
         });
 
-        // Create a test agent
-        const agent = await AgentModel.create({
-          name: "Test Interrupted Streaming Agent",
+        // Create a test profile
+        const testProfile = await ProfileModel.create({
+          name: "Test Interrupted Streaming Profile",
           teams: [],
         });
 
@@ -225,12 +225,12 @@ describe("OpenAI streaming mode", () => {
 
         // Get initial interaction count
         const initialInteractions =
-          await InteractionModel.getAllInteractionsForProfile(agent.id);
+          await InteractionModel.getAllInteractionsForProfile(testProfile.id);
         const initialCount = initialInteractions.length;
 
         const response = await app.inject({
           method: "POST",
-          url: `/v1/openai/${agent.id}/chat/completions`,
+          url: `/v1/openai/${testProfile.id}/chat/completions`,
           headers: {
             "content-type": "application/json",
             authorization: "Bearer test-key",
@@ -251,7 +251,7 @@ describe("OpenAI streaming mode", () => {
 
         // Verify interaction was still recorded despite interruption
         const interactions =
-          await InteractionModel.getAllInteractionsForProfile(agent.id);
+          await InteractionModel.getAllInteractionsForProfile(testProfile.id);
         expect(interactions.length).toBe(initialCount + 1);
 
         const interaction = interactions[interactions.length - 1];
@@ -297,9 +297,9 @@ describe("OpenAI streaming mode", () => {
           pricePerMillionOutput: "10.00",
         });
 
-        // Create a test agent
-        const agent = await AgentModel.create({
-          name: "Test Interrupted Before Usage Agent",
+        // Create a test profile
+        const profile = await ProfileModel.create({
+          name: "Test Interrupted Before Usage Profile",
           teams: [],
         });
 
@@ -307,12 +307,12 @@ describe("OpenAI streaming mode", () => {
 
         // Get initial interaction count
         const initialInteractions =
-          await InteractionModel.getAllInteractionsForProfile(agent.id);
+          await InteractionModel.getAllInteractionsForProfile(profile.id);
         const initialCount = initialInteractions.length;
 
         const response = await app.inject({
           method: "POST",
-          url: `/v1/openai/${agent.id}/chat/completions`,
+          url: `/v1/openai/${profile.id}/chat/completions`,
           headers: {
             "content-type": "application/json",
             authorization: "Bearer test-key",
@@ -333,7 +333,7 @@ describe("OpenAI streaming mode", () => {
 
         // Verify interaction was recorded even without usage data
         const interactions =
-          await InteractionModel.getAllInteractionsForProfile(agent.id);
+          await InteractionModel.getAllInteractionsForProfile(profile.id);
         expect(interactions.length).toBe(initialCount + 1);
 
         const interaction = interactions[interactions.length - 1];

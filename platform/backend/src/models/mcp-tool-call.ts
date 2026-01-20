@@ -23,7 +23,7 @@ import type {
   PaginationQuery,
   SortingQuery,
 } from "@/types";
-import AgentTeamModel from "./agent-team";
+import ProfileTeamModel from "./profile-team";
 
 /**
  * Escapes special LIKE pattern characters (%, _, \) to treat them as literals.
@@ -79,17 +79,15 @@ class McpToolCallModel {
 
     // Access control filter
     if (userId && !isMcpServerAdmin) {
-      const accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
-        userId,
-        false,
-      );
+      const accessibleProfileIds =
+        await ProfileTeamModel.getUserAccessibleProfileIds(userId, false);
 
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return createPaginatedResult([], 0, pagination);
       }
 
       conditions.push(
-        inArray(schema.mcpToolCallsTable.agentId, accessibleAgentIds),
+        inArray(schema.mcpToolCallsTable.profileId, accessibleProfileIds),
       );
     }
 
@@ -145,7 +143,7 @@ class McpToolCallModel {
       case "createdAt":
         return direction(schema.mcpToolCallsTable.createdAt);
       case "agentId":
-        return direction(schema.mcpToolCallsTable.agentId);
+        return direction(schema.mcpToolCallsTable.profileId);
       case "mcpServerName":
         return direction(schema.mcpToolCallsTable.mcpServerName);
       case "method":
@@ -172,9 +170,9 @@ class McpToolCallModel {
 
     // Check access control for non-MCP server admins
     if (userId && !isMcpServerAdmin) {
-      const hasAccess = await AgentTeamModel.userHasAgentAccess(
+      const hasAccess = await ProfileTeamModel.userHasProfileAccess(
         userId,
-        mcpToolCall.agentId,
+        mcpToolCall.profileId,
         false,
       );
       if (!hasAccess) {
@@ -185,8 +183,8 @@ class McpToolCallModel {
     return mcpToolCall;
   }
 
-  static async getAllMcpToolCallsForAgent(
-    agentId: string,
+  static async getAllMcpToolCallsForProfile(
+    profileId: string,
     whereClauses?: SQL[],
   ) {
     return db
@@ -194,7 +192,7 @@ class McpToolCallModel {
       .from(schema.mcpToolCallsTable)
       .where(
         and(
-          eq(schema.mcpToolCallsTable.agentId, agentId),
+          eq(schema.mcpToolCallsTable.profileId, profileId),
           ...(whereClauses ?? []),
         ),
       )
@@ -202,10 +200,10 @@ class McpToolCallModel {
   }
 
   /**
-   * Get all MCP tool calls for an agent with pagination and sorting support
+   * Get all MCP tool calls for a profile with pagination and sorting support
    */
-  static async getAllMcpToolCallsForAgentPaginated(
-    agentId: string,
+  static async getAllMcpToolCallsForProfilePaginated(
+    profileId: string,
     pagination: PaginationQuery,
     sorting?: SortingQuery,
     whereClauses?: SQL[],
@@ -216,7 +214,9 @@ class McpToolCallModel {
     },
   ): Promise<PaginatedResult<McpToolCall>> {
     // Build conditions array
-    const conditions: SQL[] = [eq(schema.mcpToolCallsTable.agentId, agentId)];
+    const conditions: SQL[] = [
+      eq(schema.mcpToolCallsTable.profileId, profileId),
+    ];
 
     // Add any custom where clauses
     if (whereClauses && whereClauses.length > 0) {

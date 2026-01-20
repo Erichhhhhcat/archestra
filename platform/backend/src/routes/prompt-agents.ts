@@ -40,7 +40,7 @@ const promptAgentRoutes: FastifyPluginAsyncZod = async (fastify) => {
     "/api/prompt-agents",
     {
       schema: {
-        operationId: RouteId.GetAllPromptAgentConnections,
+        operationId: RouteId.GetAllPromptProfileConnections,
         description:
           "Get all prompt-agent connections for the organization (for canvas visualization)",
         tags: ["Prompt Agents"],
@@ -70,7 +70,7 @@ const promptAgentRoutes: FastifyPluginAsyncZod = async (fastify) => {
     "/api/prompts/:promptId/agents",
     {
       schema: {
-        operationId: RouteId.GetPromptAgents,
+        operationId: RouteId.GetPromptProfiles,
         description:
           "Get all agents assigned to a prompt, filtered by user access",
         tags: ["Prompt Agents"],
@@ -109,7 +109,7 @@ const promptAgentRoutes: FastifyPluginAsyncZod = async (fastify) => {
     "/api/prompts/:promptId/agents",
     {
       schema: {
-        operationId: RouteId.SyncPromptAgents,
+        operationId: RouteId.SyncPromptProfiles,
         description: "Sync agents for a prompt - replaces all existing agents",
         tags: ["Prompt Agents"],
         params: z.object({
@@ -172,7 +172,7 @@ const promptAgentRoutes: FastifyPluginAsyncZod = async (fastify) => {
     "/api/prompts/:promptId/agents/:agentPromptId",
     {
       schema: {
-        operationId: RouteId.DeletePromptAgent,
+        operationId: RouteId.DeletePromptProfile,
         description: "Remove an agent from a prompt",
         tags: ["Prompt Agents"],
         params: z.object({

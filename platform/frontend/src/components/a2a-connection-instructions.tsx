@@ -36,8 +36,8 @@ interface A2AConnectionInstructionsProps {
 export function A2AConnectionInstructions({
   prompt,
 }: A2AConnectionInstructionsProps) {
-  // Filter tokens by the profile's teams (prompt.agentId is the profile ID)
-  const { data: tokensData } = useTokens({ profileId: prompt.agentId });
+  // Filter tokens by the profile's teams (prompt.profileId is the profile ID)
+  const { data: tokensData } = useTokens({ profileId: prompt.profileId });
   const { data: userToken } = useUserToken();
   const { data: hasProfileAdminPermission } = useHasPermissions({
     profile: ["admin"],

@@ -7,7 +7,7 @@ import type { ArchitectureTabType } from "@/components/architecture-diagram/arch
 import { ConnectionOptions } from "@/components/connection-options";
 import { PageLayout } from "@/components/page-layout";
 import { PermissivePolicyBar } from "@/components/permissive-policy-bar";
-import { useDefaultProfile } from "@/lib/agent.query";
+import { useDefaultProfile } from "@/lib/profile.query";
 
 export default function ConnectionPage() {
   const { data: defaultProfile } = useDefaultProfile();

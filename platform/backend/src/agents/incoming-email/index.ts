@@ -1,9 +1,9 @@
 import { executeA2AMessage } from "@/agents/a2a-executor";
 import config from "@/config";
 import logger from "@/logging";
-import AgentTeamModel from "@/models/agent-team";
 import IncomingEmailSubscriptionModel from "@/models/incoming-email-subscription";
 import ProcessedEmailModel from "@/models/processed-email";
+import ProfileTeamModel from "@/models/profile-team";
 import PromptModel from "@/models/prompt";
 import TeamModel from "@/models/team";
 import type {
@@ -513,15 +513,17 @@ export async function processIncomingEmail(
     throw new Error(`Prompt ${promptId} not found`);
   }
 
-  // Get organization from agent's team
-  const agentTeamIds = await AgentTeamModel.getTeamsForAgent(prompt.agentId);
-  if (agentTeamIds.length === 0) {
-    throw new Error(`No teams found for agent ${prompt.agentId}`);
+  // Get organization from profile's team
+  const profileTeamIds = await ProfileTeamModel.getTeamsForProfile(
+    prompt.profileId,
+  );
+  if (profileTeamIds.length === 0) {
+    throw new Error(`No teams found for profile ${prompt.profileId}`);
   }
 
-  const teams = await TeamModel.findByIds(agentTeamIds);
+  const teams = await TeamModel.findByIds(profileTeamIds);
   if (teams.length === 0 || !teams[0].organizationId) {
-    throw new Error(`No organization found for agent ${prompt.agentId}`);
+    throw new Error(`No organization found for profile ${prompt.profileId}`);
   }
   const organization = teams[0].organizationId;
 
@@ -606,12 +608,12 @@ ${formattedHistory}
   logger.info(
     {
       promptId,
-      agentId: prompt.agentId,
+      profileId: prompt.profileId,
       organizationId: organization,
       messageLength: message.length,
       hasConversationHistory: conversationContext.length > 0,
     },
-    "[IncomingEmail] Invoking agent with email content",
+    "[IncomingEmail] Invoking profile with email content",
   );
 
   // Execute using the shared A2A service

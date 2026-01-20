@@ -1,4 +1,4 @@
-import AgentModel from "@/models/agent";
+import ProfileModel from "@/models/profile";
 import PromptModel from "@/models/prompt";
 import PromptAgentModel from "@/models/prompt-agent";
 import ToolModel from "@/models/tool";
@@ -14,26 +14,26 @@ describe("GET /api/prompts/:id/tools", () => {
     const user = await makeUser({ email: "test@example.com" });
     const team = await makeTeam(org.id, user.id, { name: "Test Team" });
 
-    // Create parent agent and prompt
-    const parentAgent = await AgentModel.create({
-      name: "Parent Agent",
+    // Create parent profile and prompt
+    const parentProfile = await ProfileModel.create({
+      name: "Parent Profile",
       teams: [team.id],
     });
 
     const parentPrompt = await PromptModel.create(org.id, {
       name: "Parent Prompt",
-      agentId: parentAgent.id,
+      profileId: parentProfile.id,
     });
 
-    // Create child agent and prompt
-    const childAgent = await AgentModel.create({
-      name: "Child Agent",
+    // Create child profile and prompt
+    const childProfile = await ProfileModel.create({
+      name: "Child Profile",
       teams: [team.id],
     });
 
     const childPrompt = await PromptModel.create(org.id, {
       name: "Child Prompt",
-      agentId: childAgent.id,
+      profileId: childProfile.id,
       systemPrompt: "I am a child agent",
     });
 
@@ -44,17 +44,16 @@ describe("GET /api/prompts/:id/tools", () => {
     });
 
     // Verify tool was created
-    const tools = await ToolModel.getAgentDelegationToolsByPrompt(
+    const tools = await ToolModel.getProfileDelegationToolsByPrompt(
       parentPrompt.id,
     );
     expect(tools).toHaveLength(1);
     expect(tools[0].name).toBe("agent__child_prompt");
 
     // Verify the detailed query also works
-    const toolsWithDetails = await ToolModel.getAgentDelegationToolsWithDetails(
-      parentPrompt.id,
-    );
+    const toolsWithDetails =
+      await ToolModel.getProfileDelegationToolsWithDetails(parentPrompt.id);
     expect(toolsWithDetails).toHaveLength(1);
-    expect(toolsWithDetails[0].profileId).toBe(childAgent.id);
+    expect(toolsWithDetails[0].profileId).toBe(childProfile.id);
   });
 });

@@ -29,17 +29,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { useInternalMcpCatalog } from "@/lib/internal-mcp-catalog.query";
 import {
   useAllProfileTools,
   useAssignTool,
   useProfileToolPatchMutation,
   useUnassignTool,
-} from "@/lib/agent-tools.query";
-import { useInternalMcpCatalog } from "@/lib/internal-mcp-catalog.query";
+} from "@/lib/profile-tools.query";
 import { useTools } from "@/lib/tool.query";
 
 interface AssignToolsDialogProps {
-  agent: archestraApiTypes.GetAllAgentsResponses["200"][number];
+  agent: archestraApiTypes.GetAllProfilesResponses["200"][number];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -55,12 +55,12 @@ export function AssignToolsDialog({
   const { data: internalMcpCatalogItems, isLoading: isLoadingCatalog } =
     useInternalMcpCatalog();
 
-  // Fetch currently assigned tools for this agent (use getAllProfileTools to get credentialSourceMcpServerId)
+  // Fetch currently assigned tools for this profile (use getAllProfileTools to get credentialSourceMcpServerId)
   // Use skipPagination to ensure all assigned tools are returned regardless of the default pagination limit
-  // Use agentId filter to fetch only tools for this specific agent (more efficient than fetching all and filtering client-side)
+  // Use profileId filter to fetch only tools for this specific profile (more efficient than fetching all and filtering client-side)
   const { data: allProfileTools } = useAllProfileTools({
     skipPagination: true,
-    filters: { agentId: agent.id },
+    filters: { profileId: agent.id },
   });
   const agentToolRelations = useMemo(
     () => allProfileTools?.data || [],
@@ -324,7 +324,7 @@ export function AssignToolsDialog({
       // Assign new tools
       for (const tool of toAssign) {
         await assignTool.mutateAsync({
-          agentId: agent.id,
+          profileId: agent.id,
           toolId: tool.toolId,
           credentialSourceMcpServerId: tool.credentialsSourceId || null,
           executionSourceMcpServerId: tool.executionSourceId || null,
@@ -335,7 +335,7 @@ export function AssignToolsDialog({
       // Unassign removed tools
       for (const at of toUnassign) {
         await unassignTool.mutateAsync({
-          agentId: agent.id,
+          profileId: agent.id,
           toolId: at.tool.id,
         });
       }

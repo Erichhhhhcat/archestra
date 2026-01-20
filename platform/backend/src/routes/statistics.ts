@@ -47,7 +47,7 @@ const statisticsRoutes: FastifyPluginAsyncZod = async (fastify) => {
     "/api/statistics/agents",
     {
       schema: {
-        operationId: RouteId.GetAgentStatistics,
+        operationId: RouteId.GetProfileStatistics,
         description: "Get agent statistics",
         tags: ["Statistics"],
         querystring: StatisticsQuerySchema,

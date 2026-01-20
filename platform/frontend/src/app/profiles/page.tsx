@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ProfilesPageServer() {
   let initialData: {
-    agents: archestraApiTypes.GetAgentsResponses["200"] | null;
+    agents: archestraApiTypes.GetProfilesResponses["200"] | null;
     teams: archestraApiTypes.GetTeamsResponses["200"];
   } = {
     agents: null,
@@ -28,7 +28,7 @@ export default async function ProfilesPageServer() {
     initialData = {
       agents:
         (
-          await archestraApiSdk.getAgents({
+          await archestraApiSdk.getProfiles({
             headers,
             query: {
               limit: DEFAULT_AGENTS_PAGE_SIZE,

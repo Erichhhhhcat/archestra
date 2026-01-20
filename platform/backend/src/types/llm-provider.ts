@@ -32,14 +32,13 @@ import type {
   SupportedProvider,
   SupportedProviderDiscriminator,
 } from "@shared";
-
-import type { Agent } from "./agent";
 import type {
   CommonMcpToolDefinition,
   CommonMessage,
   CommonToolCall,
   CommonToolResult,
 } from "./common-llm-format";
+import type { Profile } from "./profile";
 import type { ToonCompressionResult } from "./tool-result-compression";
 
 /**
@@ -50,8 +49,8 @@ export interface CreateClientOptions {
   baseUrl?: string;
   /** Enable mock mode for testing */
   mockMode?: boolean;
-  /** Agent for observability metrics (request duration, tokens) */
-  agent?: Agent;
+  /** Profile for observability metrics (request duration, tokens) */
+  profile?: Profile;
   /** External agent ID from X-Archestra-Agent-Id header */
   externalAgentId?: string;
   /** Default headers to include with every request */

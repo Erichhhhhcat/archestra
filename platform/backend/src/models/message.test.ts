@@ -9,16 +9,16 @@ describe("MessageModel", () => {
     test("updates conversation updatedAt when message is created", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({ name: "Touch Test Agent", teams: [] });
+      const agent = await makeProfile({ name: "Touch Test Agent", teams: [] });
 
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Touch Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -54,11 +54,11 @@ describe("MessageModel", () => {
     test("updates conversation updatedAt when messages are bulk created", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({
+      const agent = await makeProfile({
         name: "Bulk Touch Test Agent",
         teams: [],
       });
@@ -66,7 +66,7 @@ describe("MessageModel", () => {
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Bulk Touch Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -111,11 +111,11 @@ describe("MessageModel", () => {
     test("updates multiple conversations when bulk creating messages across them", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({
+      const agent = await makeProfile({
         name: "Multi Conv Touch Agent",
         teams: [],
       });
@@ -123,7 +123,7 @@ describe("MessageModel", () => {
       const conversation1 = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Conversation 1",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -131,7 +131,7 @@ describe("MessageModel", () => {
       const conversation2 = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Conversation 2",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -188,16 +188,16 @@ describe("MessageModel", () => {
     test("returns message by ID", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({ name: "Test Agent", teams: [] });
+      const agent = await makeProfile({ name: "Test Agent", teams: [] });
 
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Test Conversation",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -232,11 +232,11 @@ describe("MessageModel", () => {
     test("returns message with complex content structure", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({
+      const agent = await makeProfile({
         name: "Complex Content Agent",
         teams: [],
       });
@@ -244,7 +244,7 @@ describe("MessageModel", () => {
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Complex Content Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -287,16 +287,16 @@ describe("MessageModel", () => {
     test("updates text at valid part index", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({ name: "Update Agent", teams: [] });
+      const agent = await makeProfile({ name: "Update Agent", teams: [] });
 
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Update Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -327,16 +327,16 @@ describe("MessageModel", () => {
     test("updates text in multi-part message", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({ name: "Multi-part Agent", teams: [] });
+      const agent = await makeProfile({ name: "Multi-part Agent", teams: [] });
 
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Multi-part Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -369,16 +369,19 @@ describe("MessageModel", () => {
     test("throws error for invalid part index (too high)", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({ name: "Invalid Index Agent", teams: [] });
+      const agent = await makeProfile({
+        name: "Invalid Index Agent",
+        teams: [],
+      });
 
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Invalid Index Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -404,11 +407,11 @@ describe("MessageModel", () => {
     test("throws error for negative part index", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({
+      const agent = await makeProfile({
         name: "Negative Index Agent",
         teams: [],
       });
@@ -416,7 +419,7 @@ describe("MessageModel", () => {
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Negative Index Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -449,16 +452,16 @@ describe("MessageModel", () => {
     test("preserves message metadata", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({ name: "Metadata Agent", teams: [] });
+      const agent = await makeProfile({ name: "Metadata Agent", teams: [] });
 
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Metadata Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -492,16 +495,19 @@ describe("MessageModel", () => {
     test("handles empty string update", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({ name: "Empty String Agent", teams: [] });
+      const agent = await makeProfile({
+        name: "Empty String Agent",
+        teams: [],
+      });
 
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Empty String Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -524,16 +530,19 @@ describe("MessageModel", () => {
     test("throws error when attempting to update non-text part", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({ name: "Non-text Part Agent", teams: [] });
+      const agent = await makeProfile({
+        name: "Non-text Part Agent",
+        teams: [],
+      });
 
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Non-text Part Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -575,16 +584,19 @@ describe("MessageModel", () => {
     test("deletes messages created after target message", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({ name: "Delete After Agent", teams: [] });
+      const agent = await makeProfile({
+        name: "Delete After Agent",
+        teams: [],
+      });
 
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Delete After Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -661,16 +673,16 @@ describe("MessageModel", () => {
     test("deletes no messages when target is most recent", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({ name: "Most Recent Agent", teams: [] });
+      const agent = await makeProfile({ name: "Most Recent Agent", teams: [] });
 
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Most Recent Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -718,11 +730,11 @@ describe("MessageModel", () => {
     test("throws error for non-existent message", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({
+      const agent = await makeProfile({
         name: "Non-existent Message Agent",
         teams: [],
       });
@@ -730,7 +742,7 @@ describe("MessageModel", () => {
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Non-existent Message Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -746,16 +758,16 @@ describe("MessageModel", () => {
     test("only deletes from specified conversation", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({ name: "Isolation Agent", teams: [] });
+      const agent = await makeProfile({ name: "Isolation Agent", teams: [] });
 
       const conversationA = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Conversation A",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -763,7 +775,7 @@ describe("MessageModel", () => {
       const conversationB = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Conversation B",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -852,16 +864,16 @@ describe("MessageModel", () => {
     test("uses gt() operator for timestamp comparison", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({ name: "Timestamp Agent", teams: [] });
+      const agent = await makeProfile({ name: "Timestamp Agent", teams: [] });
 
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Timestamp Test",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -910,11 +922,11 @@ describe("MessageModel", () => {
     test("throws error when message belongs to different conversation", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await makeAgent({
+      const agent = await makeProfile({
         name: "Cross-conversation Agent",
         teams: [],
       });
@@ -923,7 +935,7 @@ describe("MessageModel", () => {
       const conversationA = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Conversation A",
         selectedModel: "claude-3-haiku-20240307",
       });
@@ -931,7 +943,7 @@ describe("MessageModel", () => {
       const conversationB = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Conversation B",
         selectedModel: "claude-3-haiku-20240307",
       });

@@ -57,7 +57,7 @@ describe("isBrowserMcpTool", () => {
 
 describe("chat-mcp-client health check", () => {
   test("discards cached client when ping fails and fetches fresh tools", async ({
-    makeAgent,
+    makeProfile,
     makeUser,
     makeOrganization,
     makeTeam,
@@ -66,7 +66,7 @@ describe("chat-mcp-client health check", () => {
     const org = await makeOrganization();
     const user = await makeUser();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const agent = await makeProfile({ teams: [team.id] });
     await makeTeamMember(team.id, user.id);
     await TeamTokenModel.createTeamToken(team.id, team.name);
 
@@ -113,7 +113,7 @@ describe("chat-mcp-client health check", () => {
 
 describe("chat-mcp-client tool caching", () => {
   test("reuses cached tool definitions for the same agent and user", async ({
-    makeAgent,
+    makeProfile,
     makeUser,
     makeOrganization,
     makeTeam,
@@ -123,7 +123,7 @@ describe("chat-mcp-client tool caching", () => {
     const org = await makeOrganization();
     const user = await makeUser();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({
+    const agent = await makeProfile({
       teams: [team.id],
     });
 

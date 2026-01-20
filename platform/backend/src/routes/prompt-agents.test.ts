@@ -1,4 +1,4 @@
-import { AgentModel, PromptAgentModel, PromptModel } from "@/models";
+import { ProfileModel, PromptAgentModel, PromptModel } from "@/models";
 import { describe, expect, test } from "@/test";
 
 describe("PromptAgentModel Route Logic", () => {
@@ -14,24 +14,24 @@ describe("PromptAgentModel Route Logic", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
-        name: "Parent Agent",
+      const parentProfile = await ProfileModel.create({
+        name: "Parent Profile",
         teams: [],
       });
-      const childAgent = await AgentModel.create({
-        name: "Child Agent",
+      const childProfile = await ProfileModel.create({
+        name: "Child Profile",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentProfile.id,
         systemPrompt: "Parent system prompt",
       });
 
       const childPrompt = await PromptModel.create(org.id, {
         name: "Child Prompt",
-        agentId: childAgent.id,
+        profileId: childProfile.id,
         systemPrompt: "Child system prompt",
       });
 
@@ -48,8 +48,8 @@ describe("PromptAgentModel Route Logic", () => {
       expect(agents).toHaveLength(1);
       expect(agents[0].name).toBe("Child Prompt");
       expect(agents[0].systemPrompt).toBe("Child system prompt");
-      expect(agents[0].profileId).toBe(childAgent.id);
-      expect(agents[0].profileName).toBe("Child Agent");
+      expect(agents[0].profileId).toBe(childProfile.id);
+      expect(agents[0].profileName).toBe("Child Profile");
     });
 
     test("returns empty array for prompt with no agents", async ({
@@ -57,10 +57,13 @@ describe("PromptAgentModel Route Logic", () => {
     }) => {
       const org = await makeOrganization();
 
-      const agent = await AgentModel.create({ name: "Test Agent", teams: [] });
+      const profile = await ProfileModel.create({
+        name: "Test Profile",
+        teams: [],
+      });
       const prompt = await PromptModel.create(org.id, {
         name: "Test Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
       });
 
       const agents = await PromptAgentModel.findByPromptIdWithDetails(
@@ -75,32 +78,32 @@ describe("PromptAgentModel Route Logic", () => {
     test("adds new agents", async ({ makeOrganization }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
-        name: "Parent Agent",
+      const parentProfile = await ProfileModel.create({
+        name: "Parent Profile",
         teams: [],
       });
-      const childAgent1 = await AgentModel.create({
-        name: "Child Agent 1",
+      const childProfile1 = await ProfileModel.create({
+        name: "Child Profile 1",
         teams: [],
       });
-      const childAgent2 = await AgentModel.create({
-        name: "Child Agent 2",
+      const childProfile2 = await ProfileModel.create({
+        name: "Child Profile 2",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentProfile.id,
       });
 
       const childPrompt1 = await PromptModel.create(org.id, {
         name: "Child Prompt 1",
-        agentId: childAgent1.id,
+        profileId: childProfile1.id,
       });
 
       const childPrompt2 = await PromptModel.create(org.id, {
         name: "Child Prompt 2",
-        agentId: childAgent2.id,
+        profileId: childProfile2.id,
       });
 
       // Route would call sync
@@ -120,32 +123,32 @@ describe("PromptAgentModel Route Logic", () => {
     test("removes old agents not in new list", async ({ makeOrganization }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
-        name: "Parent Agent",
+      const parentProfile = await ProfileModel.create({
+        name: "Parent Profile",
         teams: [],
       });
-      const childAgent1 = await AgentModel.create({
-        name: "Child Agent 1",
+      const childProfile1 = await ProfileModel.create({
+        name: "Child Profile 1",
         teams: [],
       });
-      const childAgent2 = await AgentModel.create({
-        name: "Child Agent 2",
+      const childProfile2 = await ProfileModel.create({
+        name: "Child Profile 2",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentProfile.id,
       });
 
       const childPrompt1 = await PromptModel.create(org.id, {
         name: "Child Prompt 1",
-        agentId: childAgent1.id,
+        profileId: childProfile1.id,
       });
 
       const childPrompt2 = await PromptModel.create(org.id, {
         name: "Child Prompt 2",
-        agentId: childAgent2.id,
+        profileId: childProfile2.id,
       });
 
       // Initially assign both
@@ -177,23 +180,23 @@ describe("PromptAgentModel Route Logic", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
-        name: "Parent Agent",
+      const parentProfile = await ProfileModel.create({
+        name: "Parent Profile",
         teams: [],
       });
-      const childAgent = await AgentModel.create({
-        name: "Child Agent",
+      const childProfile = await ProfileModel.create({
+        name: "Child Profile",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentProfile.id,
       });
 
       const childPrompt = await PromptModel.create(org.id, {
         name: "Child Prompt",
-        agentId: childAgent.id,
+        profileId: childProfile.id,
       });
 
       // Initially assign
@@ -220,32 +223,32 @@ describe("PromptAgentModel Route Logic", () => {
     test("removes specific agent from prompt", async ({ makeOrganization }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
-        name: "Parent Agent",
+      const parentProfile = await ProfileModel.create({
+        name: "Parent Profile",
         teams: [],
       });
-      const childAgent1 = await AgentModel.create({
-        name: "Child Agent 1",
+      const childProfile1 = await ProfileModel.create({
+        name: "Child Profile 1",
         teams: [],
       });
-      const childAgent2 = await AgentModel.create({
-        name: "Child Agent 2",
+      const childProfile2 = await ProfileModel.create({
+        name: "Child Profile 2",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentProfile.id,
       });
 
       const childPrompt1 = await PromptModel.create(org.id, {
         name: "Child Prompt 1",
-        agentId: childAgent1.id,
+        profileId: childProfile1.id,
       });
 
       const childPrompt2 = await PromptModel.create(org.id, {
         name: "Child Prompt 2",
-        agentId: childAgent2.id,
+        profileId: childProfile2.id,
       });
 
       await PromptAgentModel.create({
@@ -273,10 +276,13 @@ describe("PromptAgentModel Route Logic", () => {
     }) => {
       const org = await makeOrganization();
 
-      const agent = await AgentModel.create({ name: "Test Agent", teams: [] });
+      const profile = await ProfileModel.create({
+        name: "Test Profile",
+        teams: [],
+      });
       const prompt = await PromptModel.create(org.id, {
         name: "Test Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
       });
 
       const result = await PromptAgentModel.delete({
@@ -295,10 +301,13 @@ describe("PromptAgentModel Route Logic", () => {
       const org1 = await makeOrganization();
       const org2 = await makeOrganization();
 
-      const agent = await AgentModel.create({ name: "Test Agent", teams: [] });
+      const profile = await ProfileModel.create({
+        name: "Test Profile",
+        teams: [],
+      });
       const prompt = await PromptModel.create(org1.id, {
         name: "Test Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
       });
 
       // Should find in correct org
@@ -322,25 +331,25 @@ describe("PromptAgentModel Route Logic", () => {
       const org1 = await makeOrganization();
       const org2 = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
-        name: "Parent Agent",
+      const parentProfile = await ProfileModel.create({
+        name: "Parent Profile",
         teams: [],
       });
-      const childAgent = await AgentModel.create({
-        name: "Child Agent",
+      const childProfile = await ProfileModel.create({
+        name: "Child Profile",
         teams: [],
       });
 
       // Create parent prompt in org1 (not used, but shows the scenario)
       await PromptModel.create(org1.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentProfile.id,
       });
 
       // Create child prompt in org2 (different organization)
       const childPrompt = await PromptModel.create(org2.id, {
         name: "Child Prompt",
-        agentId: childAgent.id,
+        profileId: childProfile.id,
       });
 
       // Simulate route validation - child prompt is in different org
@@ -358,10 +367,13 @@ describe("PromptAgentModel Route Logic", () => {
     }) => {
       const org = await makeOrganization();
 
-      const agent = await AgentModel.create({ name: "Test Agent", teams: [] });
+      const profile = await ProfileModel.create({
+        name: "Test Profile",
+        teams: [],
+      });
       const prompt = await PromptModel.create(org.id, {
         name: "Test Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
       });
 
       // Route should check this before calling sync

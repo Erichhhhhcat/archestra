@@ -7,7 +7,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { DualLlmMessage } from "@/types";
-import agentsTable from "./agent";
+import profilesTable from "./profile";
 
 /**
  * Stores results from the Dual LLM Quarantine Pattern
@@ -17,16 +17,16 @@ const dualLlmResultsTable = pgTable(
   "dual_llm_results",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    agentId: uuid("agent_id")
+    profileId: uuid("profile_id")
       .notNull()
-      .references(() => agentsTable.id, { onDelete: "cascade" }),
+      .references(() => profilesTable.id, { onDelete: "cascade" }),
     toolCallId: text("tool_call_id").notNull(),
     conversations: jsonb("conversations").$type<DualLlmMessage[]>().notNull(),
     result: text("result").notNull(),
     createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   },
   (table) => ({
-    agentIdIdx: index("dual_llm_results_agent_id_idx").on(table.agentId),
+    profileIdIdx: index("dual_llm_results_profile_id_idx").on(table.profileId),
   }),
 );
 

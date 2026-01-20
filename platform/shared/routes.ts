@@ -1,25 +1,25 @@
 export const RouteId = {
-  // Agent Routes
-  GetAgents: "getAgents",
-  GetAllAgents: "getAllAgents",
-  CreateAgent: "createAgent",
-  GetAgent: "getAgent",
-  GetDefaultAgent: "getDefaultAgent",
-  UpdateAgent: "updateAgent",
-  DeleteAgent: "deleteAgent",
+  // Profile Routes
+  GetProfiles: "getProfiles",
+  GetAllProfiles: "getAllProfiles",
+  CreateProfile: "createProfile",
+  GetProfile: "getProfile",
+  GetDefaultProfile: "getDefaultProfile",
+  UpdateProfile: "updateProfile",
+  DeleteProfile: "deleteProfile",
   GetLabelKeys: "getLabelKeys",
   GetLabelValues: "getLabelValues",
 
-  // Agent Tool Routes
-  AssignToolToAgent: "assignToolToAgent",
+  // Profile Tool Routes
+  AssignToolToProfile: "assignToolToProfile",
   BulkAssignTools: "bulkAssignTools",
-  BulkUpdateAgentTools: "bulkUpdateAgentTools",
-  AutoConfigureAgentToolPolicies: "autoConfigureAgentToolPolicies",
-  UnassignToolFromAgent: "unassignToolFromAgent",
-  GetAgentTools: "getAgentTools",
-  GetAllAgentTools: "getAllAgentTools",
-  UpdateAgentTool: "updateAgentTool",
-  GetAgentAvailableTokens: "getAgentAvailableTokens",
+  BulkUpdateProfileTools: "bulkUpdateProfileTools",
+  AutoConfigureProfileToolPolicies: "autoConfigureProfileToolPolicies",
+  UnassignToolFromProfile: "unassignToolFromProfile",
+  GetProfileTools: "getProfileTools",
+  GetAllProfileTools: "getAllProfileTools",
+  UpdateProfileTool: "updateProfileTool",
+  GetProfileAvailableTokens: "getProfileAvailableTokens",
 
   // Features Routes
   GetFeatures: "getFeatures",
@@ -138,37 +138,38 @@ export const RouteId = {
   GetDualLlmResultsByInteraction: "getDualLlmResultsByInteraction",
 
   // Proxy Routes - OpenAI
-  OpenAiChatCompletionsWithDefaultAgent:
-    "openAiChatCompletionsWithDefaultAgent",
-  OpenAiChatCompletionsWithAgent: "openAiChatCompletionsWithAgent",
+  OpenAiChatCompletionsWithDefaultProfile:
+    "openAiChatCompletionsWithDefaultProfile",
+  OpenAiChatCompletionsWithProfile: "openAiChatCompletionsWithProfile",
 
   // Proxy Routes - Anthropic
-  AnthropicMessagesWithDefaultAgent: "anthropicMessagesWithDefaultAgent",
-  AnthropicMessagesWithAgent: "anthropicMessagesWithAgent",
+  AnthropicMessagesWithDefaultProfile: "anthropicMessagesWithDefaultProfile",
+  AnthropicMessagesWithProfile: "anthropicMessagesWithProfile",
 
   // Proxy Routes - Cerebras
-  CerebrasChatCompletionsWithDefaultAgent:
-    "cerebrasChatCompletionsWithDefaultAgent",
-  CerebrasChatCompletionsWithAgent: "cerebrasChatCompletionsWithAgent",
+  CerebrasChatCompletionsWithDefaultProfile:
+    "cerebrasChatCompletionsWithDefaultProfile",
+  CerebrasChatCompletionsWithProfile: "cerebrasChatCompletionsWithProfile",
 
   // Proxy Routes - vLLM
-  VllmChatCompletionsWithDefaultAgent: "vllmChatCompletionsWithDefaultAgent",
-  VllmChatCompletionsWithAgent: "vllmChatCompletionsWithAgent",
+  VllmChatCompletionsWithDefaultProfile:
+    "vllmChatCompletionsWithDefaultProfile",
+  VllmChatCompletionsWithProfile: "vllmChatCompletionsWithProfile",
 
   // Proxy Routes - Ollama
-  OllamaChatCompletionsWithDefaultAgent:
-    "ollamaChatCompletionsWithDefaultAgent",
-  OllamaChatCompletionsWithAgent: "ollamaChatCompletionsWithAgent",
+  OllamaChatCompletionsWithDefaultProfile:
+    "ollamaChatCompletionsWithDefaultProfile",
+  OllamaChatCompletionsWithProfile: "ollamaChatCompletionsWithProfile",
   // Proxy Routes - Zhipu AI
-  ZhipuaiChatCompletionsWithDefaultAgent:
-    "zhipuaiChatCompletionsWithDefaultAgent",
-  ZhipuaiChatCompletionsWithAgent: "zhipuaiChatCompletionsWithAgent",
+  ZhipuaiChatCompletionsWithDefaultProfile:
+    "zhipuaiChatCompletionsWithDefaultProfile",
+  ZhipuaiChatCompletionsWithProfile: "zhipuaiChatCompletionsWithProfile",
 
   // Chat Routes
   StreamChat: "streamChat",
   GetChatConversations: "getChatConversations",
   GetChatConversation: "getChatConversation",
-  GetChatAgentMcpTools: "getChatAgentMcpTools",
+  GetChatProfileMcpTools: "getChatProfileMcpTools",
   CreateChatConversation: "createChatConversation",
   UpdateChatConversation: "updateChatConversation",
   DeleteChatConversation: "deleteChatConversation",
@@ -198,16 +199,16 @@ export const RouteId = {
   UpdatePrompt: "updatePrompt",
   DeletePrompt: "deletePrompt",
 
-  // Agent Prompt Routes
-  GetAgentPrompts: "getAgentPrompts",
-  AssignAgentPrompts: "assignAgentPrompts",
-  DeleteAgentPrompt: "deleteAgentPrompt",
+  // Profile Prompt Routes
+  GetProfilePrompts: "getProfilePrompts",
+  AssignProfilePrompts: "assignProfilePrompts",
+  DeleteProfilePrompt: "deleteProfilePrompt",
 
-  // Prompt Agent Routes (agent assignment to prompts)
-  GetAllPromptAgentConnections: "getAllPromptAgentConnections",
-  GetPromptAgents: "getPromptAgents",
-  SyncPromptAgents: "syncPromptAgents",
-  DeletePromptAgent: "deletePromptAgent",
+  // Prompt Profile Routes (profile assignment to prompts)
+  GetAllPromptProfileConnections: "getAllPromptProfileConnections",
+  GetPromptProfiles: "getPromptProfiles",
+  SyncPromptProfiles: "syncPromptProfiles",
+  DeletePromptProfile: "deletePromptProfile",
 
   // Limits Routes
   GetLimits: "getLimits",
@@ -254,7 +255,7 @@ export const RouteId = {
 
   // Statistics Routes
   GetTeamStatistics: "getTeamStatistics",
-  GetAgentStatistics: "getAgentStatistics",
+  GetProfileStatistics: "getProfileStatistics",
   GetModelStatistics: "getModelStatistics",
   GetOverviewStatistics: "getOverviewStatistics",
   GetCostSavingsStatistics: "getCostSavingsStatistics",

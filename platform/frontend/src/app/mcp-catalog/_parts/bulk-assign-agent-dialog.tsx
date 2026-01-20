@@ -20,9 +20,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useProfiles } from "@/lib/agent.query";
-import { useBulkAssignTools } from "@/lib/agent-tools.query";
 import { useMcpServers } from "@/lib/mcp-server.query";
+import { useProfiles } from "@/lib/profile.query";
+import { useBulkAssignTools } from "@/lib/profile-tools.query";
 
 interface BulkAssignProfileDialogProps {
   tools: Array<{
@@ -78,10 +78,10 @@ export function BulkAssignProfileDialog({
       credentialSourceMcpServerId === DYNAMIC_CREDENTIAL_VALUE ||
       executionSourceMcpServerId === DYNAMIC_CREDENTIAL_VALUE;
 
-    // Assign each tool to each selected agent
+    // Assign each tool to each selected profile
     const assignments = tools.flatMap((tool) =>
-      selectedProfileIds.map((agentId) => ({
-        agentId,
+      selectedProfileIds.map((profileId) => ({
+        profileId,
         toolId: tool.id,
         credentialSourceMcpServerId: isLocalServer
           ? null

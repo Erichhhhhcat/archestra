@@ -1,12 +1,12 @@
-import { AgentModel } from "@/models";
+import { ProfileModel } from "@/models";
 
 /**
- * Get or create the default agent based on the user-agent header
+ * Get or create the default profile based on the user-agent header
  */
-export const getAgentIdFromRequest = async (
+export const getProfileIdFromRequest = async (
   userAgentHeader?: string,
 ): Promise<string> =>
-  (await AgentModel.getAgentOrCreateDefault(userAgentHeader)).id;
+  (await ProfileModel.getProfileOrCreateDefault(userAgentHeader)).id;
 
 export * as tokenizers from "@/tokenizers";
 export * as adapters from "./adapters";

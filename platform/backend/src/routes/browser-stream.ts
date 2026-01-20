@@ -46,12 +46,12 @@ const browserStreamRoutes: FastifyPluginAsyncZod = async (fastify) => {
   /**
    * Helper to get agentId from conversationId
    */
-  async function getAgentIdFromConversation(
+  async function getProfileIdFromConversation(
     conversationId: string,
     userId: string,
     organizationId: string,
   ): Promise<string | null> {
-    return ConversationModel.getAgentIdForUser(
+    return ConversationModel.getProfileIdForUser(
       conversationId,
       userId,
       organizationId,
@@ -91,7 +91,7 @@ const browserStreamRoutes: FastifyPluginAsyncZod = async (fastify) => {
     async (request, reply) => {
       const { conversationId } = ConversationParamsSchema.parse(request.params);
 
-      const agentId = await getAgentIdFromConversation(
+      const agentId = await getProfileIdFromConversation(
         conversationId,
         request.user.id,
         request.organizationId,
@@ -124,7 +124,7 @@ const browserStreamRoutes: FastifyPluginAsyncZod = async (fastify) => {
       const { conversationId } = ConversationParamsSchema.parse(request.params);
       const { url } = NavigateBodySchema.parse(request.body);
 
-      const agentId = await getAgentIdFromConversation(
+      const agentId = await getProfileIdFromConversation(
         conversationId,
         request.user.id,
         request.organizationId,
@@ -161,7 +161,7 @@ const browserStreamRoutes: FastifyPluginAsyncZod = async (fastify) => {
     async (request, reply) => {
       const { conversationId } = ConversationParamsSchema.parse(request.params);
 
-      const agentId = await getAgentIdFromConversation(
+      const agentId = await getProfileIdFromConversation(
         conversationId,
         request.user.id,
         request.organizationId,
@@ -197,7 +197,7 @@ const browserStreamRoutes: FastifyPluginAsyncZod = async (fastify) => {
     async (request, reply) => {
       const { conversationId } = ConversationParamsSchema.parse(request.params);
 
-      const agentId = await getAgentIdFromConversation(
+      const agentId = await getProfileIdFromConversation(
         conversationId,
         request.user.id,
         request.organizationId,
@@ -232,7 +232,7 @@ const browserStreamRoutes: FastifyPluginAsyncZod = async (fastify) => {
     async (request, reply) => {
       const { conversationId } = ConversationParamsSchema.parse(request.params);
 
-      const agentId = await getAgentIdFromConversation(
+      const agentId = await getProfileIdFromConversation(
         conversationId,
         request.user.id,
         request.organizationId,

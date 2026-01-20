@@ -29,9 +29,9 @@ import {
 test.describe("MCP Gateway - Legacy Auth (profile ID as token)", () => {
   let profileId: string;
 
-  test.beforeAll(async ({ request, createAgent }) => {
+  test.beforeAll(async ({ request, createProfile }) => {
     // Create test profile
-    const createResponse = await createAgent(
+    const createResponse = await createProfile(
       request,
       "MCP Gateway Legacy Auth Test",
     );
@@ -42,8 +42,8 @@ test.describe("MCP Gateway - Legacy Auth (profile ID as token)", () => {
     await assignArchestraToolsToProfile(request, profileId);
   });
 
-  test.afterAll(async ({ request, deleteAgent }) => {
-    await deleteAgent(request, profileId);
+  test.afterAll(async ({ request, deleteProfile }) => {
+    await deleteProfile(request, profileId);
   });
 
   const makeMcpGatewayRequestHeaders = (sessionId?: string) => ({
@@ -198,9 +198,9 @@ test.describe("MCP Gateway - New Auth (archestra token)", () => {
   let profileId: string;
   let archestraToken: string;
 
-  test.beforeAll(async ({ request, createAgent }) => {
+  test.beforeAll(async ({ request, createProfile }) => {
     // Create test profile
-    const createResponse = await createAgent(
+    const createResponse = await createProfile(
       request,
       "MCP Gateway New Auth Test",
     );
@@ -214,8 +214,8 @@ test.describe("MCP Gateway - New Auth (archestra token)", () => {
     archestraToken = await getOrgTokenForProfile(request);
   });
 
-  test.afterAll(async ({ request, deleteAgent }) => {
-    await deleteAgent(request, profileId);
+  test.afterAll(async ({ request, deleteProfile }) => {
+    await deleteProfile(request, profileId);
   });
 
   const makeMcpGatewayRequestHeaders = (sessionId?: string) => ({
@@ -415,7 +415,7 @@ test.describe
           const defaultProfileResponse = await makeApiRequest({
             request,
             method: "get",
-            urlSuffix: "/api/agents/default",
+            urlSuffix: "/api/profiles/default",
           });
           const defaultProfile = await defaultProfileResponse.json();
           profileId = defaultProfile.id;
@@ -515,11 +515,11 @@ test.describe
           const assignResponse = await makeApiRequest({
             request,
             method: "post",
-            urlSuffix: "/api/agents/tools/bulk-assign",
+            urlSuffix: "/api/profiles/tools/bulk-assign",
             data: {
               assignments: [
                 {
-                  agentId: profileId,
+                  profileId: profileId,
                   toolId: testTool.id,
                   executionSourceMcpServerId: testServer.id,
                 },
@@ -618,7 +618,7 @@ test.describe
           const defaultProfileResponse = await makeApiRequest({
             request,
             method: "get",
-            urlSuffix: "/api/agents/default",
+            urlSuffix: "/api/profiles/default",
           });
           const defaultProfile = await defaultProfileResponse.json();
           profileId = defaultProfile.id;
@@ -721,11 +721,11 @@ test.describe
           const assignResponse = await makeApiRequest({
             request,
             method: "post",
-            urlSuffix: "/api/agents/tools/bulk-assign",
+            urlSuffix: "/api/profiles/tools/bulk-assign",
             data: {
               assignments: [
                 {
-                  agentId: profileId,
+                  profileId: profileId,
                   toolId: testTool.id,
                   executionSourceMcpServerId: testServer.id,
                 },

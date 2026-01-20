@@ -8,7 +8,7 @@ import type {
   LimitType,
   UpdateLimit,
 } from "@/types";
-import AgentTeamModel from "./agent-team";
+import ProfileTeamModel from "./profile-team";
 import TokenPriceModel from "./token-price";
 
 class LimitModel {
@@ -518,19 +518,19 @@ export class LimitValidationService {
         `[LimitValidation] Starting limit check for agent: ${agentId}`,
       );
 
-      // Get agent's teams to check team and organization limits
-      const agentTeamIds = await AgentTeamModel.getTeamsForAgent(agentId);
+      // Get profile's teams to check team and organization limits
+      const profileTeamIds = await ProfileTeamModel.getTeamsForProfile(agentId);
       logger.info(
-        `[LimitValidation] Agent ${agentId} belongs to teams: ${agentTeamIds.join(", ")}`,
+        `[LimitValidation] Profile ${agentId} belongs to teams: ${profileTeamIds.join(", ")}`,
       );
 
       // Get organization ID for cleanup (either from teams or fallback)
       let organizationId: string | null = null;
-      if (agentTeamIds.length > 0) {
+      if (profileTeamIds.length > 0) {
         const teams = await db
           .select()
           .from(schema.teamsTable)
-          .where(inArray(schema.teamsTable.id, agentTeamIds));
+          .where(inArray(schema.teamsTable.id, profileTeamIds));
         if (teams.length > 0 && teams[0].organizationId) {
           organizationId = teams[0].organizationId;
         }
@@ -569,16 +569,16 @@ export class LimitValidationService {
       logger.info(`[LimitValidation] Agent-level limits OK for: ${agentId}`);
 
       // Check team-level limits
-      if (agentTeamIds.length > 0) {
+      if (profileTeamIds.length > 0) {
         logger.info(
-          `[LimitValidation] Checking team-level limits for agent: ${agentId}`,
+          `[LimitValidation] Checking team-level limits for profile: ${agentId}`,
         );
         const teams = await db
           .select()
           .from(schema.teamsTable)
-          .where(inArray(schema.teamsTable.id, agentTeamIds));
+          .where(inArray(schema.teamsTable.id, profileTeamIds));
         logger.info(
-          `[LimitValidation] Found ${teams.length} teams for agent ${agentId}: ${teams.map((t) => `${t.id}(org:${t.organizationId})`).join(", ")}`,
+          `[LimitValidation] Found ${teams.length} teams for profile ${agentId}: ${teams.map((t) => `${t.id}(org:${t.organizationId})`).join(", ")}`,
         );
 
         for (const team of teams) {
@@ -620,7 +620,7 @@ export class LimitValidationService {
         }
       } else {
         logger.info(
-          `[LimitValidation] Agent ${agentId} has no teams, checking fallback organization limits`,
+          `[LimitValidation] Profile ${agentId} has no teams, checking fallback organization limits`,
         );
         // If agent has no teams, check if there are any organization limits to apply
         const existingOrgLimits = await db
@@ -653,7 +653,7 @@ export class LimitValidationService {
         }
       }
       logger.info(
-        `[LimitValidation] All limits OK for agent: ${agentId} - ALLOWING request`,
+        `[LimitValidation] All limits OK for profile: ${agentId} - ALLOWING request`,
       );
       return null; // No limits exceeded
     } catch (error) {

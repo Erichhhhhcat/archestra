@@ -2,7 +2,7 @@ import { E2eTestId } from "@shared";
 import { Pencil, Plug, Trash2 } from "lucide-react";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { PermissionButton } from "@/components/ui/permission-button";
-import type { useProfilesPaginated } from "@/lib/agent.query";
+import type { useProfilesPaginated } from "@/lib/profile.query";
 
 // Infer Profile type from the API response
 type Profile = NonNullable<
@@ -30,7 +30,7 @@ export function ProfileActions({
         tooltip="Connect"
         variant="outline"
         size="icon-sm"
-        data-testid={`${E2eTestId.ConnectAgentButton}-${agent.name}`}
+        data-testid={`${E2eTestId.ConnectProfileButton}-${agent.name}`}
         onClick={(e) => {
           e.stopPropagation();
           onConnect(agent);
@@ -44,7 +44,7 @@ export function ProfileActions({
         aria-label="Edit"
         variant="outline"
         size="icon-sm"
-        data-testid={`${E2eTestId.EditAgentButton}-${agent.name}`}
+        data-testid={`${E2eTestId.EditProfileButton}-${agent.name}`}
         onClick={(e) => {
           e.stopPropagation();
           onEdit({
@@ -72,7 +72,7 @@ export function ProfileActions({
           e.stopPropagation();
           onDelete(agent.id);
         }}
-        data-testid={`${E2eTestId.DeleteAgentButton}-${agent.name}`}
+        data-testid={`${E2eTestId.DeleteProfileButton}-${agent.name}`}
       >
         <Trash2 className="h-4 w-4 text-destructive" />
       </PermissionButton>

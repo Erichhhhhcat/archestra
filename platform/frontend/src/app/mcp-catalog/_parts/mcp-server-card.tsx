@@ -231,7 +231,7 @@ export function McpServerCard({
       return <LoadingSpinner className="w-3 h-3 inline-block ml-2" />;
     return !tools
       ? 0
-      : tools.filter((tool) => tool.assignedAgentCount > 0).length;
+      : tools.filter((tool) => tool.assignedProfileCount > 0).length;
   };
 
   const isRemoteVariant = variant === "remote";
@@ -625,7 +625,7 @@ export function McpServerCard({
                   catalogId: item.id,
                   mcpServerCatalogId: null,
                 },
-                agent: { id: "", name: "" },
+                profile: { id: "", name: "" },
                 createdAt: selectedToolForAssignment.createdAt,
                 updatedAt: selectedToolForAssignment.createdAt,
               }

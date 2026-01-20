@@ -38,7 +38,6 @@ import {
 } from "@/components/ui/card";
 import { Version } from "@/components/version";
 import { useChatSession } from "@/contexts/global-chat-context";
-import { useProfilesQuery } from "@/lib/agent.query";
 import { useHasPermissions } from "@/lib/auth.query";
 import {
   useConversation,
@@ -64,6 +63,7 @@ import {
   clearPendingActions,
   getPendingActions,
 } from "@/lib/pending-tool-state";
+import { useProfilesQuery } from "@/lib/profile.query";
 import { usePrompt, usePromptsQuery } from "@/lib/prompts.query";
 import ArchestraPromptInput from "./prompt-input";
 
@@ -157,7 +157,7 @@ export default function ChatPage() {
         const matchingPrompt = prompts.find((p) => p.id === urlPromptId);
         if (matchingPrompt) {
           setInitialPromptId(urlPromptId);
-          setInitialAgentId(matchingPrompt.agentId);
+          setInitialAgentId(matchingPrompt.profileId);
           urlParamsConsumedRef.current = true;
           return;
         }
@@ -170,7 +170,7 @@ export default function ChatPage() {
         if (matchingProfile) {
           setInitialAgentId(urlAgentId);
           // Find a prompt for this agent if one exists
-          const agentPrompt = prompts.find((p) => p.agentId === urlAgentId);
+          const agentPrompt = prompts.find((p) => p.profileId === urlAgentId);
           if (agentPrompt) {
             setInitialPromptId(agentPrompt.id);
           }
@@ -334,9 +334,9 @@ export default function ChatPage() {
     : undefined;
 
   // Get current agent info
-  const currentProfileId = conversation?.agentId;
+  const currentProfileId = conversation?.profileId;
   const browserToolsAgentId = conversationId
-    ? (conversation?.agentId ?? conversation?.agent?.id)
+    ? (conversation?.profileId ?? conversation?.agent?.id)
     : (initialAgentId ?? undefined);
 
   // Check if Playwright MCP is available for browser panel
@@ -899,7 +899,7 @@ export default function ChatPage() {
                   {conversationId ? (
                     <AgentSelector
                       currentPromptId={conversation?.promptId ?? null}
-                      currentAgentId={conversation?.agentId ?? ""}
+                      currentAgentId={conversation?.profileId ?? ""}
                       currentModel={conversation?.selectedModel ?? ""}
                     />
                   ) : (
@@ -920,7 +920,7 @@ export default function ChatPage() {
                   <AgentToolsDisplay
                     agentId={
                       conversationId
-                        ? (conversation?.agentId ?? "")
+                        ? (conversation?.profileId ?? "")
                         : (initialAgentId ?? "")
                     }
                     promptId={
@@ -1125,7 +1125,7 @@ export default function ChatPage() {
                               onClick={() =>
                                 handleInitialPromptChange(
                                   prompt.id,
-                                  prompt.agentId,
+                                  prompt.profileId,
                                 )
                               }
                             >

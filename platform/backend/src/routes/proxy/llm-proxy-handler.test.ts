@@ -16,7 +16,7 @@ import { vi } from "vitest";
 import config from "@/config";
 import { TokenPriceModel } from "@/models";
 import { afterEach, beforeEach, describe, expect, test } from "@/test";
-import type { Agent } from "@/types";
+import type { Profile } from "@/types";
 
 // Mock prom-client at module level (like llm-metrics.test.ts)
 const counterInc = vi.fn();
@@ -48,9 +48,9 @@ import openAiProxyRoutesV2 from "./routesv2/openai";
 
 describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
   let app: FastifyInstance;
-  let testAgent: Agent;
+  let testProfile: Profile;
 
-  beforeEach(async ({ makeAgent }) => {
+  beforeEach(async ({ makeProfile }) => {
     vi.clearAllMocks();
 
     // Create Fastify app
@@ -61,8 +61,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
     // Enable mock mode
     config.benchmark.mockMode = true;
 
-    // Create test agent
-    testAgent = await makeAgent({ name: "Test Metrics Agent" });
+    // Create test profile
+    testProfile = await makeProfile({ name: "Test Metrics Profile" });
 
     // Initialize metrics
     initializeMetrics([]);
@@ -89,7 +89,7 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
     test("streaming request increments token and cost metrics", async () => {
       const response = await app.inject({
         method: "POST",
-        url: `/v1/openai/${testAgent.id}/chat/completions`,
+        url: `/v1/openai/${testProfile.id}/chat/completions`,
         headers: {
           "content-type": "application/json",
           authorization: "Bearer test-key",
@@ -113,8 +113,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
           provider: "openai",
           type: "input",
           model: "gpt-4o",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         12,
       );
@@ -124,8 +124,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
           provider: "openai",
           type: "output",
           model: "gpt-4o",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         10,
       );
@@ -135,8 +135,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
         expect.objectContaining({
           provider: "openai",
           model: "gpt-4o",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         expect.any(Number),
       );
@@ -151,7 +151,7 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
       // are reported by getObservableFetch() in the HTTP layer.
       const response = await app.inject({
         method: "POST",
-        url: `/v1/openai/${testAgent.id}/chat/completions`,
+        url: `/v1/openai/${testProfile.id}/chat/completions`,
         headers: {
           "content-type": "application/json",
           authorization: "Bearer test-key",
@@ -174,8 +174,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
         expect.objectContaining({
           provider: "openai",
           model: "gpt-4o",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         expect.any(Number),
       );
@@ -189,7 +189,7 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
       // See TODO in llm-proxy-handler.ts handleNonStreaming()
       const response = await app.inject({
         method: "POST",
-        url: `/v1/openai/${testAgent.id}/chat/completions`,
+        url: `/v1/openai/${testProfile.id}/chat/completions`,
         headers: {
           "content-type": "application/json",
           authorization: "Bearer test-key",
@@ -213,8 +213,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
           provider: "openai",
           type: "input",
           model: "gpt-4o",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         82,
       );
@@ -224,8 +224,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
           provider: "openai",
           type: "output",
           model: "gpt-4o",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         17,
       );
@@ -248,7 +248,7 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
     test("streaming request increments token and cost metrics", async () => {
       const response = await app.inject({
         method: "POST",
-        url: `/v1/anthropic/${testAgent.id}/v1/messages`,
+        url: `/v1/anthropic/${testProfile.id}/v1/messages`,
         headers: {
           "content-type": "application/json",
           "x-api-key": "test-key",
@@ -273,8 +273,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
           provider: "anthropic",
           type: "input",
           model: "claude-3-5-sonnet-20241022",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         12,
       );
@@ -284,8 +284,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
           provider: "anthropic",
           type: "output",
           model: "claude-3-5-sonnet-20241022",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         10,
       );
@@ -295,8 +295,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
         expect.objectContaining({
           provider: "anthropic",
           model: "claude-3-5-sonnet-20241022",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         expect.any(Number),
       );
@@ -311,7 +311,7 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
       // are reported by getObservableFetch() in the HTTP layer.
       const response = await app.inject({
         method: "POST",
-        url: `/v1/anthropic/${testAgent.id}/v1/messages`,
+        url: `/v1/anthropic/${testProfile.id}/v1/messages`,
         headers: {
           "content-type": "application/json",
           "x-api-key": "test-key",
@@ -335,8 +335,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
         expect.objectContaining({
           provider: "anthropic",
           model: "claude-3-5-sonnet-20241022",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         expect.any(Number),
       );
@@ -359,7 +359,7 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
     test("streaming request increments token and cost metrics", async () => {
       const response = await app.inject({
         method: "POST",
-        url: `/v1/gemini/${testAgent.id}/v1beta/models/gemini-2.5-pro:streamGenerateContent`,
+        url: `/v1/gemini/${testProfile.id}/v1beta/models/gemini-2.5-pro:streamGenerateContent`,
         headers: {
           "content-type": "application/json",
           "x-goog-api-key": "test-key",
@@ -385,8 +385,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
           provider: "gemini",
           type: "input",
           model: "gemini-2.5-pro",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         12,
       );
@@ -396,8 +396,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
           provider: "gemini",
           type: "output",
           model: "gemini-2.5-pro",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         10,
       );
@@ -407,8 +407,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
         expect.objectContaining({
           provider: "gemini",
           model: "gemini-2.5-pro",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         expect.any(Number),
       );
@@ -423,7 +423,7 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
       // are reported by getObservableFetch() in the HTTP layer.
       const response = await app.inject({
         method: "POST",
-        url: `/v1/gemini/${testAgent.id}/v1beta/models/gemini-2.5-pro:generateContent`,
+        url: `/v1/gemini/${testProfile.id}/v1beta/models/gemini-2.5-pro:generateContent`,
         headers: {
           "content-type": "application/json",
           "x-goog-api-key": "test-key",
@@ -448,8 +448,8 @@ describe("LLM Proxy Handler V2 Prometheus Metrics", () => {
         expect.objectContaining({
           provider: "gemini",
           model: "gemini-2.5-pro",
-          profile_id: testAgent.id,
-          profile_name: testAgent.name,
+          profile_id: testProfile.id,
+          profile_name: testProfile.name,
         }),
         expect.any(Number),
       );

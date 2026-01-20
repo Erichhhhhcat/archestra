@@ -18,8 +18,8 @@ import {
  */
 export interface TestFixtures {
   makeApiRequest: typeof makeApiRequest;
-  createAgent: typeof createAgent;
-  deleteAgent: typeof deleteAgent;
+  createProfile: typeof createProfile;
+  deleteProfile: typeof deleteProfile;
   createApiKey: typeof createApiKey;
   deleteApiKey: typeof deleteApiKey;
   createToolInvocationPolicy: typeof createToolInvocationPolicy;
@@ -33,7 +33,7 @@ export interface TestFixtures {
   restartMcpServer: typeof restartMcpServer;
   createRole: typeof createRole;
   deleteRole: typeof deleteRole;
-  waitForAgentTool: typeof waitForAgentTool;
+  waitForProfileTool: typeof waitForProfileTool;
   getTeamByName: typeof getTeamByName;
   addTeamMember: typeof addTeamMember;
   removeTeamMember: typeof removeTeamMember;
@@ -95,14 +95,14 @@ const makeApiRequest = async ({
 };
 
 /**
- * Create an agent
+ * Create a profile
  * (authnz is handled by the authenticated session)
  */
-const createAgent = async (request: APIRequestContext, name: string) =>
+const createProfile = async (request: APIRequestContext, name: string) =>
   makeApiRequest({
     request,
     method: "post",
-    urlSuffix: "/api/agents",
+    urlSuffix: "/api/profiles",
     data: {
       name,
       teams: [],
@@ -110,14 +110,14 @@ const createAgent = async (request: APIRequestContext, name: string) =>
   });
 
 /**
- * Delete an agent
+ * Delete a profile
  * (authnz is handled by the authenticated session)
  */
-const deleteAgent = async (request: APIRequestContext, agentId: string) =>
+const deleteProfile = async (request: APIRequestContext, profileId: string) =>
   makeApiRequest({
     request,
     method: "delete",
-    urlSuffix: `/api/agents/${agentId}`,
+    urlSuffix: `/api/profiles/${profileId}`,
   });
 
 /**
@@ -350,17 +350,17 @@ const deleteRole = async (request: APIRequestContext, roleId: string) =>
   });
 
 /**
- * Wait for an agent-tool to be registered with retry/polling logic.
+ * Wait for a profile-tool to be registered with retry/polling logic.
  * This helps avoid race conditions when a tool is registered asynchronously.
  * In CI with parallel workers, tool registration can take longer due to resource contention.
  *
- * IMPORTANT: Uses server-side filtering by agentId to avoid pagination issues.
+ * IMPORTANT: Uses server-side filtering by profileId to avoid pagination issues.
  * The default API limit is 20 items, so without filtering, the tool might not
- * appear in results if there are many agent-tools in the database.
+ * appear in results if there are many profile-tools in the database.
  */
-const waitForAgentTool = async (
+const waitForProfileTool = async (
   request: APIRequestContext,
-  agentId: string,
+  profileId: string,
   toolName: string,
   options?: {
     maxAttempts?: number;
@@ -368,7 +368,7 @@ const waitForAgentTool = async (
   },
 ): Promise<{
   id: string;
-  agent: { id: string };
+  profile: { id: string };
   tool: { id: string; name: string };
 }> => {
   // Increased defaults for CI stability: 20 attempts × 1000ms = 20 seconds total wait
@@ -376,21 +376,21 @@ const waitForAgentTool = async (
   const delayMs = options?.delayMs ?? 1000;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    // Use server-side filtering by agentId and increase limit to avoid pagination issues
-    const agentToolsResponse = await makeApiRequest({
+    // Use server-side filtering by profileId and increase limit to avoid pagination issues
+    const profileToolsResponse = await makeApiRequest({
       request,
       method: "get",
-      urlSuffix: `/api/agent-tools?agentId=${agentId}&limit=100`,
+      urlSuffix: `/api/profile-tools?profileId=${profileId}&limit=100`,
       ignoreStatusCheck: true,
     });
 
-    if (agentToolsResponse.ok()) {
-      const agentTools = await agentToolsResponse.json();
-      // Defense-in-depth: validate both agentId AND toolName client-side
+    if (profileToolsResponse.ok()) {
+      const profileTools = await profileToolsResponse.json();
+      // Defense-in-depth: validate both profileId AND toolName client-side
       // in case the API silently ignores unknown query params
-      const foundTool = agentTools.data.find(
-        (at: { agent: { id: string }; tool: { id: string; name: string } }) =>
-          at.agent.id === agentId && at.tool.name === toolName,
+      const foundTool = profileTools.data.find(
+        (at: { profile: { id: string }; tool: { id: string; name: string } }) =>
+          at.profile.id === profileId && at.tool.name === toolName,
       );
 
       if (foundTool) {
@@ -404,7 +404,7 @@ const waitForAgentTool = async (
   }
 
   throw new Error(
-    `Agent-tool '${toolName}' for agent '${agentId}' not found after ${maxAttempts} attempts`,
+    `Profile-tool '${toolName}' for profile '${profileId}' not found after ${maxAttempts} attempts`,
   );
 };
 
@@ -785,11 +785,11 @@ export const test = base.extend<TestFixtures>({
   makeApiRequest: async ({}, use) => {
     await use(makeApiRequest);
   },
-  createAgent: async ({}, use) => {
-    await use(createAgent);
+  createProfile: async ({}, use) => {
+    await use(createProfile);
   },
-  deleteAgent: async ({}, use) => {
-    await use(deleteAgent);
+  deleteProfile: async ({}, use) => {
+    await use(deleteProfile);
   },
   createApiKey: async ({}, use) => {
     await use(createApiKey);
@@ -830,8 +830,8 @@ export const test = base.extend<TestFixtures>({
   deleteRole: async ({}, use) => {
     await use(deleteRole);
   },
-  waitForAgentTool: async ({}, use) => {
-    await use(waitForAgentTool);
+  waitForProfileTool: async ({}, use) => {
+    await use(waitForProfileTool);
   },
   getTeamByName: async ({}, use) => {
     await use(getTeamByName);

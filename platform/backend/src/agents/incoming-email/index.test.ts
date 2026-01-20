@@ -20,14 +20,14 @@ import { OutlookEmailProvider } from "./outlook-provider";
 /**
  * Helper to create a prompt for testing
  */
-async function createTestPrompt(agentId: string, organizationId: string) {
+async function createTestPrompt(profileId: string, organizationId: string) {
   const [prompt] = await db
     .insert(schema.promptsTable)
     .values({
       id: crypto.randomUUID(),
       organizationId,
       name: `Test Prompt ${crypto.randomUUID().substring(0, 8)}`,
-      agentId,
+      profileId,
       userPrompt: null,
       systemPrompt: null,
       version: 1,
@@ -162,16 +162,16 @@ describe("processIncomingEmail", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     // Create test data
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
     // Create a prompt for the agent
-    const prompt = await createTestPrompt(agent.id, org.id);
+    const prompt = await createTestPrompt(profile.id, org.id);
     const promptId = prompt.id;
 
     const mockProvider = {
@@ -211,14 +211,14 @@ describe("processIncomingEmail", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
-    const prompt = await createTestPrompt(agent.id, org.id);
+    const prompt = await createTestPrompt(profile.id, org.id);
     const promptId = prompt.id;
 
     const mockProvider = {
@@ -257,14 +257,14 @@ describe("processIncomingEmail", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
-    const prompt = await createTestPrompt(agent.id, org.id);
+    const prompt = await createTestPrompt(profile.id, org.id);
     const promptId = prompt.id;
 
     const mockProvider = {
@@ -303,14 +303,14 @@ describe("processIncomingEmail", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
-    const prompt = await createTestPrompt(agent.id, org.id);
+    const prompt = await createTestPrompt(profile.id, org.id);
     const promptId = prompt.id;
 
     const mockProvider = {
@@ -357,14 +357,14 @@ describe("processIncomingEmail", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
-    const prompt = await createTestPrompt(agent.id, org.id);
+    const prompt = await createTestPrompt(profile.id, org.id);
     const promptId = prompt.id;
 
     const mockProvider = {
@@ -405,14 +405,14 @@ describe("processIncomingEmail", () => {
   test("throws error when agent has no teams", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     await makeUser(); // Need a user in the system
     const org = await makeOrganization();
     // Create agent without assigning to any team
-    const agent = await makeAgent({ teams: [] });
+    const profile = await makeProfile({ teams: [] });
 
-    const prompt = await createTestPrompt(agent.id, org.id);
+    const prompt = await createTestPrompt(profile.id, org.id);
     const promptId = prompt.id;
 
     const mockProvider = {
@@ -439,7 +439,7 @@ describe("processIncomingEmail", () => {
     };
 
     await expect(processIncomingEmail(email, mockProvider)).rejects.toThrow(
-      `No teams found for agent ${agent.id}`,
+      `No teams found for profile ${profile.id}`,
     );
   });
 
@@ -447,16 +447,16 @@ describe("processIncomingEmail", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     // Create test data
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
     // Create a prompt for the agent
-    const prompt = await createTestPrompt(agent.id, org.id);
+    const prompt = await createTestPrompt(profile.id, org.id);
     const promptId = prompt.id;
 
     const mockProvider = {
@@ -547,12 +547,12 @@ describe("processIncomingEmail with sendReply option", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
     const [prompt] = await db
       .insert(schema.promptsTable)
@@ -560,7 +560,7 @@ describe("processIncomingEmail with sendReply option", () => {
         id: crypto.randomUUID(),
         organizationId: org.id,
         name: "Test Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
         userPrompt: null,
         systemPrompt: null,
         version: 1,
@@ -602,12 +602,12 @@ describe("processIncomingEmail with sendReply option", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
     const [prompt] = await db
       .insert(schema.promptsTable)
@@ -615,7 +615,7 @@ describe("processIncomingEmail with sendReply option", () => {
         id: crypto.randomUUID(),
         organizationId: org.id,
         name: "Test Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
         userPrompt: null,
         systemPrompt: null,
         version: 1,
@@ -664,12 +664,12 @@ describe("processIncomingEmail with sendReply option", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
     const [prompt] = await db
       .insert(schema.promptsTable)
@@ -677,7 +677,7 @@ describe("processIncomingEmail with sendReply option", () => {
         id: crypto.randomUUID(),
         organizationId: org.id,
         name: "Test Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
         userPrompt: null,
         systemPrompt: null,
         version: 1,
@@ -726,12 +726,12 @@ describe("processIncomingEmail with sendReply option", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
     const [prompt] = await db
       .insert(schema.promptsTable)
@@ -739,7 +739,7 @@ describe("processIncomingEmail with sendReply option", () => {
         id: crypto.randomUUID(),
         organizationId: org.id,
         name: "Test Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
         userPrompt: null,
         systemPrompt: null,
         version: 1,
@@ -798,12 +798,12 @@ describe("processIncomingEmail with conversation history", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
     const [prompt] = await db
       .insert(schema.promptsTable)
@@ -811,7 +811,7 @@ describe("processIncomingEmail with conversation history", () => {
         id: crypto.randomUUID(),
         organizationId: org.id,
         name: "Context Test Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
         userPrompt: null,
         systemPrompt: null,
         version: 1,
@@ -888,12 +888,12 @@ describe("processIncomingEmail with conversation history", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
     const [prompt] = await db
       .insert(schema.promptsTable)
@@ -901,7 +901,7 @@ describe("processIncomingEmail with conversation history", () => {
         id: crypto.randomUUID(),
         organizationId: org.id,
         name: "No Context Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
         userPrompt: null,
         systemPrompt: null,
         version: 1,
@@ -952,12 +952,12 @@ describe("processIncomingEmail with conversation history", () => {
     makeUser,
     makeOrganization,
     makeTeam,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
     const team = await makeTeam(org.id, user.id);
-    const agent = await makeAgent({ teams: [team.id] });
+    const profile = await makeProfile({ teams: [team.id] });
 
     const [prompt] = await db
       .insert(schema.promptsTable)
@@ -965,7 +965,7 @@ describe("processIncomingEmail with conversation history", () => {
         id: crypto.randomUUID(),
         organizationId: org.id,
         name: "Error Handler Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
         userPrompt: null,
         systemPrompt: null,
         version: 1,

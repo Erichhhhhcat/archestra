@@ -29,24 +29,24 @@ class ConversationModel {
       .returning();
 
     // Disable Archestra tools by default for new conversations (except todo_write and artifact_write)
-    // Get all tools assigned to the agent (profile tools)
-    const agentTools = await ToolModel.getToolsByAgent(data.agentId);
+    // Get all tools assigned to the profile
+    const profileTools = await ToolModel.getToolsByProfile(data.profileId);
 
-    // Get prompt-specific agent delegation tools if a prompt is selected
+    // Get prompt-specific profile delegation tools if a prompt is selected
     let promptTools: Awaited<
-      ReturnType<typeof ToolModel.getAgentDelegationToolsByPrompt>
+      ReturnType<typeof ToolModel.getProfileDelegationToolsByPrompt>
     > = [];
     if (data.promptId) {
-      promptTools = await ToolModel.getAgentDelegationToolsByPrompt(
+      promptTools = await ToolModel.getProfileDelegationToolsByPrompt(
         data.promptId,
       );
     }
 
     // Combine profile tools and prompt-specific tools
-    const allTools = [...agentTools, ...promptTools];
+    const allTools = [...profileTools, ...promptTools];
 
     // Filter out Archestra tools (those starting with "archestra__"), but keep todo_write and artifact_write enabled
-    // Agent delegation tools (agent__*) should be enabled by default
+    // Profile delegation tools (profile__*) should be enabled by default
     const nonArchestraToolIds = allTools
       .filter(
         (tool) =>
@@ -158,15 +158,15 @@ class ConversationModel {
         .select({
           conversation: getTableColumns(schema.conversationsTable),
           message: getTableColumns(schema.messagesTable),
-          agent: {
-            id: schema.agentsTable.id,
-            name: schema.agentsTable.name,
+          profile: {
+            id: schema.profilesTable.id,
+            name: schema.profilesTable.name,
           },
         })
         .from(schema.conversationsTable)
         .innerJoin(
-          schema.agentsTable,
-          eq(schema.conversationsTable.agentId, schema.agentsTable.id),
+          schema.profilesTable,
+          eq(schema.conversationsTable.profileId, schema.profilesTable.id),
         )
         .leftJoin(
           schema.messagesTable,
@@ -211,7 +211,7 @@ class ConversationModel {
           }
           conversationMap.set(conversationId, {
             ...row.conversation,
-            agent: row.agent,
+            agent: row.profile,
             messages: [],
           });
         }
@@ -238,22 +238,22 @@ class ConversationModel {
       const rows = await db
         .select({
           conversation: getTableColumns(schema.conversationsTable),
-          agent: {
-            id: schema.agentsTable.id,
-            name: schema.agentsTable.name,
+          profile: {
+            id: schema.profilesTable.id,
+            name: schema.profilesTable.name,
           },
         })
         .from(schema.conversationsTable)
         .innerJoin(
-          schema.agentsTable,
-          eq(schema.conversationsTable.agentId, schema.agentsTable.id),
+          schema.profilesTable,
+          eq(schema.conversationsTable.profileId, schema.profilesTable.id),
         )
         .where(and(...conditions))
         .orderBy(desc(schema.conversationsTable.updatedAt));
 
       return rows.map((row) => ({
         ...row.conversation,
-        agent: row.agent,
+        agent: row.profile,
         messages: [], // Messages fetched separately via findById
       }));
     }
@@ -272,15 +272,15 @@ class ConversationModel {
       .select({
         conversation: getTableColumns(schema.conversationsTable),
         message: getTableColumns(schema.messagesTable),
-        agent: {
-          id: schema.agentsTable.id,
-          name: schema.agentsTable.name,
+        profile: {
+          id: schema.profilesTable.id,
+          name: schema.profilesTable.name,
         },
       })
       .from(schema.conversationsTable)
       .innerJoin(
-        schema.agentsTable,
-        eq(schema.conversationsTable.agentId, schema.agentsTable.id),
+        schema.profilesTable,
+        eq(schema.conversationsTable.profileId, schema.profilesTable.id),
       )
       .leftJoin(
         schema.messagesTable,
@@ -314,7 +314,7 @@ class ConversationModel {
 
     return {
       ...firstRow.conversation,
-      agent: firstRow.agent,
+      agent: firstRow.profile,
       messages,
     };
   }
@@ -367,30 +367,30 @@ class ConversationModel {
   }
 
   /**
-   * Get the agentId for a conversation (without user context checks)
-   * Used by internal services that need to look up conversation -> agent mapping
+   * Get the profileId for a conversation (without user context checks)
+   * Used by internal services that need to look up conversation -> profile mapping
    */
-  static async getAgentId(conversationId: string): Promise<string | null> {
+  static async getProfileId(conversationId: string): Promise<string | null> {
     const result = await db
-      .select({ agentId: schema.conversationsTable.agentId })
+      .select({ profileId: schema.conversationsTable.profileId })
       .from(schema.conversationsTable)
       .where(eq(schema.conversationsTable.id, conversationId))
       .limit(1);
 
-    return result[0]?.agentId ?? null;
+    return result[0]?.profileId ?? null;
   }
 
   /**
-   * Get the agentId for a conversation scoped to a specific user and organization.
+   * Get the profileId for a conversation scoped to a specific user and organization.
    * Returns null when the conversation does not belong to the provided user/org.
    */
-  static async getAgentIdForUser(
+  static async getProfileIdForUser(
     conversationId: string,
     userId: string,
     organizationId: string,
   ): Promise<string | null> {
     const result = await db
-      .select({ agentId: schema.conversationsTable.agentId })
+      .select({ profileId: schema.conversationsTable.profileId })
       .from(schema.conversationsTable)
       .where(
         and(
@@ -401,7 +401,7 @@ class ConversationModel {
       )
       .limit(1);
 
-    return result[0]?.agentId ?? null;
+    return result[0]?.profileId ?? null;
   }
 }
 

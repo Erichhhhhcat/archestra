@@ -5,9 +5,9 @@ import { hasPermission } from "@/auth";
 import logger from "@/logging";
 import { McpServerRuntimeManager } from "@/mcp-server-runtime";
 import {
-  AgentToolModel,
   InternalMcpCatalogModel,
   McpServerModel,
+  ProfileToolModel,
   ToolModel,
 } from "@/models";
 import { isByosEnabled, secretManager } from "@/secrets-manager";
@@ -85,7 +85,7 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
         description: "Install an MCP server (from catalog or custom)",
         tags: ["MCP Server"],
         body: InsertMcpServerSchema.omit({ serverType: true }).extend({
-          agentIds: z.array(UuidIdSchema).optional(),
+          profileIds: z.array(UuidIdSchema).optional(),
           secretId: UuidIdSchema.optional(),
           // For PAT tokens (like GitHub), send the token directly
           // and we'll create a secret for it
@@ -100,7 +100,7 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
     },
     async ({ body, user }, reply) => {
       let {
-        agentIds,
+        profileIds,
         secretId,
         accessToken,
         isByosVault,
@@ -469,11 +469,11 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
                 const createdTools =
                   await ToolModel.bulkCreateToolsIfNotExists(toolsToCreate);
 
-                // If agentIds were provided, create agent-tool assignments with executionSourceMcpServerId
-                if (agentIds && agentIds.length > 0) {
+                // If profileIds were provided, create profile-tool assignments with executionSourceMcpServerId
+                if (profileIds && profileIds.length > 0) {
                   const toolIds = createdTools.map((t) => t.id);
-                  await AgentToolModel.bulkCreateForAgentsAndTools(
-                    agentIds,
+                  await ProfileToolModel.bulkCreateForProfilesAndTools(
+                    profileIds,
                     toolIds,
                     {
                       executionSourceMcpServerId: mcpServer.id,
@@ -557,11 +557,14 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
         const createdTools =
           await ToolModel.bulkCreateToolsIfNotExists(toolsToCreate);
 
-        // If agentIds were provided, create agent-tool assignments
+        // If profileIds were provided, create profile-tool assignments
         // Note: Remote servers don't use executionSourceMcpServerId (they route via HTTP)
-        if (agentIds && agentIds.length > 0) {
+        if (profileIds && profileIds.length > 0) {
           const toolIds = createdTools.map((t) => t.id);
-          await AgentToolModel.bulkCreateForAgentsAndTools(agentIds, toolIds);
+          await ProfileToolModel.bulkCreateForProfilesAndTools(
+            profileIds,
+            toolIds,
+          );
         }
 
         // Set status to success for non-local servers
@@ -711,8 +714,8 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
               description: z.string().nullable(),
               parameters: z.record(z.string(), z.any()),
               createdAt: z.coerce.date(),
-              assignedAgentCount: z.number(),
-              assignedAgents: z.array(
+              assignedProfileCount: z.number(),
+              assignedProfiles: z.array(
                 z.object({
                   id: z.string(),
                   name: z.string(),

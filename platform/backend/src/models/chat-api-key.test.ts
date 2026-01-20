@@ -502,14 +502,14 @@ describe("ChatApiKeyModel", () => {
       makeOrganization,
       makeUser,
       makeSecret,
-      makeAgent,
+      makeProfile,
       makeConversation,
     }) => {
       const org = await makeOrganization();
       const user = await makeUser();
       const secret1 = await makeSecret();
       const secret2 = await makeSecret();
-      const agent = await makeAgent({ name: "Test Agent", teams: [] });
+      const agent = await makeProfile({ name: "Test Agent", teams: [] });
 
       await ChatApiKeyModel.create({
         organizationId: org.id,

@@ -53,12 +53,12 @@ describe("validateMCPGatewayToken", () => {
       makeOrganization,
       makeUser,
       makeTeam,
-      makeAgent,
+      makeProfile,
     }) => {
       const org = await makeOrganization();
       const user = await makeUser();
       const team = await makeTeam(org.id, user.id, { name: "Dev Team" });
-      const agent = await makeAgent({ teams: [team.id] });
+      const agent = await makeProfile({ teams: [team.id] });
 
       const { token, value } = await TeamTokenModel.create({
         organizationId: org.id,
@@ -78,7 +78,7 @@ describe("validateMCPGatewayToken", () => {
       makeOrganization,
       makeUser,
       makeTeam,
-      makeAgent,
+      makeProfile,
     }) => {
       const org = await makeOrganization();
       const user = await makeUser();
@@ -86,7 +86,7 @@ describe("validateMCPGatewayToken", () => {
       const team2 = await makeTeam(org.id, user.id, { name: "Team 2" });
 
       // Agent assigned to team2 only
-      const agent = await makeAgent({ teams: [team2.id] });
+      const agent = await makeProfile({ teams: [team2.id] });
 
       // Token for team1
       const { value } = await TeamTokenModel.create({
@@ -107,7 +107,7 @@ describe("validateMCPGatewayToken", () => {
       makeMember,
       makeTeam,
       makeTeamMember,
-      makeAgent,
+      makeProfile,
     }) => {
       const org = await makeOrganization();
       const user = await makeUser();
@@ -115,7 +115,7 @@ describe("validateMCPGatewayToken", () => {
 
       const team = await makeTeam(org.id, user.id, { name: "Dev Team" });
       await makeTeamMember(team.id, user.id);
-      const agent = await makeAgent({ teams: [team.id] });
+      const agent = await makeProfile({ teams: [team.id] });
 
       const { token, value } = await UserTokenModel.create(
         user.id,
@@ -137,7 +137,7 @@ describe("validateMCPGatewayToken", () => {
       makeUser,
       makeMember,
       makeTeam,
-      makeAgent,
+      makeProfile,
     }) => {
       const org = await makeOrganization();
       const user1 = await makeUser();
@@ -151,7 +151,7 @@ describe("validateMCPGatewayToken", () => {
       const team2 = await makeTeam(org.id, user2.id, { name: "Team 2" });
 
       // Agent is only assigned to team2
-      const agent = await makeAgent({ teams: [team2.id] });
+      const agent = await makeProfile({ teams: [team2.id] });
 
       // Create token for user1 (who is NOT in team2)
       const { value } = await UserTokenModel.create(
@@ -169,7 +169,7 @@ describe("validateMCPGatewayToken", () => {
       makeUser,
       makeMember,
       makeTeam,
-      makeAgent,
+      makeProfile,
     }) => {
       const org = await makeOrganization();
       const adminUser = await makeUser();
@@ -184,7 +184,7 @@ describe("validateMCPGatewayToken", () => {
       });
 
       // Agent assigned to team
-      const agent = await makeAgent({ teams: [team.id] });
+      const agent = await makeProfile({ teams: [team.id] });
 
       // Create token for admin user
       const { token, value } = await UserTokenModel.create(
@@ -207,14 +207,14 @@ describe("validateMCPGatewayToken", () => {
       makeOrganization,
       makeUser,
       makeMember,
-      makeAgent,
+      makeProfile,
     }) => {
       const org = await makeOrganization();
       const adminUser = await makeUser();
       await makeMember(adminUser.id, org.id, { role: "admin" });
 
       // Agent with no teams
-      const agent = await makeAgent({ teams: [] });
+      const agent = await makeProfile({ teams: [] });
 
       // Create admin user token
       const { token, value } = await UserTokenModel.create(
@@ -235,7 +235,7 @@ describe("validateMCPGatewayToken", () => {
       makeUser,
       makeMember,
       makeTeam,
-      makeAgent,
+      makeProfile,
     }) => {
       const org = await makeOrganization();
       const userWithNoTeams = await makeUser();
@@ -246,7 +246,7 @@ describe("validateMCPGatewayToken", () => {
 
       // Create team with other user, agent in that team
       const team = await makeTeam(org.id, otherUser.id, { name: "Other Team" });
-      const agent = await makeAgent({ teams: [team.id] });
+      const agent = await makeProfile({ teams: [team.id] });
 
       // Token for user with no teams
       const { value } = await UserTokenModel.create(
@@ -264,7 +264,7 @@ describe("validateMCPGatewayToken", () => {
       makeUser,
       makeMember,
       makeTeam,
-      makeAgent,
+      makeProfile,
     }) => {
       const org = await makeOrganization();
       const adminWithNoTeams = await makeUser();
@@ -275,7 +275,7 @@ describe("validateMCPGatewayToken", () => {
 
       // Create team with other user, agent in that team
       const team = await makeTeam(org.id, otherUser.id, { name: "Other Team" });
-      const agent = await makeAgent({ teams: [team.id] });
+      const agent = await makeProfile({ teams: [team.id] });
 
       // Token for admin with no teams
       const { token, value } = await UserTokenModel.create(

@@ -1139,9 +1139,9 @@ export const vllmAdapterFactory: LLMProvider<
       return new MockOpenAIClient() as unknown as OpenAIProvider;
     }
 
-    // Use observable fetch for request duration metrics if agent is provided
-    const customFetch = options?.agent
-      ? getObservableFetch("vllm", options.agent, options.externalAgentId)
+    // Use observable fetch for request duration metrics if profile is provided
+    const customFetch = options?.profile
+      ? getObservableFetch("vllm", options.profile, options.externalAgentId)
       : undefined;
 
     // vLLM uses OpenAI SDK since it's OpenAI-compatible

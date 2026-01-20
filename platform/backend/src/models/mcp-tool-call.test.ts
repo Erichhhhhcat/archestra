@@ -1,20 +1,20 @@
 import { beforeEach, describe, expect, test } from "@/test";
-import AgentModel from "./agent";
 import McpToolCallModel from "./mcp-tool-call";
+import ProfileModel from "./profile";
 
 describe("McpToolCallModel", () => {
-  let agentId: string;
+  let profileId: string;
 
-  beforeEach(async ({ makeAgent }) => {
+  beforeEach(async ({ makeProfile }) => {
     // Create test agent
-    const agent = await makeAgent();
-    agentId = agent.id;
+    const agent = await makeProfile();
+    profileId = agent.id;
   });
 
   describe("create", () => {
     test("can create an MCP tool call", async () => {
       const mcpToolCall = await McpToolCallModel.create({
-        agentId,
+        profileId,
         mcpServerName: "test-server",
         method: "tools/call",
         toolCall: {
@@ -30,7 +30,7 @@ describe("McpToolCallModel", () => {
 
       expect(mcpToolCall).toBeDefined();
       expect(mcpToolCall.id).toBeDefined();
-      expect(mcpToolCall.agentId).toBe(agentId);
+      expect(mcpToolCall.profileId).toBe(profileId);
       expect(mcpToolCall.mcpServerName).toBe("test-server");
       expect(mcpToolCall.method).toBe("tools/call");
     });
@@ -39,7 +39,7 @@ describe("McpToolCallModel", () => {
   describe("findById", () => {
     test("returns MCP tool call by id", async () => {
       const created = await McpToolCallModel.create({
-        agentId,
+        profileId,
         mcpServerName: "test-server",
         method: "tools/call",
         toolCall: { id: "test-id", name: "testTool", arguments: {} },
@@ -62,11 +62,11 @@ describe("McpToolCallModel", () => {
   describe("date range filtering", () => {
     test("filters by startDate", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Create an MCP tool call
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "test-server",
         method: "tools/call",
         toolCall: { id: "test-id", name: "testTool", arguments: {} },
@@ -88,11 +88,11 @@ describe("McpToolCallModel", () => {
 
     test("filters by endDate", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Create an MCP tool call
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "test-server",
         method: "tools/call",
         toolCall: { id: "test-id", name: "testTool", arguments: {} },
@@ -121,11 +121,11 @@ describe("McpToolCallModel", () => {
       makeAdmin,
     }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Create an MCP tool call
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "test-server",
         method: "tools/call",
         toolCall: { id: "test-id", name: "testTool", arguments: {} },
@@ -156,13 +156,13 @@ describe("McpToolCallModel", () => {
     });
   });
 
-  describe("getAllMcpToolCallsForAgentPaginated with date filtering", () => {
+  describe("getAllMcpToolCallsForProfilePaginated with date filtering", () => {
     test("filters by date range for specific agent", async () => {
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Create an MCP tool call
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "test-server",
         method: "tools/call",
         toolCall: { id: "test-id", name: "testTool", arguments: {} },
@@ -174,7 +174,7 @@ describe("McpToolCallModel", () => {
       const endDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       const toolCalls =
-        await McpToolCallModel.getAllMcpToolCallsForAgentPaginated(
+        await McpToolCallModel.getAllMcpToolCallsForProfilePaginated(
           agent.id,
           { limit: 100, offset: 0 },
           undefined,
@@ -183,7 +183,9 @@ describe("McpToolCallModel", () => {
         );
 
       expect(toolCalls.data.length).toBeGreaterThanOrEqual(1);
-      expect(toolCalls.data.every((tc) => tc.agentId === agent.id)).toBe(true);
+      expect(toolCalls.data.every((tc) => tc.profileId === agent.id)).toBe(
+        true,
+      );
     });
   });
 
@@ -192,10 +194,10 @@ describe("McpToolCallModel", () => {
       makeAdmin,
     }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "MyTestServer",
         method: "tools/call",
         toolCall: { id: "test-id", name: "someTool", arguments: {} },
@@ -203,7 +205,7 @@ describe("McpToolCallModel", () => {
       });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "OtherServer",
         method: "tools/call",
         toolCall: { id: "test-id-2", name: "otherTool", arguments: {} },
@@ -225,10 +227,10 @@ describe("McpToolCallModel", () => {
 
     test("searches by tool name (case insensitive)", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "server1",
         method: "tools/call",
         toolCall: { id: "test-id", name: "FileSearchTool", arguments: {} },
@@ -236,7 +238,7 @@ describe("McpToolCallModel", () => {
       });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "server2",
         method: "tools/call",
         toolCall: { id: "test-id-2", name: "EmailSender", arguments: {} },
@@ -258,10 +260,10 @@ describe("McpToolCallModel", () => {
 
     test("searches by tool arguments", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "server1",
         method: "tools/call",
         toolCall: {
@@ -273,7 +275,7 @@ describe("McpToolCallModel", () => {
       });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "server2",
         method: "tools/call",
         toolCall: {
@@ -301,10 +303,10 @@ describe("McpToolCallModel", () => {
       makeAdmin,
     }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "server1",
         method: "tools/call",
         toolCall: { id: "test-id", name: "someTool", arguments: {} },
@@ -312,7 +314,7 @@ describe("McpToolCallModel", () => {
       });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "server2",
         method: "tools/list",
         toolCall: null,
@@ -320,7 +322,7 @@ describe("McpToolCallModel", () => {
       });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "server3",
         method: "initialize",
         toolCall: null,
@@ -344,10 +346,10 @@ describe("McpToolCallModel", () => {
       makeAdmin,
     }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "server1",
         method: "tools/call",
         toolCall: { id: "test-id", name: "searchTool", arguments: {} },
@@ -358,7 +360,7 @@ describe("McpToolCallModel", () => {
       });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "server2",
         method: "tools/call",
         toolCall: { id: "test-id-2", name: "otherTool", arguments: {} },
@@ -382,10 +384,10 @@ describe("McpToolCallModel", () => {
       makeAdmin,
     }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "server1",
         method: "tools/list",
         toolCall: null,
@@ -398,7 +400,7 @@ describe("McpToolCallModel", () => {
       });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "server2",
         method: "tools/list",
         toolCall: null,
@@ -422,10 +424,10 @@ describe("McpToolCallModel", () => {
 
     test("search returns multiple matches", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "file-server",
         method: "tools/call",
         toolCall: { id: "test-id", name: "readFile", arguments: {} },
@@ -433,7 +435,7 @@ describe("McpToolCallModel", () => {
       });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "other-server",
         method: "tools/call",
         toolCall: { id: "test-id-2", name: "writeFile", arguments: {} },
@@ -441,7 +443,7 @@ describe("McpToolCallModel", () => {
       });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "unrelated",
         method: "tools/call",
         toolCall: { id: "test-id-3", name: "sendEmail", arguments: {} },
@@ -462,10 +464,10 @@ describe("McpToolCallModel", () => {
 
     test("search with no matches returns empty", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "test-server",
         method: "tools/call",
         toolCall: { id: "test-id", name: "testTool", arguments: {} },
@@ -483,11 +485,11 @@ describe("McpToolCallModel", () => {
       expect(toolCalls.data).toHaveLength(0);
     });
 
-    test("search works with getAllMcpToolCallsForAgentPaginated", async () => {
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+    test("search works with getAllMcpToolCallsForProfilePaginated", async () => {
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "DatabaseServer",
         method: "tools/call",
         toolCall: { id: "test-id", name: "queryTool", arguments: {} },
@@ -495,7 +497,7 @@ describe("McpToolCallModel", () => {
       });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "OtherServer",
         method: "tools/call",
         toolCall: { id: "test-id-2", name: "otherTool", arguments: {} },
@@ -503,7 +505,7 @@ describe("McpToolCallModel", () => {
       });
 
       const toolCalls =
-        await McpToolCallModel.getAllMcpToolCallsForAgentPaginated(
+        await McpToolCallModel.getAllMcpToolCallsForProfilePaginated(
           agent.id,
           { limit: 100, offset: 0 },
           undefined,
@@ -517,10 +519,10 @@ describe("McpToolCallModel", () => {
 
     test("search combined with date filter", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await McpToolCallModel.create({
-        agentId: agent.id,
+        profileId: agent.id,
         mcpServerName: "TargetServer",
         method: "tools/call",
         toolCall: { id: "test-id", name: "targetTool", arguments: {} },

@@ -3,7 +3,7 @@ import { getChatMcpTools } from "@/clients/chat-mcp-client";
 import { createLLMModelForAgent } from "@/clients/llm-client";
 import config from "@/config";
 import logger from "@/logging";
-import { AgentModel, PromptModel } from "@/models";
+import { ProfileModel, PromptModel } from "@/models";
 
 export interface A2AExecuteParams {
   promptId: string;
@@ -57,10 +57,10 @@ export async function executeA2AMessage(
     throw new Error(`Prompt ${promptId} not found`);
   }
 
-  // Fetch the agent (profile) associated with this prompt
-  const agent = await AgentModel.findById(prompt.agentId);
-  if (!agent) {
-    throw new Error(`Agent not found for prompt ${promptId}`);
+  // Fetch the profile associated with this prompt
+  const profile = await ProfileModel.findById(prompt.profileId);
+  if (!profile) {
+    throw new Error(`Profile not found for prompt ${promptId}`);
   }
 
   // Use default model and provider from config
@@ -87,8 +87,8 @@ export async function executeA2AMessage(
   // Fetch MCP tools for the agent (including agent tools for the prompt)
   // Pass sessionId and delegationChain so nested agent calls are grouped together
   const mcpTools = await getChatMcpTools({
-    agentName: agent.name,
-    agentId: agent.id,
+    agentName: profile.name,
+    agentId: profile.id,
     userId,
     userIsProfileAdmin: true, // A2A agents have full access
     promptId,
@@ -100,7 +100,7 @@ export async function executeA2AMessage(
   logger.info(
     {
       promptId,
-      agentId: agent.id,
+      profileId: profile.id,
       userId,
       orgId: organizationId,
       toolCount: Object.keys(mcpTools).length,
@@ -116,7 +116,7 @@ export async function executeA2AMessage(
   const { model } = await createLLMModelForAgent({
     organizationId,
     userId,
-    agentId: agent.id,
+    agentId: profile.id,
     model: selectedModel,
     provider,
     sessionId,
@@ -144,7 +144,7 @@ export async function executeA2AMessage(
   logger.info(
     {
       promptId,
-      agentId: agent.id,
+      profileId: profile.id,
       provider,
       finishReason,
       usage,

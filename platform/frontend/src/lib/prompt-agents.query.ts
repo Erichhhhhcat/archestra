@@ -3,10 +3,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const {
-  getAllPromptAgentConnections,
-  getPromptAgents,
-  syncPromptAgents,
-  deletePromptAgent,
+  getAllPromptProfileConnections,
+  getPromptProfiles,
+  syncPromptProfiles,
+  deletePromptProfile,
 } = archestraApiSdk;
 
 /**
@@ -26,7 +26,7 @@ export function useAllPromptAgentConnections() {
   return useQuery({
     queryKey: promptAgentsQueryKeys.connections,
     queryFn: async () => {
-      const response = await getAllPromptAgentConnections();
+      const response = await getAllPromptProfileConnections();
       return response.data ?? [];
     },
   });
@@ -40,7 +40,7 @@ export function usePromptAgents(promptId: string | undefined) {
     queryKey: promptAgentsQueryKeys.byPrompt(promptId ?? ""),
     queryFn: async () => {
       if (!promptId) return [];
-      const response = await getPromptAgents({ path: { promptId } });
+      const response = await getPromptProfiles({ path: { promptId } });
       return response.data ?? [];
     },
     enabled: !!promptId,
@@ -61,7 +61,7 @@ export function useSyncPromptAgents() {
       promptId: string;
       agentPromptIds: string[];
     }) => {
-      const response = await syncPromptAgents({
+      const response = await syncPromptProfiles({
         path: { promptId },
         body: { agentPromptIds },
       });
@@ -105,7 +105,7 @@ export function useDeletePromptAgent() {
       promptId: string;
       agentPromptId: string;
     }) => {
-      const response = await deletePromptAgent({
+      const response = await deletePromptProfile({
         path: { promptId, agentPromptId },
       });
       return response.data;
@@ -136,4 +136,4 @@ export function useDeletePromptAgent() {
 }
 
 export type PromptAgentWithDetails =
-  archestraApiTypes.GetPromptAgentsResponses["200"][number];
+  archestraApiTypes.GetPromptProfilesResponses["200"][number];

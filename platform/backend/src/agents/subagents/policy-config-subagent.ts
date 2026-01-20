@@ -4,9 +4,12 @@ import { z } from "zod";
 import config from "@/config";
 import { getObservableFetch } from "@/llm-metrics";
 import logger from "@/logging";
-import AgentModel from "@/models/agent";
 import InteractionModel from "@/models/interaction";
-import type { Agent, Tool } from "@/types";
+import ProfileModel from "@/models/profile";
+import type { Profile, Tool } from "@/types";
+
+// Note: This is a virtual profile used for observability tracking of the subagent
+type VirtualProfile = Profile;
 
 const PolicyConfigSchema = z.object({
   allowUsageWhenUntrustedDataIsPresent: z
@@ -74,8 +77,8 @@ Examples:
 - External APIs (raw data): allowUsage=false, treatment="untrusted"
 - Code execution: allowUsage=false, treatment="untrusted"`;
 
-  // Virtual agent representing the subagent for observability
-  private static readonly VIRTUAL_AGENT: Agent = {
+  // Virtual profile representing the subagent for observability
+  private static readonly VIRTUAL_PROFILE: VirtualProfile = {
     id: PolicyConfigSubagent.SUBAGENT_ID,
     name: PolicyConfigSubagent.SUBAGENT_NAME,
     isDemo: false,
@@ -121,7 +124,7 @@ Examples:
       baseURL: `${config.llm.anthropic.baseUrl}/v1`,
       fetch: getObservableFetch(
         "anthropic",
-        PolicyConfigSubagent.VIRTUAL_AGENT,
+        PolicyConfigSubagent.VIRTUAL_PROFILE,
         PolicyConfigSubagent.SUBAGENT_ID, // Use subagent ID as external agent ID
       ),
     });
@@ -228,14 +231,14 @@ Examples:
     );
 
     try {
-      // Get or create a dedicated system agent for subagent interactions
-      // This agent will show as empty/system in the UI
-      const systemAgent = await AgentModel.getAgentOrCreateDefault(
+      // Get or create a dedicated system profile for subagent interactions
+      // This profile will show as empty/system in the UI
+      const systemProfile = await ProfileModel.getProfileOrCreateDefault(
         PolicyConfigSubagent.SUBAGENT_NAME,
       );
 
       await InteractionModel.create({
-        profileId: systemAgent.id,
+        profileId: systemProfile.id,
         externalAgentId: PolicyConfigSubagent.SUBAGENT_ID,
         type: "anthropic:messages",
         model: config.chat.defaultModel,

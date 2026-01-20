@@ -39,9 +39,9 @@ import type {
   ToolWithAssignments,
   UpdateTool,
 } from "@/types";
-import AgentTeamModel from "./agent-team";
-import AgentToolModel from "./agent-tool";
 import McpServerModel from "./mcp-server";
+import ProfileTeamModel from "./profile-team";
+import ProfileToolModel from "./profile-tool";
 import ToolInvocationPolicyModel from "./tool-invocation-policy";
 import TrustedDataPolicyModel from "./trusted-data-policy";
 
@@ -98,15 +98,15 @@ class ToolModel {
   }
 
   static async createToolIfNotExists(tool: InsertTool): Promise<Tool> {
-    // For Archestra built-in tools (both agentId and catalogId are null), check if tool already exists
+    // For Archestra built-in tools (both profileId and catalogId are null), check if tool already exists
     // This prevents duplicate Archestra tools since NULL != NULL in unique constraints
-    if (!tool.agentId && !tool.catalogId) {
+    if (!tool.profileId && !tool.catalogId) {
       const [existingTool] = await db
         .select()
         .from(schema.toolsTable)
         .where(
           and(
-            isNull(schema.toolsTable.agentId),
+            isNull(schema.toolsTable.profileId),
             isNull(schema.toolsTable.catalogId),
             eq(schema.toolsTable.name, tool.name),
           ),
@@ -117,15 +117,15 @@ class ToolModel {
       }
     }
 
-    // For proxy-sniffed tools (agentId is set, catalogId is null), check if tool already exists
-    // This prevents duplicate proxy-sniffed tools for the same agent
-    if (tool.agentId && !tool.catalogId) {
+    // For proxy-sniffed tools (profileId is set, catalogId is null), check if tool already exists
+    // This prevents duplicate proxy-sniffed tools for the same profile
+    if (tool.profileId && !tool.catalogId) {
       const [existingTool] = await db
         .select()
         .from(schema.toolsTable)
         .where(
           and(
-            eq(schema.toolsTable.agentId, tool.agentId),
+            eq(schema.toolsTable.profileId, tool.profileId),
             eq(schema.toolsTable.name, tool.name),
             isNull(schema.toolsTable.catalogId),
           ),
@@ -136,15 +136,15 @@ class ToolModel {
       }
     }
 
-    // For MCP tools (agentId is null, catalogId is set), check if tool with same catalog and name already exists
+    // For MCP tools (profileId is null, catalogId is set), check if tool with same catalog and name already exists
     // This allows multiple installations of the same catalog to share tool definitions
-    if (!tool.agentId && tool.catalogId) {
+    if (!tool.profileId && tool.catalogId) {
       const [existingTool] = await db
         .select()
         .from(schema.toolsTable)
         .where(
           and(
-            isNull(schema.toolsTable.agentId),
+            isNull(schema.toolsTable.profileId),
             eq(schema.toolsTable.catalogId, tool.catalogId),
             eq(schema.toolsTable.name, tool.name),
           ),
@@ -167,19 +167,19 @@ class ToolModel {
         .select()
         .from(schema.toolsTable)
         .where(
-          tool.agentId
+          tool.profileId
             ? and(
-                eq(schema.toolsTable.agentId, tool.agentId),
+                eq(schema.toolsTable.profileId, tool.profileId),
                 eq(schema.toolsTable.name, tool.name),
               )
             : tool.catalogId
               ? and(
-                  isNull(schema.toolsTable.agentId),
+                  isNull(schema.toolsTable.profileId),
                   eq(schema.toolsTable.catalogId, tool.catalogId),
                   eq(schema.toolsTable.name, tool.name),
                 )
               : and(
-                  isNull(schema.toolsTable.agentId),
+                  isNull(schema.toolsTable.profileId),
                   isNull(schema.toolsTable.catalogId),
                   eq(schema.toolsTable.name, tool.name),
                 ),
@@ -230,11 +230,11 @@ class ToolModel {
       return null;
     }
 
-    // Check access control for non-agent admins
-    if (tool.agentId && userId && !isAgentAdmin) {
-      const hasAccess = await AgentTeamModel.userHasAgentAccess(
+    // Check access control for non-profile admins
+    if (tool.profileId && userId && !isAgentAdmin) {
+      const hasAccess = await ProfileTeamModel.userHasProfileAccess(
         userId,
-        tool.agentId,
+        tool.profileId,
         false,
       );
       if (!hasAccess) {
@@ -265,9 +265,9 @@ class ToolModel {
           schema.toolsTable.policiesAutoConfiguringStartedAt,
         policiesAutoConfiguredReasoning:
           schema.toolsTable.policiesAutoConfiguredReasoning,
-        agent: {
-          id: schema.agentsTable.id,
-          name: schema.agentsTable.name,
+        profile: {
+          id: schema.profilesTable.id,
+          name: schema.profilesTable.name,
         },
         mcpServer: {
           id: schema.mcpServersTable.id,
@@ -276,8 +276,8 @@ class ToolModel {
       })
       .from(schema.toolsTable)
       .leftJoin(
-        schema.agentsTable,
-        eq(schema.toolsTable.agentId, schema.agentsTable.id),
+        schema.profilesTable,
+        eq(schema.toolsTable.profileId, schema.profilesTable.id),
       )
       .leftJoin(
         schema.mcpServersTable,
@@ -287,25 +287,23 @@ class ToolModel {
       .$dynamic();
 
     /**
-     * Apply access control filtering for users that are not agent admins
+     * Apply access control filtering for users that are not profile admins
      *
-     * If the user is not an admin, we basically allow them to see all tools that are assigned to agents
-     * they have access to, plus all "MCP tools" (tools that are not assigned to any agent).
+     * If the user is not an admin, we basically allow them to see all tools that are assigned to profiles
+     * they have access to, plus all "MCP tools" (tools that are not assigned to any profile).
      */
     if (userId && !isAgentAdmin) {
-      const accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
-        userId,
-        false,
-      );
+      const accessibleProfileIds =
+        await ProfileTeamModel.getUserAccessibleProfileIds(userId, false);
 
       const mcpServerSourceClause = isNotNull(schema.toolsTable.mcpServerId);
 
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         query = query.where(mcpServerSourceClause);
       } else {
         query = query.where(
           or(
-            inArray(schema.toolsTable.agentId, accessibleAgentIds),
+            inArray(schema.toolsTable.profileId, accessibleProfileIds),
             mcpServerSourceClause,
           ),
         );
@@ -330,10 +328,10 @@ class ToolModel {
     }
 
     // Check access control for non-admins
-    if (tool.agentId && userId && !isAgentAdmin) {
-      const hasAccess = await AgentTeamModel.userHasAgentAccess(
+    if (tool.profileId && userId && !isAgentAdmin) {
+      const hasAccess = await ProfileTeamModel.userHasProfileAccess(
         userId,
-        tool.agentId,
+        tool.profileId,
         false,
       );
       if (!hasAccess) {
@@ -345,18 +343,19 @@ class ToolModel {
   }
 
   /**
-   * Get all tools for an agent (both proxy-sniffed and MCP tools)
-   * Proxy-sniffed tools are those with agentId set directly
-   * MCP tools are those assigned via the agent_tools junction table
+   * Get all tools for a profile (both proxy-sniffed and MCP tools)
+   * Proxy-sniffed tools are those with profileId set directly
+   * MCP tools are those assigned via the profile_tools junction table
    */
-  static async getToolsByAgent(agentId: string): Promise<Tool[]> {
+  static async getToolsByProfile(profileId: string): Promise<Tool[]> {
     // Get tool IDs assigned via junction table (MCP tools)
-    const assignedToolIds = await AgentToolModel.findToolIdsByAgent(agentId);
+    const assignedToolIds =
+      await ProfileToolModel.findToolIdsByProfile(profileId);
 
     // Query for tools that are either:
-    // 1. Directly associated with the agent (proxy-sniffed, agentId set)
-    // 2. Assigned via junction table (MCP tools, agentId is null)
-    const conditions = [eq(schema.toolsTable.agentId, agentId)];
+    // 1. Directly associated with the profile (proxy-sniffed, profileId set)
+    // 2. Assigned via junction table (MCP tools, profileId is null)
+    const conditions = [eq(schema.toolsTable.profileId, profileId)];
 
     if (assignedToolIds.length > 0) {
       conditions.push(inArray(schema.toolsTable.id, assignedToolIds));
@@ -372,16 +371,17 @@ class ToolModel {
   }
 
   /**
-   * Get only MCP tools assigned to an agent (those from connected MCP servers)
+   * Get only MCP tools assigned to a profile (those from connected MCP servers)
    * Includes: MCP server tools (catalogId set, including Archestra builtin tools)
-   * Excludes: proxy-discovered tools (agentId set, catalogId null)
+   * Excludes: proxy-discovered tools (profileId set, catalogId null)
    *
    * Note: Archestra tools are no longer automatically assigned - they must be
    * explicitly assigned like any other MCP server tools.
    */
-  static async getMcpToolsByAgent(agentId: string): Promise<Tool[]> {
+  static async getMcpToolsByProfile(profileId: string): Promise<Tool[]> {
     // Get tool IDs assigned via junction table (MCP tools)
-    const assignedToolIds = await AgentToolModel.findToolIdsByAgent(agentId);
+    const assignedToolIds =
+      await ProfileToolModel.findToolIdsByProfile(profileId);
 
     if (assignedToolIds.length === 0) {
       return [];
@@ -389,7 +389,7 @@ class ToolModel {
 
     // Return tools that are assigned via junction table AND have catalogId set
     // This includes both regular MCP server tools and Archestra builtin tools
-    // Excludes proxy-discovered tools which have agentId set and catalogId null
+    // Excludes proxy-discovered tools which have profileId set and catalogId null
     const tools = await db
       .select()
       .from(schema.toolsTable)
@@ -432,7 +432,7 @@ class ToolModel {
       .from(schema.toolsTable)
       .where(
         and(
-          isNull(schema.toolsTable.agentId),
+          isNull(schema.toolsTable.profileId),
           eq(schema.toolsTable.catalogId, catalogId),
           inArray(schema.toolsTable.name, toolNames),
         ),
@@ -455,7 +455,7 @@ class ToolModel {
           parameters: tool.parameters,
           catalogId: tool.catalogId,
           mcpServerId: tool.mcpServerId,
-          agentId: null,
+          profileId: null,
         });
       }
     }
@@ -486,7 +486,7 @@ class ToolModel {
             .from(schema.toolsTable)
             .where(
               and(
-                isNull(schema.toolsTable.agentId),
+                isNull(schema.toolsTable.profileId),
                 eq(schema.toolsTable.catalogId, catalogId),
                 inArray(schema.toolsTable.name, missingNames),
               ),
@@ -542,7 +542,7 @@ class ToolModel {
       .where(
         and(
           isNull(schema.toolsTable.catalogId),
-          isNull(schema.toolsTable.agentId),
+          isNull(schema.toolsTable.profileId),
           inArray(schema.toolsTable.name, archestraToolNames),
         ),
       );
@@ -571,7 +571,7 @@ class ToolModel {
           description: archestraTool.description || null,
           parameters: archestraTool.inputSchema,
           catalogId,
-          agentId: null,
+          profileId: null,
         });
       }
     }
@@ -583,11 +583,11 @@ class ToolModel {
   }
 
   /**
-   * Assign Archestra built-in tools to an agent.
+   * Assign Archestra built-in tools to a profile.
    * Assumes tools have already been seeded via seedArchestraTools().
    */
-  static async assignArchestraToolsToAgent(
-    agentId: string,
+  static async assignArchestraToolsToProfile(
+    profileId: string,
     catalogId: string,
   ): Promise<void> {
     // Get all Archestra tools from the catalog
@@ -598,19 +598,19 @@ class ToolModel {
 
     const toolIds = archestraTools.map((t) => t.id);
 
-    // Assign all tools to agent in bulk to avoid N+1
-    await AgentToolModel.createManyIfNotExists(agentId, toolIds);
+    // Assign all tools to profile in bulk to avoid N+1
+    await ProfileToolModel.createManyIfNotExists(profileId, toolIds);
   }
 
   /**
-   * Assign default Archestra tools to an agent.
+   * Assign default Archestra tools to a profile.
    * These tools are automatically assigned to new profiles:
    * - artifact_write: for artifact management
    * - todo_write: for task tracking
    * - query_knowledge_graph: for querying the knowledge graph (only if configured)
    */
-  static async assignDefaultArchestraToolsToAgent(
-    agentId: string,
+  static async assignDefaultArchestraToolsToProfile(
+    profileId: string,
   ): Promise<void> {
     // Build the list of default tools
     const defaultToolNames = [
@@ -635,27 +635,27 @@ class ToolModel {
 
     const toolIds = defaultTools.map((t) => t.id);
 
-    // Assign tools to agent in bulk
-    await AgentToolModel.createManyIfNotExists(agentId, toolIds);
+    // Assign tools to profile in bulk
+    await ProfileToolModel.createManyIfNotExists(profileId, toolIds);
   }
 
   /**
-   * Get names of all MCP tools assigned to an agent
+   * Get names of all MCP tools assigned to a profile
    * Used to prevent autodiscovery of tools already available via MCP servers
    */
-  static async getMcpToolNamesByAgent(agentId: string): Promise<string[]> {
+  static async getMcpToolNamesByProfile(profileId: string): Promise<string[]> {
     const mcpTools = await db
       .select({
         name: schema.toolsTable.name,
       })
       .from(schema.toolsTable)
       .innerJoin(
-        schema.agentToolsTable,
-        eq(schema.agentToolsTable.toolId, schema.toolsTable.id),
+        schema.profileToolsTable,
+        eq(schema.profileToolsTable.toolId, schema.toolsTable.id),
       )
       .where(
         and(
-          eq(schema.agentToolsTable.agentId, agentId),
+          eq(schema.profileToolsTable.profileId, profileId),
           isNotNull(schema.toolsTable.mcpServerId), // Only MCP tools
         ),
       );
@@ -664,11 +664,11 @@ class ToolModel {
   }
 
   /**
-   * Get MCP tools assigned to an agent
+   * Get MCP tools assigned to a profile
    */
-  static async getMcpToolsAssignedToAgent(
+  static async getMcpToolsAssignedToProfile(
     toolNames: string[],
-    agentId: string,
+    profileId: string,
   ): Promise<
     Array<{
       toolName: string;
@@ -692,24 +692,24 @@ class ToolModel {
       .select({
         toolName: schema.toolsTable.name,
         responseModifierTemplate:
-          schema.agentToolsTable.responseModifierTemplate,
+          schema.profileToolsTable.responseModifierTemplate,
         mcpServerSecretId: schema.mcpServersTable.secretId,
         mcpServerName: schema.mcpServersTable.name,
         mcpServerCatalogId: schema.mcpServersTable.catalogId,
         credentialSourceMcpServerId:
-          schema.agentToolsTable.credentialSourceMcpServerId,
+          schema.profileToolsTable.credentialSourceMcpServerId,
         executionSourceMcpServerId:
-          schema.agentToolsTable.executionSourceMcpServerId,
+          schema.profileToolsTable.executionSourceMcpServerId,
         useDynamicTeamCredential:
-          schema.agentToolsTable.useDynamicTeamCredential,
+          schema.profileToolsTable.useDynamicTeamCredential,
         mcpServerId: schema.mcpServersTable.id,
         catalogId: schema.toolsTable.catalogId,
         catalogName: schema.internalMcpCatalogTable.name,
       })
       .from(schema.toolsTable)
       .innerJoin(
-        schema.agentToolsTable,
-        eq(schema.agentToolsTable.toolId, schema.toolsTable.id),
+        schema.profileToolsTable,
+        eq(schema.profileToolsTable.toolId, schema.toolsTable.id),
       )
       .leftJoin(
         schema.mcpServersTable,
@@ -721,7 +721,7 @@ class ToolModel {
       )
       .where(
         and(
-          eq(schema.agentToolsTable.agentId, agentId),
+          eq(schema.profileToolsTable.profileId, profileId),
           inArray(schema.toolsTable.name, toolNames),
           isNotNull(schema.toolsTable.catalogId), // Only MCP tools (have catalogId)
         ),
@@ -731,7 +731,7 @@ class ToolModel {
   }
 
   /**
-   * Get all tools for a specific MCP server with their assignment counts and assigned agents
+   * Get all tools for a specific MCP server with their assignment counts and assigned profiles
    */
   static async findByMcpServerId(mcpServerId: string): Promise<
     Array<{
@@ -740,8 +740,8 @@ class ToolModel {
       description: string | null;
       parameters: Record<string, unknown>;
       createdAt: Date;
-      assignedAgentCount: number;
-      assignedAgents: Array<{ id: string; name: string }>;
+      assignedProfileCount: number;
+      assignedProfiles: Array<{ id: string; name: string }>;
     }>
   > {
     const tools = await db
@@ -758,19 +758,19 @@ class ToolModel {
 
     const toolIds = tools.map((tool) => tool.id);
 
-    // Get all agent assignments for these tools in one query to avoid N+1
+    // Get all profile assignments for these tools in one query to avoid N+1
     const assignments = await db
       .select({
-        toolId: schema.agentToolsTable.toolId,
-        agentId: schema.agentToolsTable.agentId,
-        agentName: schema.agentsTable.name,
+        toolId: schema.profileToolsTable.toolId,
+        profileId: schema.profileToolsTable.profileId,
+        profileName: schema.profilesTable.name,
       })
-      .from(schema.agentToolsTable)
+      .from(schema.profileToolsTable)
       .innerJoin(
-        schema.agentsTable,
-        eq(schema.agentToolsTable.agentId, schema.agentsTable.id),
+        schema.profilesTable,
+        eq(schema.profileToolsTable.profileId, schema.profilesTable.id),
       )
-      .where(inArray(schema.agentToolsTable.toolId, toolIds));
+      .where(inArray(schema.profileToolsTable.toolId, toolIds));
 
     // Group assignments by tool ID
     const assignmentsByTool = new Map<
@@ -785,29 +785,29 @@ class ToolModel {
     for (const assignment of assignments) {
       const toolAssignments = assignmentsByTool.get(assignment.toolId) || [];
       toolAssignments.push({
-        id: assignment.agentId,
-        name: assignment.agentName,
+        id: assignment.profileId,
+        name: assignment.profileName,
       });
       assignmentsByTool.set(assignment.toolId, toolAssignments);
     }
 
-    // Build tools with their assigned agents
-    const toolsWithAgents = tools.map((tool) => {
-      const assignedAgents = assignmentsByTool.get(tool.id) || [];
+    // Build tools with their assigned profiles
+    const toolsWithProfiles = tools.map((tool) => {
+      const assignedProfiles = assignmentsByTool.get(tool.id) || [];
 
       return {
         ...tool,
         parameters: tool.parameters ?? {},
-        assignedAgentCount: assignedAgents.length,
-        assignedAgents,
+        assignedProfileCount: assignedProfiles.length,
+        assignedProfiles,
       };
     });
 
-    return toolsWithAgents;
+    return toolsWithProfiles;
   }
 
   /**
-   * Get all tools for a specific catalog item with their assignment counts and assigned agents
+   * Get all tools for a specific catalog item with their assignment counts and assigned profiles
    * Used to show tools across all installations of the same catalog item
    */
   static async findByCatalogId(catalogId: string): Promise<
@@ -817,8 +817,8 @@ class ToolModel {
       description: string | null;
       parameters: Record<string, unknown>;
       createdAt: Date;
-      assignedAgentCount: number;
-      assignedAgents: Array<{ id: string; name: string }>;
+      assignedProfileCount: number;
+      assignedProfiles: Array<{ id: string; name: string }>;
     }>
   > {
     const tools = await db
@@ -835,19 +835,19 @@ class ToolModel {
 
     const toolIds = tools.map((tool) => tool.id);
 
-    // Get all agent assignments for these tools in one query to avoid N+1
+    // Get all profile assignments for these tools in one query to avoid N+1
     const assignments = await db
       .select({
-        toolId: schema.agentToolsTable.toolId,
-        agentId: schema.agentToolsTable.agentId,
-        agentName: schema.agentsTable.name,
+        toolId: schema.profileToolsTable.toolId,
+        profileId: schema.profileToolsTable.profileId,
+        profileName: schema.profilesTable.name,
       })
-      .from(schema.agentToolsTable)
+      .from(schema.profileToolsTable)
       .innerJoin(
-        schema.agentsTable,
-        eq(schema.agentToolsTable.agentId, schema.agentsTable.id),
+        schema.profilesTable,
+        eq(schema.profileToolsTable.profileId, schema.profilesTable.id),
       )
-      .where(inArray(schema.agentToolsTable.toolId, toolIds));
+      .where(inArray(schema.profileToolsTable.toolId, toolIds));
 
     // Group assignments by tool ID
     const assignmentsByTool = new Map<
@@ -862,25 +862,25 @@ class ToolModel {
     for (const assignment of assignments) {
       const toolAssignments = assignmentsByTool.get(assignment.toolId) || [];
       toolAssignments.push({
-        id: assignment.agentId,
-        name: assignment.agentName,
+        id: assignment.profileId,
+        name: assignment.profileName,
       });
       assignmentsByTool.set(assignment.toolId, toolAssignments);
     }
 
-    // Build tools with their assigned agents
-    const toolsWithAgents = tools.map((tool) => {
-      const assignedAgents = assignmentsByTool.get(tool.id) || [];
+    // Build tools with their assigned profiles
+    const toolsWithProfiles = tools.map((tool) => {
+      const assignedProfiles = assignmentsByTool.get(tool.id) || [];
 
       return {
         ...tool,
         parameters: tool.parameters ?? {},
-        assignedAgentCount: assignedAgents.length,
-        assignedAgents,
+        assignedProfileCount: assignedProfiles.length,
+        assignedProfiles,
       };
     });
 
-    return toolsWithAgents;
+    return toolsWithProfiles;
   }
 
   /**
@@ -938,7 +938,7 @@ class ToolModel {
   }
 
   /**
-   * Bulk create proxy-sniffed tools for an agent (tools discovered via LLM proxy)
+   * Bulk create proxy-sniffed tools for a profile (tools discovered via LLM proxy)
    * Fetches existing tools in a single query, then bulk inserts only new tools
    * Returns all tools (existing + newly created) to avoid N+1 queries
    */
@@ -948,7 +948,7 @@ class ToolModel {
       description?: string | null;
       parameters?: Record<string, unknown>;
     }>,
-    agentId: string,
+    profileId: string,
   ): Promise<Tool[]> {
     if (tools.length === 0) {
       return [];
@@ -956,13 +956,13 @@ class ToolModel {
 
     const toolNames = tools.map((t) => t.name);
 
-    // Fetch all existing tools for this agent in a single query
+    // Fetch all existing tools for this profile in a single query
     const existingTools = await db
       .select()
       .from(schema.toolsTable)
       .where(
         and(
-          eq(schema.toolsTable.agentId, agentId),
+          eq(schema.toolsTable.profileId, profileId),
           isNull(schema.toolsTable.catalogId),
           inArray(schema.toolsTable.name, toolNames),
         ),
@@ -985,7 +985,7 @@ class ToolModel {
           parameters: tool.parameters ?? {},
           catalogId: null,
           mcpServerId: null,
-          agentId,
+          profileId,
         });
       }
     }
@@ -1016,7 +1016,7 @@ class ToolModel {
             .from(schema.toolsTable)
             .where(
               and(
-                eq(schema.toolsTable.agentId, agentId),
+                eq(schema.toolsTable.profileId, profileId),
                 isNull(schema.toolsTable.catalogId),
                 inArray(schema.toolsTable.name, missingNames),
               ),
@@ -1038,18 +1038,18 @@ class ToolModel {
   }
 
   /**
-   * Create or get an agent delegation tool for a prompt agent
-   * These tools are NOT assigned to agents via agent_tools - they're prompt-specific
+   * Create or get a profile delegation tool for a prompt agent
+   * These tools are NOT assigned to profiles via profile_tools - they're prompt-specific
    * @param params.promptAgentId - The prompt_agents.id
-   * @param params.agentName - The name of the delegated agent (used for tool name)
+   * @param params.profileName - The name of the delegated profile (used for tool name)
    * @param params.description - Description from the delegated prompt's systemPrompt
    */
-  static async createAgentDelegationTool(params: {
+  static async createProfileDelegationTool(params: {
     promptAgentId: string;
-    agentName: string;
+    profileName: string;
     description?: string | null;
   }): Promise<Tool> {
-    const { promptAgentId, agentName, description } = params;
+    const { promptAgentId, profileName, description } = params;
 
     // Check if tool already exists for this prompt agent
     const [existingTool] = await db
@@ -1062,13 +1062,13 @@ class ToolModel {
       return existingTool;
     }
 
-    // Create the tool (NOT assigned to agent_tools - it's prompt-specific)
+    // Create the tool (NOT assigned to profile_tools - it's prompt-specific)
     const [tool] = await db
       .insert(schema.toolsTable)
       .values({
-        name: `${AGENT_TOOL_PREFIX}${slugify(agentName)}`,
+        name: `${AGENT_TOOL_PREFIX}${slugify(profileName)}`,
         promptAgentId,
-        agentId: null,
+        profileId: null,
         catalogId: null,
         mcpServerId: null,
         parameters: {
@@ -1076,12 +1076,12 @@ class ToolModel {
           properties: {
             message: {
               type: "string",
-              description: "The message to send to this agent",
+              description: "The message to send to this profile",
             },
           },
           required: ["message"],
         },
-        description: description || `Delegate to ${agentName}`,
+        description: description || `Delegate to ${profileName}`,
       })
       .returning();
 
@@ -1089,10 +1089,10 @@ class ToolModel {
   }
 
   /**
-   * Get agent delegation tools for a prompt
+   * Get profile delegation tools for a prompt
    * Fetches tools that are linked to prompt_agents for the given promptId
    */
-  static async getAgentDelegationToolsByPrompt(
+  static async getProfileDelegationToolsByPrompt(
     promptId: string,
   ): Promise<Tool[]> {
     // Get prompt_agents for this prompt
@@ -1117,26 +1117,26 @@ class ToolModel {
   }
 
   /**
-   * Get agent delegation tools with profile info for user access filtering
+   * Get profile delegation tools with profile info for user access filtering
    * Returns tools along with the profile ID of the delegated-to prompt
    */
-  static async getAgentDelegationToolsWithDetails(promptId: string): Promise<
+  static async getProfileDelegationToolsWithDetails(promptId: string): Promise<
     Array<{
       tool: Tool;
       profileId: string;
-      agentPromptId: string;
-      agentPromptName: string;
-      agentPromptSystemPrompt: string | null;
+      delegatePromptId: string;
+      delegatePromptName: string;
+      delegatePromptSystemPrompt: string | null;
     }>
   > {
     // Join tools with prompt_agents and prompts to get profile info
     const results = await db
       .select({
         tool: schema.toolsTable,
-        profileId: schema.agentsTable.id,
-        agentPromptId: schema.promptAgentsTable.agentPromptId,
-        agentPromptName: schema.promptsTable.name,
-        agentPromptSystemPrompt: schema.promptsTable.systemPrompt,
+        profileId: schema.profilesTable.id,
+        delegatePromptId: schema.promptAgentsTable.agentPromptId,
+        delegatePromptName: schema.promptsTable.name,
+        delegatePromptSystemPrompt: schema.promptsTable.systemPrompt,
       })
       .from(schema.toolsTable)
       .innerJoin(
@@ -1148,8 +1148,8 @@ class ToolModel {
         eq(schema.promptAgentsTable.agentPromptId, schema.promptsTable.id),
       )
       .innerJoin(
-        schema.agentsTable,
-        eq(schema.promptsTable.agentId, schema.agentsTable.id),
+        schema.profilesTable,
+        eq(schema.promptsTable.profileId, schema.profilesTable.id),
       )
       .where(eq(schema.promptAgentsTable.promptId, promptId));
 
@@ -1157,18 +1157,18 @@ class ToolModel {
   }
 
   /**
-   * Sync agent delegation tool names when a prompt is renamed
+   * Sync profile delegation tool names when a prompt is renamed
    * Updates the tool name for all tools that delegate to this prompt
-   * @param agentPromptId - The prompt ID that was renamed (the delegated-to prompt)
+   * @param delegatePromptIds - The prompt ID that was renamed (the delegated-to prompt)
    * @param newName - The new name of the prompt
    */
-  static async syncAgentDelegationToolNames(
-    agentPromptIds: string | string[],
+  static async syncProfileDelegationToolNames(
+    delegatePromptIds: string | string[],
     newName: string,
   ): Promise<void> {
-    const idsArray = Array.isArray(agentPromptIds)
-      ? agentPromptIds
-      : [agentPromptIds];
+    const idsArray = Array.isArray(delegatePromptIds)
+      ? delegatePromptIds
+      : [delegatePromptIds];
 
     if (idsArray.length === 0) {
       return;
@@ -1230,9 +1230,9 @@ class ToolModel {
     // Filter by origin (either "llm-proxy" or a catalogId)
     if (filters?.origin) {
       if (filters.origin === "llm-proxy") {
-        // LLM Proxy tools have null catalogId but agentId is set
+        // LLM Proxy tools have null catalogId but profileId is set
         toolWhereConditions.push(isNull(schema.toolsTable.catalogId));
-        toolWhereConditions.push(isNotNull(schema.toolsTable.agentId));
+        toolWhereConditions.push(isNotNull(schema.toolsTable.profileId));
       } else {
         // MCP tools have a catalogId
         toolWhereConditions.push(
@@ -1249,18 +1249,18 @@ class ToolModel {
     }
 
     // Apply access control filtering for users that are not agent admins
-    // Get accessible agent IDs for filtering assignments
-    let accessibleAgentIds: string[] | undefined;
+    // Get accessible profile IDs for filtering assignments
+    let accessibleProfileIds: string[] | undefined;
     let accessibleMcpServerIds: Set<string> | undefined;
     if (userId && !isAgentAdmin) {
-      const [agentIds, mcpServers] = await Promise.all([
-        AgentTeamModel.getUserAccessibleAgentIds(userId, false),
+      const [profileIds, mcpServers] = await Promise.all([
+        ProfileTeamModel.getUserAccessibleProfileIds(userId, false),
         McpServerModel.findAll(userId, false),
       ]);
-      accessibleAgentIds = agentIds;
+      accessibleProfileIds = profileIds;
       accessibleMcpServerIds = new Set(mcpServers.map((s) => s.id));
 
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return createPaginatedResult([], 0, {
           limit: pagination.limit ?? 20,
           offset: pagination.offset ?? 0,
@@ -1273,16 +1273,16 @@ class ToolModel {
       toolWhereConditions.length > 0 ? and(...toolWhereConditions) : undefined;
 
     // Subquery to get tools that have at least one assignment (with access control)
-    const assignmentConditions = accessibleAgentIds
+    const assignmentConditions = accessibleProfileIds
       ? and(
-          eq(schema.agentToolsTable.toolId, schema.toolsTable.id),
-          inArray(schema.agentToolsTable.agentId, accessibleAgentIds),
+          eq(schema.profileToolsTable.toolId, schema.toolsTable.id),
+          inArray(schema.profileToolsTable.profileId, accessibleProfileIds),
         )
-      : eq(schema.agentToolsTable.toolId, schema.toolsTable.id);
+      : eq(schema.profileToolsTable.toolId, schema.toolsTable.id);
 
     // Count subquery for assignment count (with access control)
     const assignmentCountSubquery = sql<number>`(
-      SELECT COUNT(*) FROM ${schema.agentToolsTable}
+      SELECT COUNT(*) FROM ${schema.profileToolsTable}
       WHERE ${assignmentConditions}
     )`;
 
@@ -1333,7 +1333,7 @@ class ToolModel {
           toolWhereClause,
           // Only tools with at least one assignment
           sql`EXISTS (
-            SELECT 1 FROM ${schema.agentToolsTable}
+            SELECT 1 FROM ${schema.profileToolsTable}
             WHERE ${assignmentConditions}
           )`,
         ),
@@ -1350,7 +1350,7 @@ class ToolModel {
         and(
           toolWhereClause,
           sql`EXISTS (
-            SELECT 1 FROM ${schema.agentToolsTable}
+            SELECT 1 FROM ${schema.profileToolsTable}
             WHERE ${assignmentConditions}
           )`,
         ),
@@ -1366,13 +1366,13 @@ class ToolModel {
     // Get all assignments for these tools in one query
     const toolIds = toolsWithCount.map((t) => t.id as string);
     const assignmentWhereConditions = [
-      inArray(schema.agentToolsTable.toolId, toolIds),
+      inArray(schema.profileToolsTable.toolId, toolIds),
     ];
 
     // Apply access control to assignments
-    if (accessibleAgentIds) {
+    if (accessibleProfileIds) {
       assignmentWhereConditions.push(
-        inArray(schema.agentToolsTable.agentId, accessibleAgentIds),
+        inArray(schema.profileToolsTable.profileId, accessibleProfileIds),
       );
     }
 
@@ -1390,30 +1390,30 @@ class ToolModel {
 
     const assignments = await db
       .select({
-        toolId: schema.agentToolsTable.toolId,
-        agentToolId: schema.agentToolsTable.id,
-        agentId: schema.agentsTable.id,
-        agentName: schema.agentsTable.name,
+        toolId: schema.profileToolsTable.toolId,
+        profileToolId: schema.profileToolsTable.id,
+        profileId: schema.profilesTable.id,
+        profileName: schema.profilesTable.name,
         credentialSourceMcpServerId:
-          schema.agentToolsTable.credentialSourceMcpServerId,
+          schema.profileToolsTable.credentialSourceMcpServerId,
         credentialOwnerEmail: credentialOwnerAlias.email,
         executionSourceMcpServerId:
-          schema.agentToolsTable.executionSourceMcpServerId,
+          schema.profileToolsTable.executionSourceMcpServerId,
         executionOwnerEmail: executionOwnerAlias.email,
         useDynamicTeamCredential:
-          schema.agentToolsTable.useDynamicTeamCredential,
+          schema.profileToolsTable.useDynamicTeamCredential,
         responseModifierTemplate:
-          schema.agentToolsTable.responseModifierTemplate,
+          schema.profileToolsTable.responseModifierTemplate,
       })
-      .from(schema.agentToolsTable)
+      .from(schema.profileToolsTable)
       .innerJoin(
-        schema.agentsTable,
-        eq(schema.agentToolsTable.agentId, schema.agentsTable.id),
+        schema.profilesTable,
+        eq(schema.profileToolsTable.profileId, schema.profilesTable.id),
       )
       .leftJoin(
         credentialMcpServerAlias,
         eq(
-          schema.agentToolsTable.credentialSourceMcpServerId,
+          schema.profileToolsTable.credentialSourceMcpServerId,
           credentialMcpServerAlias.id,
         ),
       )
@@ -1424,7 +1424,7 @@ class ToolModel {
       .leftJoin(
         executionMcpServerAlias,
         eq(
-          schema.agentToolsTable.executionSourceMcpServerId,
+          schema.profileToolsTable.executionSourceMcpServerId,
           executionMcpServerAlias.id,
         ),
       )
@@ -1438,8 +1438,8 @@ class ToolModel {
     const assignmentsByToolId = new Map<
       string,
       Array<{
-        agentToolId: string;
-        agent: { id: string; name: string };
+        profileToolId: string;
+        profile: { id: string; name: string };
         credentialSourceMcpServerId: string | null;
         credentialOwnerEmail: string | null;
         executionSourceMcpServerId: string | null;
@@ -1464,10 +1464,10 @@ class ToolModel {
         accessibleMcpServerIds.has(assignment.executionSourceMcpServerId);
 
       existing.push({
-        agentToolId: assignment.agentToolId,
-        agent: {
-          id: assignment.agentId,
-          name: assignment.agentName,
+        profileToolId: assignment.profileToolId,
+        profile: {
+          id: assignment.profileId,
+          name: assignment.profileName,
         },
         credentialSourceMcpServerId: assignment.credentialSourceMcpServerId,
         credentialOwnerEmail: credentialServerAccessible

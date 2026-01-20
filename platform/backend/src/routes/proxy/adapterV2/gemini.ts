@@ -832,8 +832,12 @@ export const geminiAdapterFactory: LLMProvider<
     const client = createGoogleGenAIClient(apiKey, "[GeminiProxyV2]");
 
     // Wrap with observability for request duration metrics
-    if (options?.agent) {
-      return getObservableGenAI(client, options.agent, options.externalAgentId);
+    if (options?.profile) {
+      return getObservableGenAI(
+        client,
+        options.profile,
+        options.externalAgentId,
+      );
     }
     return client;
   },

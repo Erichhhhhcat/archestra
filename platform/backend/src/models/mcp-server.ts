@@ -6,9 +6,9 @@ import { McpServerRuntimeManager } from "@/mcp-server-runtime";
 import { secretManager } from "@/secrets-manager";
 import { computeSecretStorageType } from "@/secrets-manager/utils";
 import type { InsertMcpServer, McpServer, UpdateMcpServer } from "@/types";
-import AgentToolModel from "./agent-tool";
 import InternalMcpCatalogModel from "./internal-mcp-catalog";
 import McpServerUserModel from "./mcp-server-user";
+import ProfileToolModel from "./profile-tool";
 import ToolModel from "./tool";
 
 class McpServerModel {
@@ -337,29 +337,29 @@ class McpServerModel {
       return false;
     }
 
-    // Clean up agent_tools that reference this server
-    // Must be done before deletion to ensure agents do not retain unusable tool assignments
+    // Clean up profile_tools that reference this server
+    // Must be done before deletion to ensure profiles do not retain unusable tool assignments
     // FK constraint would only null out the reference, not remove the assignment
     try {
-      let deletedAgentTools = 0;
+      let deletedProfileTools = 0;
       if (mcpServer.serverType === "local") {
-        deletedAgentTools =
-          await AgentToolModel.deleteByExecutionSourceMcpServerId(id);
+        deletedProfileTools =
+          await ProfileToolModel.deleteByExecutionSourceMcpServerId(id);
       } else {
-        deletedAgentTools =
-          await AgentToolModel.deleteByCredentialSourceMcpServerId(id);
+        deletedProfileTools =
+          await ProfileToolModel.deleteByCredentialSourceMcpServerId(id);
       }
-      if (deletedAgentTools > 0) {
+      if (deletedProfileTools > 0) {
         logger.info(
-          `Deleted ${deletedAgentTools} agent tool assignments for MCP server: ${mcpServer.name}`,
+          `Deleted ${deletedProfileTools} profile tool assignments for MCP server: ${mcpServer.name}`,
         );
       }
     } catch (error) {
       logger.error(
         { err: error },
-        `Failed to clean up agent tools for MCP server ${mcpServer.name}:`,
+        `Failed to clean up profile tools for MCP server ${mcpServer.name}:`,
       );
-      // Continue with deletion even if agent tool cleanup fails
+      // Continue with deletion even if profile tool cleanup fails
     }
 
     // For local servers, stop and remove the K8s deployment

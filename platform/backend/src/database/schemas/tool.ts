@@ -7,17 +7,17 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { ToolParametersContent } from "@/types";
-import agentsTable from "./agent";
 import mcpCatalogTable from "./internal-mcp-catalog";
 import mcpServerTable from "./mcp-server";
+import profilesTable from "./profile";
 import promptAgentsTable from "./prompt-agent";
 
 const toolsTable = pgTable(
   "tools",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    // agentId is nullable - null for MCP tools, set for proxy-sniffed tools
-    agentId: uuid("agent_id").references(() => agentsTable.id, {
+    // profileId is nullable - null for MCP tools, set for proxy-sniffed tools
+    profileId: uuid("profile_id").references(() => profilesTable.id, {
       onDelete: "cascade",
     }),
     // catalogId links MCP tools to their catalog item (shared across installations)
@@ -64,12 +64,12 @@ const toolsTable = pgTable(
   (table) => [
     // Unique constraint ensures:
     // - For MCP tools: one tool per (catalogId, name) combination
-    // - For proxy-sniffed tools: one tool per (agentId, name) combination
+    // - For proxy-sniffed tools: one tool per (profileId, name) combination
     // - For agent delegation tools: one tool per promptAgentId
     unique().on(
       table.catalogId,
       table.name,
-      table.agentId,
+      table.profileId,
       table.promptAgentId,
     ),
   ],

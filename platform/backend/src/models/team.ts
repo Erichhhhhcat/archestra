@@ -343,29 +343,29 @@ class TeamModel {
   }
 
   /**
-   * Get all teams for an agent with their compression settings
+   * Get all teams for a profile with their compression settings
    */
-  static async getTeamsForAgent(agentId: string): Promise<Team[]> {
+  static async getTeamsForProfile(profileId: string): Promise<Team[]> {
     logger.debug(
-      { agentId },
-      "TeamModel.getTeamsForAgent: fetching agent teams",
+      { profileId },
+      "TeamModel.getTeamsForProfile: fetching profile teams",
     );
-    const agentTeams = await db
+    const profileTeams = await db
       .select({
         team: schema.teamsTable,
       })
-      .from(schema.agentTeamsTable)
+      .from(schema.profileTeamsTable)
       .innerJoin(
         schema.teamsTable,
-        eq(schema.agentTeamsTable.teamId, schema.teamsTable.id),
+        eq(schema.profileTeamsTable.teamId, schema.teamsTable.id),
       )
-      .where(eq(schema.agentTeamsTable.agentId, agentId));
+      .where(eq(schema.profileTeamsTable.profileId, profileId));
 
     logger.debug(
-      { agentId, count: agentTeams.length },
-      "TeamModel.getTeamsForAgent: completed",
+      { profileId, count: profileTeams.length },
+      "TeamModel.getTeamsForProfile: completed",
     );
-    return agentTeams.map((result) => ({
+    return profileTeams.map((result) => ({
       ...result.team,
       members: [], // Members not needed for compression logic
     }));

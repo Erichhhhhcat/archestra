@@ -4,7 +4,7 @@ import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { executeA2AMessage } from "@/agents/a2a-executor";
 import config from "@/config";
-import { AgentModel, PromptModel, UserModel } from "@/models";
+import { ProfileModel, PromptModel, UserModel } from "@/models";
 import {
   extractBearerToken,
   validateMCPGatewayToken,
@@ -108,10 +108,10 @@ const a2aRoutes: FastifyPluginAsyncZod = async (fastify) => {
         throw new ApiError(404, "Prompt not found");
       }
 
-      // Fetch the agent (profile) associated with this prompt for token validation
-      const agent = await AgentModel.findById(prompt.agentId);
-      if (!agent) {
-        throw new ApiError(404, "Agent not found for prompt");
+      // Fetch the profile associated with this prompt for token validation
+      const profile = await ProfileModel.findById(prompt.profileId);
+      if (!profile) {
+        throw new ApiError(404, "Profile not found for prompt");
       }
 
       // Validate token authentication (reuse MCP Gateway utilities)
@@ -123,7 +123,7 @@ const a2aRoutes: FastifyPluginAsyncZod = async (fastify) => {
         );
       }
 
-      const tokenAuth = await validateMCPGatewayToken(agent.id, token);
+      const tokenAuth = await validateMCPGatewayToken(profile.id, token);
       if (!tokenAuth) {
         throw new ApiError(401, "Invalid or unauthorized token");
       }
@@ -193,16 +193,16 @@ const a2aRoutes: FastifyPluginAsyncZod = async (fastify) => {
         });
       }
 
-      // Fetch the agent (profile) associated with this prompt
-      const agent = await AgentModel.findById(prompt.agentId);
+      // Fetch the profile associated with this prompt
+      const profile = await ProfileModel.findById(prompt.profileId);
 
-      if (!agent) {
+      if (!profile) {
         return reply.send({
           jsonrpc: "2.0" as const,
           id,
           error: {
             code: -32602,
-            message: "Agent not found for prompt",
+            message: "Profile not found for prompt",
           },
         });
       }
@@ -221,7 +221,7 @@ const a2aRoutes: FastifyPluginAsyncZod = async (fastify) => {
         });
       }
 
-      const tokenAuth = await validateMCPGatewayToken(agent.id, token);
+      const tokenAuth = await validateMCPGatewayToken(profile.id, token);
       if (!tokenAuth) {
         return reply.send({
           jsonrpc: "2.0" as const,

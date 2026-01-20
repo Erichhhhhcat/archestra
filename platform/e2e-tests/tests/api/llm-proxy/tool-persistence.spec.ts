@@ -16,7 +16,7 @@ interface ToolDefinition {
 
 interface ToolPersistenceTestConfig {
   providerName: string;
-  endpoint: (agentId: string) => string;
+  endpoint: (profileId: string) => string;
   headers: (wiremockStub: string) => Record<string, string>;
   buildRequest: (content: string, tools: ToolDefinition[]) => object;
 }
@@ -56,7 +56,7 @@ const E2E_PERSIST_TOOL_BETA: ToolDefinition = {
 const openaiConfig: ToolPersistenceTestConfig = {
   providerName: "OpenAI",
 
-  endpoint: (agentId) => `/v1/openai/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/openai/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -80,7 +80,7 @@ const openaiConfig: ToolPersistenceTestConfig = {
 const anthropicConfig: ToolPersistenceTestConfig = {
   providerName: "Anthropic",
 
-  endpoint: (agentId) => `/v1/anthropic/${agentId}/v1/messages`,
+  endpoint: (profileId) => `/v1/anthropic/${profileId}/v1/messages`,
 
   headers: (wiremockStub) => ({
     "x-api-key": wiremockStub,
@@ -103,8 +103,8 @@ const anthropicConfig: ToolPersistenceTestConfig = {
 const geminiConfig: ToolPersistenceTestConfig = {
   providerName: "Gemini",
 
-  endpoint: (agentId) =>
-    `/v1/gemini/${agentId}/v1beta/models/gemini-2.5-pro:generateContent`,
+  endpoint: (profileId) =>
+    `/v1/gemini/${profileId}/v1beta/models/gemini-2.5-pro:generateContent`,
 
   headers: (wiremockStub) => ({
     "x-goog-api-key": wiremockStub,
@@ -133,7 +133,7 @@ const geminiConfig: ToolPersistenceTestConfig = {
 const cerebrasConfig: ToolPersistenceTestConfig = {
   providerName: "Cerebras",
 
-  endpoint: (agentId) => `/v1/cerebras/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/cerebras/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -157,7 +157,7 @@ const cerebrasConfig: ToolPersistenceTestConfig = {
 const vllmConfig: ToolPersistenceTestConfig = {
   providerName: "vLLM",
 
-  endpoint: (agentId) => `/v1/vllm/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/vllm/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -181,7 +181,7 @@ const vllmConfig: ToolPersistenceTestConfig = {
 const ollamaConfig: ToolPersistenceTestConfig = {
   providerName: "Ollama",
 
-  endpoint: (agentId) => `/v1/ollama/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/ollama/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -205,7 +205,7 @@ const ollamaConfig: ToolPersistenceTestConfig = {
 const zhipuaiConfig: ToolPersistenceTestConfig = {
   providerName: "Zhipuai",
 
-  endpoint: (agentId) => `/v1/zhipuai/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/zhipuai/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -242,29 +242,29 @@ const testConfigs: ToolPersistenceTestConfig[] = [
 
 for (const config of testConfigs) {
   test.describe(`LLMProxy-ToolPersistence-${config.providerName}`, () => {
-    let agentId: string;
+    let profileId: string;
 
     test("persists tools from LLM proxy request", async ({
       request,
-      createAgent,
+      createProfile,
       makeApiRequest,
-      waitForAgentTool,
+      waitForProfileTool,
     }) => {
       const wiremockStub = `${config.providerName.toLowerCase()}-tool-persistence`;
 
       // 1. Create test profile with unique name
-      const createResponse = await createAgent(
+      const createResponse = await createProfile(
         request,
         `Tool Persistence Test - ${config.providerName}`,
       );
       const agent = await createResponse.json();
-      agentId = agent.id;
+      profileId = agent.id;
 
       // 2. Send LLM proxy request with test tools
       const response = await makeApiRequest({
         request,
         method: "post",
-        urlSuffix: config.endpoint(agentId),
+        urlSuffix: config.endpoint(profileId),
         headers: config.headers(wiremockStub),
         data: config.buildRequest("Test message", [
           E2E_PERSIST_TOOL_ALPHA,
@@ -273,59 +273,63 @@ for (const config of testConfigs) {
       });
       expect(response.ok()).toBeTruthy();
 
-      // 3. Verify tools are persisted using waitForAgentTool
-      const toolAlpha = await waitForAgentTool(
+      // 3. Verify tools are persisted using waitForProfileTool
+      const toolAlpha = await waitForProfileTool(
         request,
-        agentId,
+        profileId,
         "e2e_persist_test_tool_alpha",
       );
       expect(toolAlpha).toBeDefined();
-      expect(toolAlpha.agent.id).toBe(agentId);
+      expect(toolAlpha.profile.id).toBe(profileId);
       expect(toolAlpha.tool.name).toBe("e2e_persist_test_tool_alpha");
 
-      const toolBeta = await waitForAgentTool(
+      const toolBeta = await waitForProfileTool(
         request,
-        agentId,
+        profileId,
         "e2e_persist_test_tool_beta",
       );
       expect(toolBeta).toBeDefined();
-      expect(toolBeta.agent.id).toBe(agentId);
+      expect(toolBeta.profile.id).toBe(profileId);
       expect(toolBeta.tool.name).toBe("e2e_persist_test_tool_beta");
     });
 
     test("does not create duplicate tools when same request is sent twice", async ({
       request,
-      createAgent,
+      createProfile,
       makeApiRequest,
-      waitForAgentTool,
+      waitForProfileTool,
     }) => {
       const wiremockStub = `${config.providerName.toLowerCase()}-tool-persistence-idempotency`;
 
       // 1. Create test profile
-      const createResponse = await createAgent(
+      const createResponse = await createProfile(
         request,
         `Tool Persistence Idempotency Test - ${config.providerName}`,
       );
       const agent = await createResponse.json();
-      agentId = agent.id;
+      profileId = agent.id;
 
       // 2. Send first request with test tool
       await makeApiRequest({
         request,
         method: "post",
-        urlSuffix: config.endpoint(agentId),
+        urlSuffix: config.endpoint(profileId),
         headers: config.headers(wiremockStub),
         data: config.buildRequest("First request", [E2E_PERSIST_TOOL_ALPHA]),
       });
 
       // 3. Wait for tool to be persisted
-      await waitForAgentTool(request, agentId, "e2e_persist_test_tool_alpha");
+      await waitForProfileTool(
+        request,
+        profileId,
+        "e2e_persist_test_tool_alpha",
+      );
 
       // 4. Send second request with same tool
       await makeApiRequest({
         request,
         method: "post",
-        urlSuffix: config.endpoint(agentId),
+        urlSuffix: config.endpoint(profileId),
         headers: config.headers(wiremockStub),
         data: config.buildRequest("Second request", [E2E_PERSIST_TOOL_ALPHA]),
       });
@@ -337,7 +341,7 @@ for (const config of testConfigs) {
       const agentToolsResponse = await makeApiRequest({
         request,
         method: "get",
-        urlSuffix: `/api/agent-tools?agentId=${agentId}&limit=100`,
+        urlSuffix: `/api/profile-tools?profileId=${profileId}&limit=100`,
       });
       const agentTools = await agentToolsResponse.json();
 
@@ -351,10 +355,10 @@ for (const config of testConfigs) {
       expect(alphaTools.length).toBe(1);
     });
 
-    test.afterEach(async ({ request, deleteAgent }) => {
-      if (agentId) {
-        await deleteAgent(request, agentId);
-        agentId = "";
+    test.afterEach(async ({ request, deleteProfile }) => {
+      if (profileId) {
+        await deleteProfile(request, profileId);
+        profileId = "";
       }
     });
   });

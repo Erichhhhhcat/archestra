@@ -5360,1711 +5360,7 @@ export type PostV1A2aByPromptIdResponses = {
 
 export type PostV1A2aByPromptIdResponse = PostV1A2aByPromptIdResponses[keyof PostV1A2aByPromptIdResponses];
 
-export type GetAgentsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Filter by agent name
-         */
-        name?: string;
-        limit?: number;
-        offset?: number;
-        sortBy?: 'name' | 'createdAt' | 'toolsCount' | 'team';
-        sortDirection?: 'asc' | 'desc';
-    };
-    url: '/api/agents';
-};
-
-export type GetAgentsErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type GetAgentsError = GetAgentsErrors[keyof GetAgentsErrors];
-
-export type GetAgentsResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        data: Array<{
-            id: string;
-            name: string;
-            isDemo: boolean;
-            isDefault: boolean;
-            considerContextUntrusted: boolean;
-            createdAt: string;
-            updatedAt: string;
-            tools: Array<{
-                id: string;
-                agentId: string | null;
-                catalogId: string | null;
-                mcpServerId: string | null;
-                promptAgentId: string | null;
-                name: string;
-                /**
-                 *
-                 * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
-                 *
-                 * The parameters the functions accepts, described as a JSON Schema object. See the
-                 * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
-                 * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
-                 * documentation about the format.
-                 *
-                 * Omitting parameters defines a function with an empty parameter list.
-                 *
-                 */
-                parameters?: {
-                    [key: string]: unknown;
-                };
-                description: string | null;
-                policiesAutoConfiguredAt: string | null;
-                policiesAutoConfiguringStartedAt: string | null;
-                policiesAutoConfiguredReasoning: string | null;
-                createdAt: string;
-                updatedAt: string;
-            }>;
-            teams: Array<{
-                id: string;
-                name: string;
-            }>;
-            labels: Array<{
-                key: string;
-                value: string;
-                keyId?: string;
-                valueId?: string;
-            }>;
-        }>;
-        pagination: {
-            currentPage: number;
-            limit: number;
-            total: number;
-            totalPages: number;
-            hasNext: boolean;
-            hasPrev: boolean;
-        };
-    };
-};
-
-export type GetAgentsResponse = GetAgentsResponses[keyof GetAgentsResponses];
-
-export type CreateAgentData = {
-    body: {
-        name: string;
-        isDemo?: boolean;
-        isDefault?: boolean;
-        considerContextUntrusted?: boolean;
-        teams: Array<string>;
-        labels?: Array<{
-            key: string;
-            value: string;
-            keyId?: string;
-            valueId?: string;
-        }>;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/agents';
-};
-
-export type CreateAgentErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type CreateAgentError = CreateAgentErrors[keyof CreateAgentErrors];
-
-export type CreateAgentResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        id: string;
-        name: string;
-        isDemo: boolean;
-        isDefault: boolean;
-        considerContextUntrusted: boolean;
-        createdAt: string;
-        updatedAt: string;
-        tools: Array<{
-            id: string;
-            agentId: string | null;
-            catalogId: string | null;
-            mcpServerId: string | null;
-            promptAgentId: string | null;
-            name: string;
-            /**
-             *
-             * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
-             *
-             * The parameters the functions accepts, described as a JSON Schema object. See the
-             * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
-             * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
-             * documentation about the format.
-             *
-             * Omitting parameters defines a function with an empty parameter list.
-             *
-             */
-            parameters?: {
-                [key: string]: unknown;
-            };
-            description: string | null;
-            policiesAutoConfiguredAt: string | null;
-            policiesAutoConfiguringStartedAt: string | null;
-            policiesAutoConfiguredReasoning: string | null;
-            createdAt: string;
-            updatedAt: string;
-        }>;
-        teams: Array<{
-            id: string;
-            name: string;
-        }>;
-        labels: Array<{
-            key: string;
-            value: string;
-            keyId?: string;
-            valueId?: string;
-        }>;
-    };
-};
-
-export type CreateAgentResponse = CreateAgentResponses[keyof CreateAgentResponses];
-
-export type GetAllAgentsData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/agents/all';
-};
-
-export type GetAllAgentsErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type GetAllAgentsError = GetAllAgentsErrors[keyof GetAllAgentsErrors];
-
-export type GetAllAgentsResponses = {
-    /**
-     * Default Response
-     */
-    200: Array<{
-        id: string;
-        name: string;
-        isDemo: boolean;
-        isDefault: boolean;
-        considerContextUntrusted: boolean;
-        createdAt: string;
-        updatedAt: string;
-        tools: Array<{
-            id: string;
-            agentId: string | null;
-            catalogId: string | null;
-            mcpServerId: string | null;
-            promptAgentId: string | null;
-            name: string;
-            /**
-             *
-             * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
-             *
-             * The parameters the functions accepts, described as a JSON Schema object. See the
-             * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
-             * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
-             * documentation about the format.
-             *
-             * Omitting parameters defines a function with an empty parameter list.
-             *
-             */
-            parameters?: {
-                [key: string]: unknown;
-            };
-            description: string | null;
-            policiesAutoConfiguredAt: string | null;
-            policiesAutoConfiguringStartedAt: string | null;
-            policiesAutoConfiguredReasoning: string | null;
-            createdAt: string;
-            updatedAt: string;
-        }>;
-        teams: Array<{
-            id: string;
-            name: string;
-        }>;
-        labels: Array<{
-            key: string;
-            value: string;
-            keyId?: string;
-            valueId?: string;
-        }>;
-    }>;
-};
-
-export type GetAllAgentsResponse = GetAllAgentsResponses[keyof GetAllAgentsResponses];
-
-export type GetDefaultAgentData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/agents/default';
-};
-
-export type GetDefaultAgentErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type GetDefaultAgentError = GetDefaultAgentErrors[keyof GetDefaultAgentErrors];
-
-export type GetDefaultAgentResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        id: string;
-        name: string;
-        isDemo: boolean;
-        isDefault: boolean;
-        considerContextUntrusted: boolean;
-        createdAt: string;
-        updatedAt: string;
-        tools: Array<{
-            id: string;
-            agentId: string | null;
-            catalogId: string | null;
-            mcpServerId: string | null;
-            promptAgentId: string | null;
-            name: string;
-            /**
-             *
-             * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
-             *
-             * The parameters the functions accepts, described as a JSON Schema object. See the
-             * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
-             * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
-             * documentation about the format.
-             *
-             * Omitting parameters defines a function with an empty parameter list.
-             *
-             */
-            parameters?: {
-                [key: string]: unknown;
-            };
-            description: string | null;
-            policiesAutoConfiguredAt: string | null;
-            policiesAutoConfiguringStartedAt: string | null;
-            policiesAutoConfiguredReasoning: string | null;
-            createdAt: string;
-            updatedAt: string;
-        }>;
-        teams: Array<{
-            id: string;
-            name: string;
-        }>;
-        labels: Array<{
-            key: string;
-            value: string;
-            keyId?: string;
-            valueId?: string;
-        }>;
-    };
-};
-
-export type GetDefaultAgentResponse = GetDefaultAgentResponses[keyof GetDefaultAgentResponses];
-
-export type DeleteAgentData = {
-    body?: never;
-    path: {
-        id: string;
-    };
-    query?: never;
-    url: '/api/agents/{id}';
-};
-
-export type DeleteAgentErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type DeleteAgentError = DeleteAgentErrors[keyof DeleteAgentErrors];
-
-export type DeleteAgentResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        success: boolean;
-    };
-};
-
-export type DeleteAgentResponse = DeleteAgentResponses[keyof DeleteAgentResponses];
-
-export type GetAgentData = {
-    body?: never;
-    path: {
-        id: string;
-    };
-    query?: never;
-    url: '/api/agents/{id}';
-};
-
-export type GetAgentErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type GetAgentError = GetAgentErrors[keyof GetAgentErrors];
-
-export type GetAgentResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        id: string;
-        name: string;
-        isDemo: boolean;
-        isDefault: boolean;
-        considerContextUntrusted: boolean;
-        createdAt: string;
-        updatedAt: string;
-        tools: Array<{
-            id: string;
-            agentId: string | null;
-            catalogId: string | null;
-            mcpServerId: string | null;
-            promptAgentId: string | null;
-            name: string;
-            /**
-             *
-             * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
-             *
-             * The parameters the functions accepts, described as a JSON Schema object. See the
-             * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
-             * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
-             * documentation about the format.
-             *
-             * Omitting parameters defines a function with an empty parameter list.
-             *
-             */
-            parameters?: {
-                [key: string]: unknown;
-            };
-            description: string | null;
-            policiesAutoConfiguredAt: string | null;
-            policiesAutoConfiguringStartedAt: string | null;
-            policiesAutoConfiguredReasoning: string | null;
-            createdAt: string;
-            updatedAt: string;
-        }>;
-        teams: Array<{
-            id: string;
-            name: string;
-        }>;
-        labels: Array<{
-            key: string;
-            value: string;
-            keyId?: string;
-            valueId?: string;
-        }>;
-    };
-};
-
-export type GetAgentResponse = GetAgentResponses[keyof GetAgentResponses];
-
-export type UpdateAgentData = {
-    body?: {
-        name?: string;
-        isDemo?: boolean;
-        isDefault?: boolean;
-        considerContextUntrusted?: boolean;
-        teams?: Array<string>;
-        labels?: Array<{
-            key: string;
-            value: string;
-            keyId?: string;
-            valueId?: string;
-        }>;
-    };
-    path: {
-        id: string;
-    };
-    query?: never;
-    url: '/api/agents/{id}';
-};
-
-export type UpdateAgentErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type UpdateAgentError = UpdateAgentErrors[keyof UpdateAgentErrors];
-
-export type UpdateAgentResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        id: string;
-        name: string;
-        isDemo: boolean;
-        isDefault: boolean;
-        considerContextUntrusted: boolean;
-        createdAt: string;
-        updatedAt: string;
-        tools: Array<{
-            id: string;
-            agentId: string | null;
-            catalogId: string | null;
-            mcpServerId: string | null;
-            promptAgentId: string | null;
-            name: string;
-            /**
-             *
-             * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
-             *
-             * The parameters the functions accepts, described as a JSON Schema object. See the
-             * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
-             * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
-             * documentation about the format.
-             *
-             * Omitting parameters defines a function with an empty parameter list.
-             *
-             */
-            parameters?: {
-                [key: string]: unknown;
-            };
-            description: string | null;
-            policiesAutoConfiguredAt: string | null;
-            policiesAutoConfiguringStartedAt: string | null;
-            policiesAutoConfiguredReasoning: string | null;
-            createdAt: string;
-            updatedAt: string;
-        }>;
-        teams: Array<{
-            id: string;
-            name: string;
-        }>;
-        labels: Array<{
-            key: string;
-            value: string;
-            keyId?: string;
-            valueId?: string;
-        }>;
-    };
-};
-
-export type UpdateAgentResponse = UpdateAgentResponses[keyof UpdateAgentResponses];
-
-export type GetLabelKeysData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/agents/labels/keys';
-};
-
-export type GetLabelKeysErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type GetLabelKeysError = GetLabelKeysErrors[keyof GetLabelKeysErrors];
-
-export type GetLabelKeysResponses = {
-    /**
-     * Default Response
-     */
-    200: Array<string>;
-};
-
-export type GetLabelKeysResponse = GetLabelKeysResponses[keyof GetLabelKeysResponses];
-
-export type GetLabelValuesData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Filter values by label key
-         */
-        key?: string;
-    };
-    url: '/api/agents/labels/values';
-};
-
-export type GetLabelValuesErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type GetLabelValuesError = GetLabelValuesErrors[keyof GetLabelValuesErrors];
-
-export type GetLabelValuesResponses = {
-    /**
-     * Default Response
-     */
-    200: Array<string>;
-};
-
-export type GetLabelValuesResponse = GetLabelValuesResponses[keyof GetLabelValuesResponses];
-
-export type GetAllAgentToolsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        search?: string;
-        agentId?: string;
-        /**
-         * Can be 'llm-proxy' or a catalogId
-         */
-        origin?: string;
-        /**
-         * Filter by MCP server owner user ID
-         */
-        mcpServerOwnerId?: string;
-        /**
-         * For test isolation
-         */
-        excludeArchestraTools?: boolean;
-        sortBy?: 'name' | 'agent' | 'origin' | 'createdAt';
-        sortDirection?: 'asc' | 'desc';
-        skipPagination?: boolean;
-        limit?: number;
-        offset?: number;
-    };
-    url: '/api/agent-tools';
-};
-
-export type GetAllAgentToolsErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type GetAllAgentToolsError = GetAllAgentToolsErrors[keyof GetAllAgentToolsErrors];
-
-export type GetAllAgentToolsResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        data: Array<{
-            id: string;
-            responseModifierTemplate: string | null;
-            credentialSourceMcpServerId: string | null;
-            executionSourceMcpServerId: string | null;
-            useDynamicTeamCredential: boolean;
-            createdAt: string;
-            updatedAt: string;
-            agent: {
-                id: string;
-                name: string;
-            };
-            tool: {
-                id: string;
-                name: string;
-                description: string | null;
-                /**
-                 *
-                 * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
-                 *
-                 * The parameters the functions accepts, described as a JSON Schema object. See the
-                 * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
-                 * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
-                 * documentation about the format.
-                 *
-                 * Omitting parameters defines a function with an empty parameter list.
-                 *
-                 */
-                parameters?: {
-                    [key: string]: unknown;
-                };
-                createdAt: string;
-                updatedAt: string;
-                catalogId: string | null;
-                mcpServerId: string | null;
-                mcpServerName: string | null;
-                mcpServerCatalogId: string | null;
-            };
-        }>;
-        pagination: {
-            currentPage: number;
-            limit: number;
-            total: number;
-            totalPages: number;
-            hasNext: boolean;
-            hasPrev: boolean;
-        };
-    };
-};
-
-export type GetAllAgentToolsResponse = GetAllAgentToolsResponses[keyof GetAllAgentToolsResponses];
-
-export type UnassignToolFromAgentData = {
-    body?: never;
-    path: {
-        agentId: string;
-        toolId: string;
-    };
-    query?: never;
-    url: '/api/agents/{agentId}/tools/{toolId}';
-};
-
-export type UnassignToolFromAgentErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type UnassignToolFromAgentError = UnassignToolFromAgentErrors[keyof UnassignToolFromAgentErrors];
-
-export type UnassignToolFromAgentResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        success: boolean;
-    };
-};
-
-export type UnassignToolFromAgentResponse = UnassignToolFromAgentResponses[keyof UnassignToolFromAgentResponses];
-
-export type AssignToolToAgentData = {
-    body?: {
-        credentialSourceMcpServerId?: string | null;
-        executionSourceMcpServerId?: string | null;
-        useDynamicTeamCredential?: boolean;
-    } | null;
-    path: {
-        agentId: string;
-        toolId: string;
-    };
-    query?: never;
-    url: '/api/agents/{agentId}/tools/{toolId}';
-};
-
-export type AssignToolToAgentErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type AssignToolToAgentError = AssignToolToAgentErrors[keyof AssignToolToAgentErrors];
-
-export type AssignToolToAgentResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        success: boolean;
-    };
-};
-
-export type AssignToolToAgentResponse = AssignToolToAgentResponses[keyof AssignToolToAgentResponses];
-
-export type BulkAssignToolsData = {
-    body: {
-        assignments: Array<{
-            agentId: string;
-            toolId: string;
-            credentialSourceMcpServerId?: string | null;
-            executionSourceMcpServerId?: string | null;
-            useDynamicTeamCredential?: boolean;
-        }>;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/agents/tools/bulk-assign';
-};
-
-export type BulkAssignToolsErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type BulkAssignToolsError = BulkAssignToolsErrors[keyof BulkAssignToolsErrors];
-
-export type BulkAssignToolsResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        succeeded: Array<{
-            agentId: string;
-            toolId: string;
-        }>;
-        failed: Array<{
-            agentId: string;
-            toolId: string;
-            error: string;
-        }>;
-        duplicates: Array<{
-            agentId: string;
-            toolId: string;
-        }>;
-    };
-};
-
-export type BulkAssignToolsResponse = BulkAssignToolsResponses[keyof BulkAssignToolsResponses];
-
-export type AutoConfigureAgentToolPoliciesData = {
-    body: {
-        toolIds: Array<string>;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/agent-tools/auto-configure-policies';
-};
-
-export type AutoConfigureAgentToolPoliciesErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type AutoConfigureAgentToolPoliciesError = AutoConfigureAgentToolPoliciesErrors[keyof AutoConfigureAgentToolPoliciesErrors];
-
-export type AutoConfigureAgentToolPoliciesResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        success: boolean;
-        results: Array<{
-            toolId: string;
-            success: boolean;
-            config?: {
-                toolResultTreatment: 'trusted' | 'sanitize_with_dual_llm' | 'untrusted';
-                reasoning: string;
-            };
-            error?: string;
-        }>;
-    };
-};
-
-export type AutoConfigureAgentToolPoliciesResponse = AutoConfigureAgentToolPoliciesResponses[keyof AutoConfigureAgentToolPoliciesResponses];
-
-export type GetAgentToolsData = {
-    body?: never;
-    path: {
-        agentId: string;
-    };
-    query?: {
-        excludeLlmProxyOrigin?: boolean;
-    };
-    url: '/api/agents/{agentId}/tools';
-};
-
-export type GetAgentToolsErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type GetAgentToolsError = GetAgentToolsErrors[keyof GetAgentToolsErrors];
-
-export type GetAgentToolsResponses = {
-    /**
-     * Default Response
-     */
-    200: Array<{
-        id: string;
-        agentId: string | null;
-        catalogId: string | null;
-        mcpServerId: string | null;
-        promptAgentId: string | null;
-        name: string;
-        /**
-         *
-         * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
-         *
-         * The parameters the functions accepts, described as a JSON Schema object. See the
-         * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
-         * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
-         * documentation about the format.
-         *
-         * Omitting parameters defines a function with an empty parameter list.
-         *
-         */
-        parameters?: {
-            [key: string]: unknown;
-        };
-        description: string | null;
-        policiesAutoConfiguredAt: string | null;
-        policiesAutoConfiguringStartedAt: string | null;
-        policiesAutoConfiguredReasoning: string | null;
-        createdAt: string;
-        updatedAt: string;
-    }>;
-};
-
-export type GetAgentToolsResponse = GetAgentToolsResponses[keyof GetAgentToolsResponses];
-
-export type UpdateAgentToolData = {
-    body?: {
-        responseModifierTemplate?: string | null;
-        credentialSourceMcpServerId?: string | null;
-        executionSourceMcpServerId?: string | null;
-        useDynamicTeamCredential?: boolean;
-    };
-    path: {
-        id: string;
-    };
-    query?: never;
-    url: '/api/agent-tools/{id}';
-};
-
-export type UpdateAgentToolErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type UpdateAgentToolError = UpdateAgentToolErrors[keyof UpdateAgentToolErrors];
-
-export type UpdateAgentToolResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        id?: string;
-        agentId?: string;
-        toolId?: string;
-        responseModifierTemplate?: string | null;
-        credentialSourceMcpServerId?: string | null;
-        executionSourceMcpServerId?: string | null;
-        useDynamicTeamCredential?: boolean;
-        createdAt?: string;
-        updatedAt?: string;
-    };
-};
-
-export type UpdateAgentToolResponse = UpdateAgentToolResponses[keyof UpdateAgentToolResponses];
-
-export type AnthropicMessagesWithDefaultAgentData = {
+export type AnthropicMessagesWithDefaultProfileData = {
     body?: AnthropicMessagesRequestInput;
     headers: {
         /**
@@ -7087,7 +5383,7 @@ export type AnthropicMessagesWithDefaultAgentData = {
     url: '/v1/anthropic/v1/messages';
 };
 
-export type AnthropicMessagesWithDefaultAgentErrors = {
+export type AnthropicMessagesWithDefaultProfileErrors = {
     /**
      * Default Response
      */
@@ -7144,18 +5440,18 @@ export type AnthropicMessagesWithDefaultAgentErrors = {
     };
 };
 
-export type AnthropicMessagesWithDefaultAgentError = AnthropicMessagesWithDefaultAgentErrors[keyof AnthropicMessagesWithDefaultAgentErrors];
+export type AnthropicMessagesWithDefaultProfileError = AnthropicMessagesWithDefaultProfileErrors[keyof AnthropicMessagesWithDefaultProfileErrors];
 
-export type AnthropicMessagesWithDefaultAgentResponses = {
+export type AnthropicMessagesWithDefaultProfileResponses = {
     /**
      * Default Response
      */
     200: AnthropicMessagesResponse;
 };
 
-export type AnthropicMessagesWithDefaultAgentResponse = AnthropicMessagesWithDefaultAgentResponses[keyof AnthropicMessagesWithDefaultAgentResponses];
+export type AnthropicMessagesWithDefaultProfileResponse = AnthropicMessagesWithDefaultProfileResponses[keyof AnthropicMessagesWithDefaultProfileResponses];
 
-export type AnthropicMessagesWithAgentData = {
+export type AnthropicMessagesWithProfileData = {
     body?: AnthropicMessagesRequestInput;
     headers: {
         /**
@@ -7174,13 +5470,13 @@ export type AnthropicMessagesWithAgentData = {
         authorization?: string;
     };
     path: {
-        agentId: string;
+        profileId: string;
     };
     query?: never;
-    url: '/v1/anthropic/{agentId}/v1/messages';
+    url: '/v1/anthropic/{profileId}/v1/messages';
 };
 
-export type AnthropicMessagesWithAgentErrors = {
+export type AnthropicMessagesWithProfileErrors = {
     /**
      * Default Response
      */
@@ -7237,16 +5533,16 @@ export type AnthropicMessagesWithAgentErrors = {
     };
 };
 
-export type AnthropicMessagesWithAgentError = AnthropicMessagesWithAgentErrors[keyof AnthropicMessagesWithAgentErrors];
+export type AnthropicMessagesWithProfileError = AnthropicMessagesWithProfileErrors[keyof AnthropicMessagesWithProfileErrors];
 
-export type AnthropicMessagesWithAgentResponses = {
+export type AnthropicMessagesWithProfileResponses = {
     /**
      * Default Response
      */
     200: AnthropicMessagesResponse;
 };
 
-export type AnthropicMessagesWithAgentResponse = AnthropicMessagesWithAgentResponses[keyof AnthropicMessagesWithAgentResponses];
+export type AnthropicMessagesWithProfileResponse = AnthropicMessagesWithProfileResponses[keyof AnthropicMessagesWithProfileResponses];
 
 export type GetDefaultCredentialsStatusData = {
     body?: never;
@@ -8461,7 +6757,7 @@ export type BulkUpsertDefaultResultPolicyResponses = {
 
 export type BulkUpsertDefaultResultPolicyResponse = BulkUpsertDefaultResultPolicyResponses[keyof BulkUpsertDefaultResultPolicyResponses];
 
-export type CerebrasChatCompletionsWithDefaultAgentData = {
+export type CerebrasChatCompletionsWithDefaultProfileData = {
     body?: CerebrasChatCompletionRequestInput;
     headers: {
         /**
@@ -8478,7 +6774,7 @@ export type CerebrasChatCompletionsWithDefaultAgentData = {
     url: '/v1/cerebras/chat/completions';
 };
 
-export type CerebrasChatCompletionsWithDefaultAgentErrors = {
+export type CerebrasChatCompletionsWithDefaultProfileErrors = {
     /**
      * Default Response
      */
@@ -8535,18 +6831,18 @@ export type CerebrasChatCompletionsWithDefaultAgentErrors = {
     };
 };
 
-export type CerebrasChatCompletionsWithDefaultAgentError = CerebrasChatCompletionsWithDefaultAgentErrors[keyof CerebrasChatCompletionsWithDefaultAgentErrors];
+export type CerebrasChatCompletionsWithDefaultProfileError = CerebrasChatCompletionsWithDefaultProfileErrors[keyof CerebrasChatCompletionsWithDefaultProfileErrors];
 
-export type CerebrasChatCompletionsWithDefaultAgentResponses = {
+export type CerebrasChatCompletionsWithDefaultProfileResponses = {
     /**
      * Default Response
      */
     200: CerebrasChatCompletionResponse;
 };
 
-export type CerebrasChatCompletionsWithDefaultAgentResponse = CerebrasChatCompletionsWithDefaultAgentResponses[keyof CerebrasChatCompletionsWithDefaultAgentResponses];
+export type CerebrasChatCompletionsWithDefaultProfileResponse = CerebrasChatCompletionsWithDefaultProfileResponses[keyof CerebrasChatCompletionsWithDefaultProfileResponses];
 
-export type CerebrasChatCompletionsWithAgentData = {
+export type CerebrasChatCompletionsWithProfileData = {
     body?: CerebrasChatCompletionRequestInput;
     headers: {
         /**
@@ -8559,13 +6855,13 @@ export type CerebrasChatCompletionsWithAgentData = {
         authorization: string;
     };
     path: {
-        agentId: string;
+        profileId: string;
     };
     query?: never;
-    url: '/v1/cerebras/{agentId}/chat/completions';
+    url: '/v1/cerebras/{profileId}/chat/completions';
 };
 
-export type CerebrasChatCompletionsWithAgentErrors = {
+export type CerebrasChatCompletionsWithProfileErrors = {
     /**
      * Default Response
      */
@@ -8622,16 +6918,16 @@ export type CerebrasChatCompletionsWithAgentErrors = {
     };
 };
 
-export type CerebrasChatCompletionsWithAgentError = CerebrasChatCompletionsWithAgentErrors[keyof CerebrasChatCompletionsWithAgentErrors];
+export type CerebrasChatCompletionsWithProfileError = CerebrasChatCompletionsWithProfileErrors[keyof CerebrasChatCompletionsWithProfileErrors];
 
-export type CerebrasChatCompletionsWithAgentResponses = {
+export type CerebrasChatCompletionsWithProfileResponses = {
     /**
      * Default Response
      */
     200: CerebrasChatCompletionResponse;
 };
 
-export type CerebrasChatCompletionsWithAgentResponse = CerebrasChatCompletionsWithAgentResponses[keyof CerebrasChatCompletionsWithAgentResponses];
+export type CerebrasChatCompletionsWithProfileResponse = CerebrasChatCompletionsWithProfileResponses[keyof CerebrasChatCompletionsWithProfileResponses];
 
 export type GetChatApiKeysData = {
     body?: never;
@@ -9406,7 +7702,7 @@ export type GetChatConversationsResponses = {
         id: string;
         userId: string;
         organizationId: string;
-        agentId: string;
+        profileId: string;
         promptId: string | null;
         chatApiKeyId: string | null;
         title: string | null;
@@ -9431,7 +7727,7 @@ export type GetChatConversationsResponse = GetChatConversationsResponses[keyof G
 
 export type CreateChatConversationData = {
     body: {
-        agentId: string;
+        profileId: string;
         promptId?: string | null;
         title?: string | null;
         selectedModel?: string;
@@ -9510,7 +7806,7 @@ export type CreateChatConversationResponses = {
         id: string;
         userId: string;
         organizationId: string;
-        agentId: string;
+        profileId: string;
         promptId: string | null;
         chatApiKeyId: string | null;
         title: string | null;
@@ -9688,7 +7984,7 @@ export type GetChatConversationResponses = {
         id: string;
         userId: string;
         organizationId: string;
-        agentId: string;
+        profileId: string;
         promptId: string | null;
         chatApiKeyId: string | null;
         title: string | null;
@@ -9717,7 +8013,7 @@ export type UpdateChatConversationData = {
         selectedModel?: string;
         selectedProvider?: 'anthropic' | 'cerebras' | 'gemini' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         chatApiKeyId?: string | null;
-        agentId?: string;
+        profileId?: string;
         artifact?: string | null;
     };
     path: {
@@ -9794,7 +8090,7 @@ export type UpdateChatConversationResponses = {
         id: string;
         userId: string;
         organizationId: string;
-        agentId: string;
+        profileId: string;
         promptId: string | null;
         chatApiKeyId: string | null;
         title: string | null;
@@ -9817,7 +8113,7 @@ export type UpdateChatConversationResponses = {
 
 export type UpdateChatConversationResponse = UpdateChatConversationResponses[keyof UpdateChatConversationResponses];
 
-export type GetChatAgentMcpToolsData = {
+export type GetChatProfileMcpToolsData = {
     body?: never;
     path: {
         agentId: string;
@@ -9826,7 +8122,7 @@ export type GetChatAgentMcpToolsData = {
     url: '/api/chat/agents/{agentId}/mcp-tools';
 };
 
-export type GetChatAgentMcpToolsErrors = {
+export type GetChatProfileMcpToolsErrors = {
     /**
      * Default Response
      */
@@ -9883,9 +8179,9 @@ export type GetChatAgentMcpToolsErrors = {
     };
 };
 
-export type GetChatAgentMcpToolsError = GetChatAgentMcpToolsErrors[keyof GetChatAgentMcpToolsErrors];
+export type GetChatProfileMcpToolsError = GetChatProfileMcpToolsErrors[keyof GetChatProfileMcpToolsErrors];
 
-export type GetChatAgentMcpToolsResponses = {
+export type GetChatProfileMcpToolsResponses = {
     /**
      * Default Response
      */
@@ -9898,7 +8194,7 @@ export type GetChatAgentMcpToolsResponses = {
     }>;
 };
 
-export type GetChatAgentMcpToolsResponse = GetChatAgentMcpToolsResponses[keyof GetChatAgentMcpToolsResponses];
+export type GetChatProfileMcpToolsResponse = GetChatProfileMcpToolsResponses[keyof GetChatProfileMcpToolsResponses];
 
 export type GenerateChatConversationTitleData = {
     body?: {
@@ -9981,7 +8277,7 @@ export type GenerateChatConversationTitleResponses = {
         id: string;
         userId: string;
         organizationId: string;
-        agentId: string;
+        profileId: string;
         promptId: string | null;
         chatApiKeyId: string | null;
         title: string | null;
@@ -10084,7 +8380,7 @@ export type UpdateChatMessageResponses = {
         id: string;
         userId: string;
         organizationId: string;
-        agentId: string;
+        profileId: string;
         promptId: string | null;
         chatApiKeyId: string | null;
         title: string | null;
@@ -11224,7 +9520,7 @@ export type GetDualLlmResultByToolCallIdResponses = {
      */
     200: {
         id: string;
-        agentId: string;
+        profileId: string;
         toolCallId: string;
         conversations: string | number | boolean | null | {
             [key: string]: unknown;
@@ -11310,7 +9606,7 @@ export type GetDualLlmResultsByInteractionResponses = {
      */
     200: Array<{
         id: string;
-        agentId: string;
+        profileId: string;
         toolCallId: string;
         conversations: string | number | boolean | null | {
             [key: string]: unknown;
@@ -11529,7 +9825,7 @@ export type PostV1GeminiV1BetaModelsByModelStreamGenerateContentErrors = {
 
 export type PostV1GeminiV1BetaModelsByModelStreamGenerateContentError = PostV1GeminiV1BetaModelsByModelStreamGenerateContentErrors[keyof PostV1GeminiV1BetaModelsByModelStreamGenerateContentErrors];
 
-export type PostV1GeminiByAgentIdV1BetaModelsByModelGenerateContentData = {
+export type PostV1GeminiByProfileIdV1BetaModelsByModelGenerateContentData = {
     body?: GeminiGenerateContentRequestInput;
     headers?: {
         /**
@@ -11542,17 +9838,17 @@ export type PostV1GeminiByAgentIdV1BetaModelsByModelGenerateContentData = {
         'x-goog-api-key'?: string;
     };
     path: {
-        agentId: string;
+        profileId: string;
         /**
          * The model to use
          */
         model: string;
     };
     query?: never;
-    url: '/v1/gemini/{agentId}/v1beta/models/{model}:generateContent';
+    url: '/v1/gemini/{profileId}/v1beta/models/{model}:generateContent';
 };
 
-export type PostV1GeminiByAgentIdV1BetaModelsByModelGenerateContentErrors = {
+export type PostV1GeminiByProfileIdV1BetaModelsByModelGenerateContentErrors = {
     /**
      * Default Response
      */
@@ -11609,18 +9905,18 @@ export type PostV1GeminiByAgentIdV1BetaModelsByModelGenerateContentErrors = {
     };
 };
 
-export type PostV1GeminiByAgentIdV1BetaModelsByModelGenerateContentError = PostV1GeminiByAgentIdV1BetaModelsByModelGenerateContentErrors[keyof PostV1GeminiByAgentIdV1BetaModelsByModelGenerateContentErrors];
+export type PostV1GeminiByProfileIdV1BetaModelsByModelGenerateContentError = PostV1GeminiByProfileIdV1BetaModelsByModelGenerateContentErrors[keyof PostV1GeminiByProfileIdV1BetaModelsByModelGenerateContentErrors];
 
-export type PostV1GeminiByAgentIdV1BetaModelsByModelGenerateContentResponses = {
+export type PostV1GeminiByProfileIdV1BetaModelsByModelGenerateContentResponses = {
     /**
      * Default Response
      */
     200: GeminiGenerateContentResponse;
 };
 
-export type PostV1GeminiByAgentIdV1BetaModelsByModelGenerateContentResponse = PostV1GeminiByAgentIdV1BetaModelsByModelGenerateContentResponses[keyof PostV1GeminiByAgentIdV1BetaModelsByModelGenerateContentResponses];
+export type PostV1GeminiByProfileIdV1BetaModelsByModelGenerateContentResponse = PostV1GeminiByProfileIdV1BetaModelsByModelGenerateContentResponses[keyof PostV1GeminiByProfileIdV1BetaModelsByModelGenerateContentResponses];
 
-export type PostV1GeminiByAgentIdV1BetaModelsByModelStreamGenerateContentData = {
+export type PostV1GeminiByProfileIdV1BetaModelsByModelStreamGenerateContentData = {
     body?: GeminiGenerateContentRequestInput;
     headers?: {
         /**
@@ -11633,17 +9929,17 @@ export type PostV1GeminiByAgentIdV1BetaModelsByModelStreamGenerateContentData = 
         'x-goog-api-key'?: string;
     };
     path: {
-        agentId: string;
+        profileId: string;
         /**
          * The model to use
          */
         model: string;
     };
     query?: never;
-    url: '/v1/gemini/{agentId}/v1beta/models/{model}:streamGenerateContent';
+    url: '/v1/gemini/{profileId}/v1beta/models/{model}:streamGenerateContent';
 };
 
-export type PostV1GeminiByAgentIdV1BetaModelsByModelStreamGenerateContentErrors = {
+export type PostV1GeminiByProfileIdV1BetaModelsByModelStreamGenerateContentErrors = {
     /**
      * Default Response
      */
@@ -11700,7 +9996,7 @@ export type PostV1GeminiByAgentIdV1BetaModelsByModelStreamGenerateContentErrors 
     };
 };
 
-export type PostV1GeminiByAgentIdV1BetaModelsByModelStreamGenerateContentError = PostV1GeminiByAgentIdV1BetaModelsByModelStreamGenerateContentErrors[keyof PostV1GeminiByAgentIdV1BetaModelsByModelStreamGenerateContentErrors];
+export type PostV1GeminiByProfileIdV1BetaModelsByModelStreamGenerateContentError = PostV1GeminiByProfileIdV1BetaModelsByModelStreamGenerateContentErrors[keyof PostV1GeminiByProfileIdV1BetaModelsByModelStreamGenerateContentErrors];
 
 export type PostApiWebhooksIncomingEmailData = {
     body?: unknown;
@@ -13855,8 +12151,8 @@ export type GetInternalMcpCatalogToolsResponses = {
             [key: string]: unknown;
         };
         createdAt: string;
-        assignedAgentCount: number;
-        assignedAgents: Array<{
+        assignedProfileCount: number;
+        assignedProfiles: Array<{
             id: string;
             name: string;
         }>;
@@ -15905,7 +14201,7 @@ export type InstallMcpServerData = {
         environmentValues?: {
             [key: string]: string;
         };
-        agentIds?: Array<string>;
+        profileIds?: Array<string>;
         accessToken?: string;
         isByosVault?: boolean;
         serviceAccount?: string;
@@ -16353,8 +14649,8 @@ export type GetMcpServerToolsResponses = {
             [key: string]: unknown;
         };
         createdAt: string;
-        assignedAgentCount: number;
-        assignedAgents: Array<{
+        assignedProfileCount: number;
+        assignedProfiles: Array<{
             id: string;
             name: string;
         }>;
@@ -16713,7 +15009,7 @@ export type GetMcpToolCallsResponses = {
     200: {
         data: Array<{
             id: string;
-            agentId: string;
+            profileId: string;
             mcpServerName: string;
             method: string;
             /**
@@ -16816,7 +15112,7 @@ export type GetMcpToolCallResponses = {
      */
     200: {
         id: string;
-        agentId: string;
+        profileId: string;
         mcpServerName: string;
         method: string;
         /**
@@ -17099,7 +15395,7 @@ export type HandleOAuthCallbackResponses = {
 
 export type HandleOAuthCallbackResponse = HandleOAuthCallbackResponses[keyof HandleOAuthCallbackResponses];
 
-export type OllamaChatCompletionsWithDefaultAgentData = {
+export type OllamaChatCompletionsWithDefaultProfileData = {
     body?: OllamaChatCompletionRequestInput;
     headers?: {
         /**
@@ -17116,7 +15412,7 @@ export type OllamaChatCompletionsWithDefaultAgentData = {
     url: '/v1/ollama/chat/completions';
 };
 
-export type OllamaChatCompletionsWithDefaultAgentErrors = {
+export type OllamaChatCompletionsWithDefaultProfileErrors = {
     /**
      * Default Response
      */
@@ -17173,18 +15469,18 @@ export type OllamaChatCompletionsWithDefaultAgentErrors = {
     };
 };
 
-export type OllamaChatCompletionsWithDefaultAgentError = OllamaChatCompletionsWithDefaultAgentErrors[keyof OllamaChatCompletionsWithDefaultAgentErrors];
+export type OllamaChatCompletionsWithDefaultProfileError = OllamaChatCompletionsWithDefaultProfileErrors[keyof OllamaChatCompletionsWithDefaultProfileErrors];
 
-export type OllamaChatCompletionsWithDefaultAgentResponses = {
+export type OllamaChatCompletionsWithDefaultProfileResponses = {
     /**
      * Default Response
      */
     200: OllamaChatCompletionResponse;
 };
 
-export type OllamaChatCompletionsWithDefaultAgentResponse = OllamaChatCompletionsWithDefaultAgentResponses[keyof OllamaChatCompletionsWithDefaultAgentResponses];
+export type OllamaChatCompletionsWithDefaultProfileResponse = OllamaChatCompletionsWithDefaultProfileResponses[keyof OllamaChatCompletionsWithDefaultProfileResponses];
 
-export type OllamaChatCompletionsWithAgentData = {
+export type OllamaChatCompletionsWithProfileData = {
     body?: OllamaChatCompletionRequestInput;
     headers?: {
         /**
@@ -17197,13 +15493,13 @@ export type OllamaChatCompletionsWithAgentData = {
         authorization?: string;
     };
     path: {
-        agentId: string;
+        profileId: string;
     };
     query?: never;
-    url: '/v1/ollama/{agentId}/chat/completions';
+    url: '/v1/ollama/{profileId}/chat/completions';
 };
 
-export type OllamaChatCompletionsWithAgentErrors = {
+export type OllamaChatCompletionsWithProfileErrors = {
     /**
      * Default Response
      */
@@ -17260,18 +15556,18 @@ export type OllamaChatCompletionsWithAgentErrors = {
     };
 };
 
-export type OllamaChatCompletionsWithAgentError = OllamaChatCompletionsWithAgentErrors[keyof OllamaChatCompletionsWithAgentErrors];
+export type OllamaChatCompletionsWithProfileError = OllamaChatCompletionsWithProfileErrors[keyof OllamaChatCompletionsWithProfileErrors];
 
-export type OllamaChatCompletionsWithAgentResponses = {
+export type OllamaChatCompletionsWithProfileResponses = {
     /**
      * Default Response
      */
     200: OllamaChatCompletionResponse;
 };
 
-export type OllamaChatCompletionsWithAgentResponse = OllamaChatCompletionsWithAgentResponses[keyof OllamaChatCompletionsWithAgentResponses];
+export type OllamaChatCompletionsWithProfileResponse = OllamaChatCompletionsWithProfileResponses[keyof OllamaChatCompletionsWithProfileResponses];
 
-export type OpenAiChatCompletionsWithDefaultAgentData = {
+export type OpenAiChatCompletionsWithDefaultProfileData = {
     body?: CerebrasChatCompletionRequestInput;
     headers: {
         /**
@@ -17288,7 +15584,7 @@ export type OpenAiChatCompletionsWithDefaultAgentData = {
     url: '/v1/openai/chat/completions';
 };
 
-export type OpenAiChatCompletionsWithDefaultAgentErrors = {
+export type OpenAiChatCompletionsWithDefaultProfileErrors = {
     /**
      * Default Response
      */
@@ -17345,18 +15641,18 @@ export type OpenAiChatCompletionsWithDefaultAgentErrors = {
     };
 };
 
-export type OpenAiChatCompletionsWithDefaultAgentError = OpenAiChatCompletionsWithDefaultAgentErrors[keyof OpenAiChatCompletionsWithDefaultAgentErrors];
+export type OpenAiChatCompletionsWithDefaultProfileError = OpenAiChatCompletionsWithDefaultProfileErrors[keyof OpenAiChatCompletionsWithDefaultProfileErrors];
 
-export type OpenAiChatCompletionsWithDefaultAgentResponses = {
+export type OpenAiChatCompletionsWithDefaultProfileResponses = {
     /**
      * Default Response
      */
     200: OpenAiChatCompletionResponse;
 };
 
-export type OpenAiChatCompletionsWithDefaultAgentResponse = OpenAiChatCompletionsWithDefaultAgentResponses[keyof OpenAiChatCompletionsWithDefaultAgentResponses];
+export type OpenAiChatCompletionsWithDefaultProfileResponse = OpenAiChatCompletionsWithDefaultProfileResponses[keyof OpenAiChatCompletionsWithDefaultProfileResponses];
 
-export type OpenAiChatCompletionsWithAgentData = {
+export type OpenAiChatCompletionsWithProfileData = {
     body?: CerebrasChatCompletionRequestInput;
     headers: {
         /**
@@ -17369,13 +15665,13 @@ export type OpenAiChatCompletionsWithAgentData = {
         authorization: string;
     };
     path: {
-        agentId: string;
+        profileId: string;
     };
     query?: never;
-    url: '/v1/openai/{agentId}/chat/completions';
+    url: '/v1/openai/{profileId}/chat/completions';
 };
 
-export type OpenAiChatCompletionsWithAgentErrors = {
+export type OpenAiChatCompletionsWithProfileErrors = {
     /**
      * Default Response
      */
@@ -17432,16 +15728,16 @@ export type OpenAiChatCompletionsWithAgentErrors = {
     };
 };
 
-export type OpenAiChatCompletionsWithAgentError = OpenAiChatCompletionsWithAgentErrors[keyof OpenAiChatCompletionsWithAgentErrors];
+export type OpenAiChatCompletionsWithProfileError = OpenAiChatCompletionsWithProfileErrors[keyof OpenAiChatCompletionsWithProfileErrors];
 
-export type OpenAiChatCompletionsWithAgentResponses = {
+export type OpenAiChatCompletionsWithProfileResponses = {
     /**
      * Default Response
      */
     200: OpenAiChatCompletionResponse;
 };
 
-export type OpenAiChatCompletionsWithAgentResponse = OpenAiChatCompletionsWithAgentResponses[keyof OpenAiChatCompletionsWithAgentResponses];
+export type OpenAiChatCompletionsWithProfileResponse = OpenAiChatCompletionsWithProfileResponses[keyof OpenAiChatCompletionsWithProfileResponses];
 
 export type GetOptimizationRulesData = {
     body?: never;
@@ -18692,14 +16988,23 @@ export type GetPolicyConfigSubagentPromptResponses = {
 
 export type GetPolicyConfigSubagentPromptResponse = GetPolicyConfigSubagentPromptResponses[keyof GetPolicyConfigSubagentPromptResponses];
 
-export type GetAllPromptAgentConnectionsData = {
+export type GetProfilesData = {
     body?: never;
     path?: never;
-    query?: never;
-    url: '/api/prompt-agents';
+    query?: {
+        /**
+         * Filter by profile name
+         */
+        name?: string;
+        limit?: number;
+        offset?: number;
+        sortBy?: 'name' | 'createdAt' | 'toolsCount' | 'team';
+        sortDirection?: 'asc' | 'desc';
+    };
+    url: '/api/profiles';
 };
 
-export type GetAllPromptAgentConnectionsErrors = {
+export type GetProfilesErrors = {
     /**
      * Default Response
      */
@@ -18756,9 +17061,1704 @@ export type GetAllPromptAgentConnectionsErrors = {
     };
 };
 
-export type GetAllPromptAgentConnectionsError = GetAllPromptAgentConnectionsErrors[keyof GetAllPromptAgentConnectionsErrors];
+export type GetProfilesError = GetProfilesErrors[keyof GetProfilesErrors];
 
-export type GetAllPromptAgentConnectionsResponses = {
+export type GetProfilesResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        data: Array<{
+            id: string;
+            name: string;
+            isDemo: boolean;
+            isDefault: boolean;
+            considerContextUntrusted: boolean;
+            createdAt: string;
+            updatedAt: string;
+            tools: Array<{
+                id: string;
+                profileId: string | null;
+                catalogId: string | null;
+                mcpServerId: string | null;
+                promptAgentId: string | null;
+                name: string;
+                /**
+                 *
+                 * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
+                 *
+                 * The parameters the functions accepts, described as a JSON Schema object. See the
+                 * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
+                 * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+                 * documentation about the format.
+                 *
+                 * Omitting parameters defines a function with an empty parameter list.
+                 *
+                 */
+                parameters?: {
+                    [key: string]: unknown;
+                };
+                description: string | null;
+                policiesAutoConfiguredAt: string | null;
+                policiesAutoConfiguringStartedAt: string | null;
+                policiesAutoConfiguredReasoning: string | null;
+                createdAt: string;
+                updatedAt: string;
+            }>;
+            teams: Array<{
+                id: string;
+                name: string;
+            }>;
+            labels: Array<{
+                key: string;
+                value: string;
+                keyId?: string;
+                valueId?: string;
+            }>;
+        }>;
+        pagination: {
+            currentPage: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+            hasNext: boolean;
+            hasPrev: boolean;
+        };
+    };
+};
+
+export type GetProfilesResponse = GetProfilesResponses[keyof GetProfilesResponses];
+
+export type CreateProfileData = {
+    body: {
+        name: string;
+        isDemo?: boolean;
+        isDefault?: boolean;
+        considerContextUntrusted?: boolean;
+        teams: Array<string>;
+        labels?: Array<{
+            key: string;
+            value: string;
+            keyId?: string;
+            valueId?: string;
+        }>;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/profiles';
+};
+
+export type CreateProfileErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type CreateProfileError = CreateProfileErrors[keyof CreateProfileErrors];
+
+export type CreateProfileResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        id: string;
+        name: string;
+        isDemo: boolean;
+        isDefault: boolean;
+        considerContextUntrusted: boolean;
+        createdAt: string;
+        updatedAt: string;
+        tools: Array<{
+            id: string;
+            profileId: string | null;
+            catalogId: string | null;
+            mcpServerId: string | null;
+            promptAgentId: string | null;
+            name: string;
+            /**
+             *
+             * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
+             *
+             * The parameters the functions accepts, described as a JSON Schema object. See the
+             * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
+             * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+             * documentation about the format.
+             *
+             * Omitting parameters defines a function with an empty parameter list.
+             *
+             */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            description: string | null;
+            policiesAutoConfiguredAt: string | null;
+            policiesAutoConfiguringStartedAt: string | null;
+            policiesAutoConfiguredReasoning: string | null;
+            createdAt: string;
+            updatedAt: string;
+        }>;
+        teams: Array<{
+            id: string;
+            name: string;
+        }>;
+        labels: Array<{
+            key: string;
+            value: string;
+            keyId?: string;
+            valueId?: string;
+        }>;
+    };
+};
+
+export type CreateProfileResponse = CreateProfileResponses[keyof CreateProfileResponses];
+
+export type GetAllProfilesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/profiles/all';
+};
+
+export type GetAllProfilesErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type GetAllProfilesError = GetAllProfilesErrors[keyof GetAllProfilesErrors];
+
+export type GetAllProfilesResponses = {
+    /**
+     * Default Response
+     */
+    200: Array<{
+        id: string;
+        name: string;
+        isDemo: boolean;
+        isDefault: boolean;
+        considerContextUntrusted: boolean;
+        createdAt: string;
+        updatedAt: string;
+        tools: Array<{
+            id: string;
+            profileId: string | null;
+            catalogId: string | null;
+            mcpServerId: string | null;
+            promptAgentId: string | null;
+            name: string;
+            /**
+             *
+             * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
+             *
+             * The parameters the functions accepts, described as a JSON Schema object. See the
+             * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
+             * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+             * documentation about the format.
+             *
+             * Omitting parameters defines a function with an empty parameter list.
+             *
+             */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            description: string | null;
+            policiesAutoConfiguredAt: string | null;
+            policiesAutoConfiguringStartedAt: string | null;
+            policiesAutoConfiguredReasoning: string | null;
+            createdAt: string;
+            updatedAt: string;
+        }>;
+        teams: Array<{
+            id: string;
+            name: string;
+        }>;
+        labels: Array<{
+            key: string;
+            value: string;
+            keyId?: string;
+            valueId?: string;
+        }>;
+    }>;
+};
+
+export type GetAllProfilesResponse = GetAllProfilesResponses[keyof GetAllProfilesResponses];
+
+export type GetDefaultProfileData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/profiles/default';
+};
+
+export type GetDefaultProfileErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type GetDefaultProfileError = GetDefaultProfileErrors[keyof GetDefaultProfileErrors];
+
+export type GetDefaultProfileResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        id: string;
+        name: string;
+        isDemo: boolean;
+        isDefault: boolean;
+        considerContextUntrusted: boolean;
+        createdAt: string;
+        updatedAt: string;
+        tools: Array<{
+            id: string;
+            profileId: string | null;
+            catalogId: string | null;
+            mcpServerId: string | null;
+            promptAgentId: string | null;
+            name: string;
+            /**
+             *
+             * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
+             *
+             * The parameters the functions accepts, described as a JSON Schema object. See the
+             * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
+             * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+             * documentation about the format.
+             *
+             * Omitting parameters defines a function with an empty parameter list.
+             *
+             */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            description: string | null;
+            policiesAutoConfiguredAt: string | null;
+            policiesAutoConfiguringStartedAt: string | null;
+            policiesAutoConfiguredReasoning: string | null;
+            createdAt: string;
+            updatedAt: string;
+        }>;
+        teams: Array<{
+            id: string;
+            name: string;
+        }>;
+        labels: Array<{
+            key: string;
+            value: string;
+            keyId?: string;
+            valueId?: string;
+        }>;
+    };
+};
+
+export type GetDefaultProfileResponse = GetDefaultProfileResponses[keyof GetDefaultProfileResponses];
+
+export type DeleteProfileData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/profiles/{id}';
+};
+
+export type DeleteProfileErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type DeleteProfileError = DeleteProfileErrors[keyof DeleteProfileErrors];
+
+export type DeleteProfileResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        success: boolean;
+    };
+};
+
+export type DeleteProfileResponse = DeleteProfileResponses[keyof DeleteProfileResponses];
+
+export type GetProfileData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/profiles/{id}';
+};
+
+export type GetProfileErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type GetProfileError = GetProfileErrors[keyof GetProfileErrors];
+
+export type GetProfileResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        id: string;
+        name: string;
+        isDemo: boolean;
+        isDefault: boolean;
+        considerContextUntrusted: boolean;
+        createdAt: string;
+        updatedAt: string;
+        tools: Array<{
+            id: string;
+            profileId: string | null;
+            catalogId: string | null;
+            mcpServerId: string | null;
+            promptAgentId: string | null;
+            name: string;
+            /**
+             *
+             * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
+             *
+             * The parameters the functions accepts, described as a JSON Schema object. See the
+             * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
+             * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+             * documentation about the format.
+             *
+             * Omitting parameters defines a function with an empty parameter list.
+             *
+             */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            description: string | null;
+            policiesAutoConfiguredAt: string | null;
+            policiesAutoConfiguringStartedAt: string | null;
+            policiesAutoConfiguredReasoning: string | null;
+            createdAt: string;
+            updatedAt: string;
+        }>;
+        teams: Array<{
+            id: string;
+            name: string;
+        }>;
+        labels: Array<{
+            key: string;
+            value: string;
+            keyId?: string;
+            valueId?: string;
+        }>;
+    };
+};
+
+export type GetProfileResponse = GetProfileResponses[keyof GetProfileResponses];
+
+export type UpdateProfileData = {
+    body?: {
+        name?: string;
+        isDemo?: boolean;
+        isDefault?: boolean;
+        considerContextUntrusted?: boolean;
+        teams?: Array<string>;
+        labels?: Array<{
+            key: string;
+            value: string;
+            keyId?: string;
+            valueId?: string;
+        }>;
+    };
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/profiles/{id}';
+};
+
+export type UpdateProfileErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type UpdateProfileError = UpdateProfileErrors[keyof UpdateProfileErrors];
+
+export type UpdateProfileResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        id: string;
+        name: string;
+        isDemo: boolean;
+        isDefault: boolean;
+        considerContextUntrusted: boolean;
+        createdAt: string;
+        updatedAt: string;
+        tools: Array<{
+            id: string;
+            profileId: string | null;
+            catalogId: string | null;
+            mcpServerId: string | null;
+            promptAgentId: string | null;
+            name: string;
+            /**
+             *
+             * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
+             *
+             * The parameters the functions accepts, described as a JSON Schema object. See the
+             * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
+             * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+             * documentation about the format.
+             *
+             * Omitting parameters defines a function with an empty parameter list.
+             *
+             */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            description: string | null;
+            policiesAutoConfiguredAt: string | null;
+            policiesAutoConfiguringStartedAt: string | null;
+            policiesAutoConfiguredReasoning: string | null;
+            createdAt: string;
+            updatedAt: string;
+        }>;
+        teams: Array<{
+            id: string;
+            name: string;
+        }>;
+        labels: Array<{
+            key: string;
+            value: string;
+            keyId?: string;
+            valueId?: string;
+        }>;
+    };
+};
+
+export type UpdateProfileResponse = UpdateProfileResponses[keyof UpdateProfileResponses];
+
+export type GetLabelKeysData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/profiles/labels/keys';
+};
+
+export type GetLabelKeysErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type GetLabelKeysError = GetLabelKeysErrors[keyof GetLabelKeysErrors];
+
+export type GetLabelKeysResponses = {
+    /**
+     * Default Response
+     */
+    200: Array<string>;
+};
+
+export type GetLabelKeysResponse = GetLabelKeysResponses[keyof GetLabelKeysResponses];
+
+export type GetLabelValuesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filter values by label key
+         */
+        key?: string;
+    };
+    url: '/api/profiles/labels/values';
+};
+
+export type GetLabelValuesErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type GetLabelValuesError = GetLabelValuesErrors[keyof GetLabelValuesErrors];
+
+export type GetLabelValuesResponses = {
+    /**
+     * Default Response
+     */
+    200: Array<string>;
+};
+
+export type GetLabelValuesResponse = GetLabelValuesResponses[keyof GetLabelValuesResponses];
+
+export type GetAllProfileToolsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        search?: string;
+        profileId?: string;
+        /**
+         * Can be 'llm-proxy' or a catalogId
+         */
+        origin?: string;
+        /**
+         * Filter by MCP server owner user ID
+         */
+        mcpServerOwnerId?: string;
+        /**
+         * For test isolation
+         */
+        excludeArchestraTools?: boolean;
+        sortBy?: 'name' | 'profile' | 'origin' | 'createdAt';
+        sortDirection?: 'asc' | 'desc';
+        skipPagination?: boolean;
+        limit?: number;
+        offset?: number;
+    };
+    url: '/api/profile-tools';
+};
+
+export type GetAllProfileToolsErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type GetAllProfileToolsError = GetAllProfileToolsErrors[keyof GetAllProfileToolsErrors];
+
+export type GetAllProfileToolsResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        data: Array<{
+            id: string;
+            responseModifierTemplate: string | null;
+            credentialSourceMcpServerId: string | null;
+            executionSourceMcpServerId: string | null;
+            useDynamicTeamCredential: boolean;
+            createdAt: string;
+            updatedAt: string;
+            profile: {
+                id: string;
+                name: string;
+            };
+            tool: {
+                id: string;
+                name: string;
+                description: string | null;
+                /**
+                 *
+                 * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
+                 *
+                 * The parameters the functions accepts, described as a JSON Schema object. See the
+                 * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
+                 * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+                 * documentation about the format.
+                 *
+                 * Omitting parameters defines a function with an empty parameter list.
+                 *
+                 */
+                parameters?: {
+                    [key: string]: unknown;
+                };
+                createdAt: string;
+                updatedAt: string;
+                catalogId: string | null;
+                mcpServerId: string | null;
+                mcpServerName: string | null;
+                mcpServerCatalogId: string | null;
+            };
+        }>;
+        pagination: {
+            currentPage: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+            hasNext: boolean;
+            hasPrev: boolean;
+        };
+    };
+};
+
+export type GetAllProfileToolsResponse = GetAllProfileToolsResponses[keyof GetAllProfileToolsResponses];
+
+export type UnassignToolFromProfileData = {
+    body?: never;
+    path: {
+        profileId: string;
+        toolId: string;
+    };
+    query?: never;
+    url: '/api/profiles/{profileId}/tools/{toolId}';
+};
+
+export type UnassignToolFromProfileErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type UnassignToolFromProfileError = UnassignToolFromProfileErrors[keyof UnassignToolFromProfileErrors];
+
+export type UnassignToolFromProfileResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        success: boolean;
+    };
+};
+
+export type UnassignToolFromProfileResponse = UnassignToolFromProfileResponses[keyof UnassignToolFromProfileResponses];
+
+export type AssignToolToProfileData = {
+    body?: {
+        credentialSourceMcpServerId?: string | null;
+        executionSourceMcpServerId?: string | null;
+        useDynamicTeamCredential?: boolean;
+    } | null;
+    path: {
+        profileId: string;
+        toolId: string;
+    };
+    query?: never;
+    url: '/api/profiles/{profileId}/tools/{toolId}';
+};
+
+export type AssignToolToProfileErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type AssignToolToProfileError = AssignToolToProfileErrors[keyof AssignToolToProfileErrors];
+
+export type AssignToolToProfileResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        success: boolean;
+    };
+};
+
+export type AssignToolToProfileResponse = AssignToolToProfileResponses[keyof AssignToolToProfileResponses];
+
+export type BulkAssignToolsData = {
+    body: {
+        assignments: Array<{
+            profileId: string;
+            toolId: string;
+            credentialSourceMcpServerId?: string | null;
+            executionSourceMcpServerId?: string | null;
+            useDynamicTeamCredential?: boolean;
+        }>;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/profiles/tools/bulk-assign';
+};
+
+export type BulkAssignToolsErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type BulkAssignToolsError = BulkAssignToolsErrors[keyof BulkAssignToolsErrors];
+
+export type BulkAssignToolsResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        succeeded: Array<{
+            profileId: string;
+            toolId: string;
+        }>;
+        failed: Array<{
+            profileId: string;
+            toolId: string;
+            error: string;
+        }>;
+        duplicates: Array<{
+            profileId: string;
+            toolId: string;
+        }>;
+    };
+};
+
+export type BulkAssignToolsResponse = BulkAssignToolsResponses[keyof BulkAssignToolsResponses];
+
+export type AutoConfigureProfileToolPoliciesData = {
+    body: {
+        toolIds: Array<string>;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/profile-tools/auto-configure-policies';
+};
+
+export type AutoConfigureProfileToolPoliciesErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type AutoConfigureProfileToolPoliciesError = AutoConfigureProfileToolPoliciesErrors[keyof AutoConfigureProfileToolPoliciesErrors];
+
+export type AutoConfigureProfileToolPoliciesResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        success: boolean;
+        results: Array<{
+            toolId: string;
+            success: boolean;
+            config?: {
+                toolResultTreatment: 'trusted' | 'sanitize_with_dual_llm' | 'untrusted';
+                reasoning: string;
+            };
+            error?: string;
+        }>;
+    };
+};
+
+export type AutoConfigureProfileToolPoliciesResponse = AutoConfigureProfileToolPoliciesResponses[keyof AutoConfigureProfileToolPoliciesResponses];
+
+export type GetProfileToolsData = {
+    body?: never;
+    path: {
+        profileId: string;
+    };
+    query?: {
+        excludeLlmProxyOrigin?: boolean;
+    };
+    url: '/api/profiles/{profileId}/tools';
+};
+
+export type GetProfileToolsErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type GetProfileToolsError = GetProfileToolsErrors[keyof GetProfileToolsErrors];
+
+export type GetProfileToolsResponses = {
+    /**
+     * Default Response
+     */
+    200: Array<{
+        id: string;
+        profileId: string | null;
+        catalogId: string | null;
+        mcpServerId: string | null;
+        promptAgentId: string | null;
+        name: string;
+        /**
+         *
+         * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
+         *
+         * The parameters the functions accepts, described as a JSON Schema object. See the
+         * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
+         * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+         * documentation about the format.
+         *
+         * Omitting parameters defines a function with an empty parameter list.
+         *
+         */
+        parameters?: {
+            [key: string]: unknown;
+        };
+        description: string | null;
+        policiesAutoConfiguredAt: string | null;
+        policiesAutoConfiguringStartedAt: string | null;
+        policiesAutoConfiguredReasoning: string | null;
+        createdAt: string;
+        updatedAt: string;
+    }>;
+};
+
+export type GetProfileToolsResponse = GetProfileToolsResponses[keyof GetProfileToolsResponses];
+
+export type UpdateProfileToolData = {
+    body?: {
+        responseModifierTemplate?: string | null;
+        credentialSourceMcpServerId?: string | null;
+        executionSourceMcpServerId?: string | null;
+        useDynamicTeamCredential?: boolean;
+    };
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/profile-tools/{id}';
+};
+
+export type UpdateProfileToolErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type UpdateProfileToolError = UpdateProfileToolErrors[keyof UpdateProfileToolErrors];
+
+export type UpdateProfileToolResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        id?: string;
+        profileId?: string;
+        toolId?: string;
+        responseModifierTemplate?: string | null;
+        credentialSourceMcpServerId?: string | null;
+        executionSourceMcpServerId?: string | null;
+        useDynamicTeamCredential?: boolean;
+        createdAt?: string;
+        updatedAt?: string;
+    };
+};
+
+export type UpdateProfileToolResponse = UpdateProfileToolResponses[keyof UpdateProfileToolResponses];
+
+export type GetAllPromptProfileConnectionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/prompt-agents';
+};
+
+export type GetAllPromptProfileConnectionsErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type GetAllPromptProfileConnectionsError = GetAllPromptProfileConnectionsErrors[keyof GetAllPromptProfileConnectionsErrors];
+
+export type GetAllPromptProfileConnectionsResponses = {
     /**
      * Default Response
      */
@@ -18769,9 +18769,9 @@ export type GetAllPromptAgentConnectionsResponses = {
     }>;
 };
 
-export type GetAllPromptAgentConnectionsResponse = GetAllPromptAgentConnectionsResponses[keyof GetAllPromptAgentConnectionsResponses];
+export type GetAllPromptProfileConnectionsResponse = GetAllPromptProfileConnectionsResponses[keyof GetAllPromptProfileConnectionsResponses];
 
-export type GetPromptAgentsData = {
+export type GetPromptProfilesData = {
     body?: never;
     path: {
         promptId: string;
@@ -18780,7 +18780,7 @@ export type GetPromptAgentsData = {
     url: '/api/prompts/{promptId}/agents';
 };
 
-export type GetPromptAgentsErrors = {
+export type GetPromptProfilesErrors = {
     /**
      * Default Response
      */
@@ -18837,9 +18837,9 @@ export type GetPromptAgentsErrors = {
     };
 };
 
-export type GetPromptAgentsError = GetPromptAgentsErrors[keyof GetPromptAgentsErrors];
+export type GetPromptProfilesError = GetPromptProfilesErrors[keyof GetPromptProfilesErrors];
 
-export type GetPromptAgentsResponses = {
+export type GetPromptProfilesResponses = {
     /**
      * Default Response
      */
@@ -18855,9 +18855,9 @@ export type GetPromptAgentsResponses = {
     }>;
 };
 
-export type GetPromptAgentsResponse = GetPromptAgentsResponses[keyof GetPromptAgentsResponses];
+export type GetPromptProfilesResponse = GetPromptProfilesResponses[keyof GetPromptProfilesResponses];
 
-export type SyncPromptAgentsData = {
+export type SyncPromptProfilesData = {
     body: {
         agentPromptIds: Array<string>;
     };
@@ -18868,7 +18868,7 @@ export type SyncPromptAgentsData = {
     url: '/api/prompts/{promptId}/agents';
 };
 
-export type SyncPromptAgentsErrors = {
+export type SyncPromptProfilesErrors = {
     /**
      * Default Response
      */
@@ -18925,9 +18925,9 @@ export type SyncPromptAgentsErrors = {
     };
 };
 
-export type SyncPromptAgentsError = SyncPromptAgentsErrors[keyof SyncPromptAgentsErrors];
+export type SyncPromptProfilesError = SyncPromptProfilesErrors[keyof SyncPromptProfilesErrors];
 
-export type SyncPromptAgentsResponses = {
+export type SyncPromptProfilesResponses = {
     /**
      * Default Response
      */
@@ -18937,9 +18937,9 @@ export type SyncPromptAgentsResponses = {
     };
 };
 
-export type SyncPromptAgentsResponse = SyncPromptAgentsResponses[keyof SyncPromptAgentsResponses];
+export type SyncPromptProfilesResponse = SyncPromptProfilesResponses[keyof SyncPromptProfilesResponses];
 
-export type DeletePromptAgentData = {
+export type DeletePromptProfileData = {
     body?: never;
     path: {
         promptId: string;
@@ -18949,7 +18949,7 @@ export type DeletePromptAgentData = {
     url: '/api/prompts/{promptId}/agents/{agentPromptId}';
 };
 
-export type DeletePromptAgentErrors = {
+export type DeletePromptProfileErrors = {
     /**
      * Default Response
      */
@@ -19006,9 +19006,9 @@ export type DeletePromptAgentErrors = {
     };
 };
 
-export type DeletePromptAgentError = DeletePromptAgentErrors[keyof DeletePromptAgentErrors];
+export type DeletePromptProfileError = DeletePromptProfileErrors[keyof DeletePromptProfileErrors];
 
-export type DeletePromptAgentResponses = {
+export type DeletePromptProfileResponses = {
     /**
      * Default Response
      */
@@ -19017,7 +19017,7 @@ export type DeletePromptAgentResponses = {
     };
 };
 
-export type DeletePromptAgentResponse = DeletePromptAgentResponses[keyof DeletePromptAgentResponses];
+export type DeletePromptProfileResponse = DeletePromptProfileResponses[keyof DeletePromptProfileResponses];
 
 export type GetPromptsData = {
     body?: never;
@@ -19093,7 +19093,7 @@ export type GetPromptsResponses = {
         id: string;
         organizationId: string;
         name: string;
-        agentId: string;
+        profileId: string;
         userPrompt: string | null;
         systemPrompt: string | null;
         version: number;
@@ -19113,7 +19113,7 @@ export type GetPromptsResponse = GetPromptsResponses[keyof GetPromptsResponses];
 export type CreatePromptData = {
     body: {
         name: string;
-        agentId: string;
+        profileId: string;
         userPrompt?: string | null;
         systemPrompt?: string | null;
         version?: number;
@@ -19193,7 +19193,7 @@ export type CreatePromptResponses = {
         id: string;
         organizationId: string;
         name: string;
-        agentId: string;
+        profileId: string;
         userPrompt: string | null;
         systemPrompt: string | null;
         version: number;
@@ -19365,7 +19365,7 @@ export type GetPromptResponses = {
         id: string;
         organizationId: string;
         name: string;
-        agentId: string;
+        profileId: string;
         userPrompt: string | null;
         systemPrompt: string | null;
         version: number;
@@ -19385,7 +19385,7 @@ export type GetPromptResponse = GetPromptResponses[keyof GetPromptResponses];
 export type UpdatePromptData = {
     body?: {
         name?: string;
-        agentId?: string;
+        profileId?: string;
         userPrompt?: string | null;
         systemPrompt?: string | null;
         allowedChatops?: string | number | boolean | null | {
@@ -19466,7 +19466,7 @@ export type UpdatePromptResponses = {
         id: string;
         organizationId: string;
         name: string;
-        agentId: string;
+        profileId: string;
         userPrompt: string | null;
         systemPrompt: string | null;
         version: number;
@@ -19560,7 +19560,7 @@ export type GetPromptVersionsResponses = {
             id: string;
             organizationId: string;
             name: string;
-            agentId: string;
+            profileId: string;
             userPrompt: string | null;
             systemPrompt: string | null;
             version: number;
@@ -19658,7 +19658,7 @@ export type GetPromptToolsResponses = {
      */
     200: Array<{
         id: string;
-        agentId: string | null;
+        profileId: string | null;
         catalogId: string | null;
         mcpServerId: string | null;
         promptAgentId: string | null;
@@ -19684,7 +19684,7 @@ export type GetPromptToolsResponses = {
         policiesAutoConfiguredReasoning: string | null;
         createdAt: string;
         updatedAt: string;
-        agentPromptId: string;
+        delegatePromptId: string;
     }>;
 };
 
@@ -19768,7 +19768,7 @@ export type RollbackPromptResponses = {
         id: string;
         organizationId: string;
         name: string;
-        agentId: string;
+        profileId: string;
         userPrompt: string | null;
         systemPrompt: string | null;
         version: number;
@@ -20201,7 +20201,7 @@ export type GetTeamStatisticsResponses = {
 
 export type GetTeamStatisticsResponse = GetTeamStatisticsResponses[keyof GetTeamStatisticsResponses];
 
-export type GetAgentStatisticsData = {
+export type GetProfileStatisticsData = {
     body?: never;
     path?: never;
     query?: {
@@ -20210,7 +20210,7 @@ export type GetAgentStatisticsData = {
     url: '/api/statistics/agents';
 };
 
-export type GetAgentStatisticsErrors = {
+export type GetProfileStatisticsErrors = {
     /**
      * Default Response
      */
@@ -20267,9 +20267,9 @@ export type GetAgentStatisticsErrors = {
     };
 };
 
-export type GetAgentStatisticsError = GetAgentStatisticsErrors[keyof GetAgentStatisticsErrors];
+export type GetProfileStatisticsError = GetProfileStatisticsErrors[keyof GetProfileStatisticsErrors];
 
-export type GetAgentStatisticsResponses = {
+export type GetProfileStatisticsResponses = {
     /**
      * Default Response
      */
@@ -20288,7 +20288,7 @@ export type GetAgentStatisticsResponses = {
     }>;
 };
 
-export type GetAgentStatisticsResponse = GetAgentStatisticsResponses[keyof GetAgentStatisticsResponses];
+export type GetProfileStatisticsResponse = GetProfileStatisticsResponses[keyof GetProfileStatisticsResponses];
 
 export type GetModelStatisticsData = {
     body?: never;
@@ -22293,7 +22293,7 @@ export type GetToolsResponses = {
         policiesAutoConfiguredReasoning: string | null;
         createdAt: string;
         updatedAt: string;
-        agent: {
+        profile: {
             id: string;
             name: string;
         } | null;
@@ -22418,8 +22418,8 @@ export type GetToolsWithAssignmentsResponses = {
             updatedAt: string;
             assignmentCount: number;
             assignments: Array<{
-                agentToolId: string;
-                agent: {
+                profileToolId: string;
+                profile: {
                     id: string;
                     name: string;
                 };
@@ -22840,7 +22840,7 @@ export type RotateUserTokenResponses = {
 
 export type RotateUserTokenResponse = RotateUserTokenResponses[keyof RotateUserTokenResponses];
 
-export type VllmChatCompletionsWithDefaultAgentData = {
+export type VllmChatCompletionsWithDefaultProfileData = {
     body?: VllmChatCompletionRequestInput;
     headers?: {
         /**
@@ -22857,7 +22857,7 @@ export type VllmChatCompletionsWithDefaultAgentData = {
     url: '/v1/vllm/chat/completions';
 };
 
-export type VllmChatCompletionsWithDefaultAgentErrors = {
+export type VllmChatCompletionsWithDefaultProfileErrors = {
     /**
      * Default Response
      */
@@ -22914,18 +22914,18 @@ export type VllmChatCompletionsWithDefaultAgentErrors = {
     };
 };
 
-export type VllmChatCompletionsWithDefaultAgentError = VllmChatCompletionsWithDefaultAgentErrors[keyof VllmChatCompletionsWithDefaultAgentErrors];
+export type VllmChatCompletionsWithDefaultProfileError = VllmChatCompletionsWithDefaultProfileErrors[keyof VllmChatCompletionsWithDefaultProfileErrors];
 
-export type VllmChatCompletionsWithDefaultAgentResponses = {
+export type VllmChatCompletionsWithDefaultProfileResponses = {
     /**
      * Default Response
      */
     200: VllmChatCompletionResponse;
 };
 
-export type VllmChatCompletionsWithDefaultAgentResponse = VllmChatCompletionsWithDefaultAgentResponses[keyof VllmChatCompletionsWithDefaultAgentResponses];
+export type VllmChatCompletionsWithDefaultProfileResponse = VllmChatCompletionsWithDefaultProfileResponses[keyof VllmChatCompletionsWithDefaultProfileResponses];
 
-export type VllmChatCompletionsWithAgentData = {
+export type VllmChatCompletionsWithProfileData = {
     body?: VllmChatCompletionRequestInput;
     headers?: {
         /**
@@ -22938,13 +22938,13 @@ export type VllmChatCompletionsWithAgentData = {
         authorization?: string;
     };
     path: {
-        agentId: string;
+        profileId: string;
     };
     query?: never;
-    url: '/v1/vllm/{agentId}/chat/completions';
+    url: '/v1/vllm/{profileId}/chat/completions';
 };
 
-export type VllmChatCompletionsWithAgentErrors = {
+export type VllmChatCompletionsWithProfileErrors = {
     /**
      * Default Response
      */
@@ -23001,18 +23001,18 @@ export type VllmChatCompletionsWithAgentErrors = {
     };
 };
 
-export type VllmChatCompletionsWithAgentError = VllmChatCompletionsWithAgentErrors[keyof VllmChatCompletionsWithAgentErrors];
+export type VllmChatCompletionsWithProfileError = VllmChatCompletionsWithProfileErrors[keyof VllmChatCompletionsWithProfileErrors];
 
-export type VllmChatCompletionsWithAgentResponses = {
+export type VllmChatCompletionsWithProfileResponses = {
     /**
      * Default Response
      */
     200: VllmChatCompletionResponse;
 };
 
-export type VllmChatCompletionsWithAgentResponse = VllmChatCompletionsWithAgentResponses[keyof VllmChatCompletionsWithAgentResponses];
+export type VllmChatCompletionsWithProfileResponse = VllmChatCompletionsWithProfileResponses[keyof VllmChatCompletionsWithProfileResponses];
 
-export type ZhipuaiChatCompletionsWithDefaultAgentData = {
+export type ZhipuaiChatCompletionsWithDefaultProfileData = {
     body?: ZhipuaiChatCompletionRequestInput;
     headers: {
         /**
@@ -23030,7 +23030,7 @@ export type ZhipuaiChatCompletionsWithDefaultAgentData = {
     url: '/v1/zhipuai/chat/completions';
 };
 
-export type ZhipuaiChatCompletionsWithDefaultAgentErrors = {
+export type ZhipuaiChatCompletionsWithDefaultProfileErrors = {
     /**
      * Default Response
      */
@@ -23087,18 +23087,18 @@ export type ZhipuaiChatCompletionsWithDefaultAgentErrors = {
     };
 };
 
-export type ZhipuaiChatCompletionsWithDefaultAgentError = ZhipuaiChatCompletionsWithDefaultAgentErrors[keyof ZhipuaiChatCompletionsWithDefaultAgentErrors];
+export type ZhipuaiChatCompletionsWithDefaultProfileError = ZhipuaiChatCompletionsWithDefaultProfileErrors[keyof ZhipuaiChatCompletionsWithDefaultProfileErrors];
 
-export type ZhipuaiChatCompletionsWithDefaultAgentResponses = {
+export type ZhipuaiChatCompletionsWithDefaultProfileResponses = {
     /**
      * Default Response
      */
     200: ZhipuaiChatCompletionResponse;
 };
 
-export type ZhipuaiChatCompletionsWithDefaultAgentResponse = ZhipuaiChatCompletionsWithDefaultAgentResponses[keyof ZhipuaiChatCompletionsWithDefaultAgentResponses];
+export type ZhipuaiChatCompletionsWithDefaultProfileResponse = ZhipuaiChatCompletionsWithDefaultProfileResponses[keyof ZhipuaiChatCompletionsWithDefaultProfileResponses];
 
-export type ZhipuaiChatCompletionsWithAgentData = {
+export type ZhipuaiChatCompletionsWithProfileData = {
     body?: ZhipuaiChatCompletionRequestInput;
     headers: {
         /**
@@ -23112,13 +23112,13 @@ export type ZhipuaiChatCompletionsWithAgentData = {
         'accept-language'?: string;
     };
     path: {
-        agentId: string;
+        profileId: string;
     };
     query?: never;
-    url: '/v1/zhipuai/{agentId}/chat/completions';
+    url: '/v1/zhipuai/{profileId}/chat/completions';
 };
 
-export type ZhipuaiChatCompletionsWithAgentErrors = {
+export type ZhipuaiChatCompletionsWithProfileErrors = {
     /**
      * Default Response
      */
@@ -23175,16 +23175,16 @@ export type ZhipuaiChatCompletionsWithAgentErrors = {
     };
 };
 
-export type ZhipuaiChatCompletionsWithAgentError = ZhipuaiChatCompletionsWithAgentErrors[keyof ZhipuaiChatCompletionsWithAgentErrors];
+export type ZhipuaiChatCompletionsWithProfileError = ZhipuaiChatCompletionsWithProfileErrors[keyof ZhipuaiChatCompletionsWithProfileErrors];
 
-export type ZhipuaiChatCompletionsWithAgentResponses = {
+export type ZhipuaiChatCompletionsWithProfileResponses = {
     /**
      * Default Response
      */
     200: ZhipuaiChatCompletionResponse;
 };
 
-export type ZhipuaiChatCompletionsWithAgentResponse = ZhipuaiChatCompletionsWithAgentResponses[keyof ZhipuaiChatCompletionsWithAgentResponses];
+export type ZhipuaiChatCompletionsWithProfileResponse = ZhipuaiChatCompletionsWithProfileResponses[keyof ZhipuaiChatCompletionsWithProfileResponses];
 
 export type GetPublicSsoProvidersData = {
     body?: never;

@@ -9,7 +9,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 
 const {
   getTeamStatistics,
-  getAgentStatistics,
+  getProfileStatistics,
   getModelStatistics,
   getOverviewStatistics,
   getCostSavingsStatistics,
@@ -40,12 +40,12 @@ export function useProfileStatistics({
   initialData,
 }: {
   timeframe?: StatisticsTimeFrame;
-  initialData?: archestraApiTypes.GetAgentStatisticsResponses["200"];
+  initialData?: archestraApiTypes.GetProfileStatisticsResponses["200"];
 } = {}) {
   return useSuspenseQuery({
     queryKey: ["statistics", "agents", timeframe],
     queryFn: async () => {
-      const response = await getAgentStatistics({
+      const response = await getProfileStatistics({
         query: { timeframe },
       });
       return response.data;

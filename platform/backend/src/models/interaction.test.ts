@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, test } from "@/test";
-import AgentModel from "./agent";
 import ConversationModel from "./conversation";
 import InteractionModel from "./interaction";
+import ProfileModel from "./profile";
 import TeamModel from "./team";
 
 describe("InteractionModel", () => {
   let profileId: string;
 
-  beforeEach(async ({ makeAgent }) => {
+  beforeEach(async ({ makeProfile }) => {
     // Create test profile
-    const agent = await makeAgent();
+    const agent = await makeProfile();
     profileId = agent.id;
   });
 
@@ -95,7 +95,7 @@ describe("InteractionModel", () => {
   describe("getAllInteractionsForProfile", () => {
     test("returns all interactions for a specific agent", async () => {
       // Create another agent
-      const otherAgent = await AgentModel.create({
+      const otherAgent = await ProfileModel.create({
         name: "Other Agent",
         teams: [],
       });
@@ -166,11 +166,11 @@ describe("InteractionModel", () => {
     test("admin can see all interactions", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
 
-      const agent1 = await AgentModel.create({
+      const agent1 = await ProfileModel.create({
         name: "Agent 1",
         teams: [],
       });
-      const agent2 = await AgentModel.create({
+      const agent2 = await ProfileModel.create({
         name: "Agent 2",
         teams: [],
       });
@@ -229,11 +229,11 @@ describe("InteractionModel", () => {
       await TeamModel.addMember(team2.id, user2.id);
 
       // Create agents with team assignments
-      const agent1 = await AgentModel.create({
+      const agent1 = await ProfileModel.create({
         name: "Agent 1",
         teams: [team1.id],
       });
-      const agent2 = await AgentModel.create({
+      const agent2 = await ProfileModel.create({
         name: "Agent 2",
         teams: [team2.id],
       });
@@ -277,7 +277,7 @@ describe("InteractionModel", () => {
     test("member with no access sees no interactions", async ({ makeUser }) => {
       const user = await makeUser();
 
-      const agent1 = await AgentModel.create({ name: "Agent 1", teams: [] });
+      const agent1 = await ProfileModel.create({ name: "Agent 1", teams: [] });
 
       await InteractionModel.create({
         profileId: agent1.id,
@@ -304,7 +304,10 @@ describe("InteractionModel", () => {
     test("findById returns interaction for admin", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
 
-      const agent = await AgentModel.create({ name: "Test Agent", teams: [] });
+      const agent = await ProfileModel.create({
+        name: "Test Agent",
+        teams: [],
+      });
 
       const interaction = await InteractionModel.create({
         profileId: agent.id,
@@ -342,7 +345,7 @@ describe("InteractionModel", () => {
       const team = await makeTeam(org.id, admin.id);
       await TeamModel.addMember(team.id, user.id);
 
-      const agent = await AgentModel.create({
+      const agent = await ProfileModel.create({
         name: "Test Agent",
         teams: [team.id],
       });
@@ -374,7 +377,10 @@ describe("InteractionModel", () => {
     }) => {
       const user = await makeUser();
 
-      const agent = await AgentModel.create({ name: "Test Agent", teams: [] });
+      const agent = await ProfileModel.create({
+        name: "Test Agent",
+        teams: [],
+      });
 
       const interaction = await InteractionModel.create({
         profileId: agent.id,
@@ -402,8 +408,8 @@ describe("InteractionModel", () => {
     test("filters by profileId", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
 
-      const agent1 = await AgentModel.create({ name: "Agent 1", teams: [] });
-      const agent2 = await AgentModel.create({ name: "Agent 2", teams: [] });
+      const agent1 = await ProfileModel.create({ name: "Agent 1", teams: [] });
+      const agent2 = await ProfileModel.create({ name: "Agent 2", teams: [] });
 
       await InteractionModel.create({
         profileId: agent1.id,
@@ -446,7 +452,7 @@ describe("InteractionModel", () => {
     test("filters by externalAgentId", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
 
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await InteractionModel.create({
         profileId: agent.id,
@@ -507,8 +513,8 @@ describe("InteractionModel", () => {
     }) => {
       const admin = await makeAdmin();
 
-      const agent1 = await AgentModel.create({ name: "Agent 1", teams: [] });
-      const agent2 = await AgentModel.create({ name: "Agent 2", teams: [] });
+      const agent1 = await ProfileModel.create({ name: "Agent 1", teams: [] });
+      const agent2 = await ProfileModel.create({ name: "Agent 2", teams: [] });
 
       // Agent 1 with external ID
       await InteractionModel.create({
@@ -580,11 +586,11 @@ describe("InteractionModel", () => {
       const team = await makeTeam(org.id, admin.id);
       await TeamModel.addMember(team.id, user.id);
 
-      const accessibleAgent = await AgentModel.create({
+      const accessibleAgent = await ProfileModel.create({
         name: "Accessible Agent",
         teams: [team.id],
       });
-      const inaccessibleAgent = await AgentModel.create({
+      const inaccessibleAgent = await ProfileModel.create({
         name: "Inaccessible Agent",
         teams: [],
       });
@@ -637,7 +643,7 @@ describe("InteractionModel", () => {
       const user1 = await makeUser();
       const user2 = await makeUser();
 
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Interaction with user1
       await InteractionModel.create({
@@ -699,7 +705,7 @@ describe("InteractionModel", () => {
   describe("date range filtering", () => {
     test("filters by startDate", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Create interactions with different timestamps
       const now = new Date();
@@ -749,7 +755,7 @@ describe("InteractionModel", () => {
 
     test("filters by endDate", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Create interactions
       await InteractionModel.create({
@@ -787,7 +793,7 @@ describe("InteractionModel", () => {
       makeAdmin,
     }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Create an interaction
       await InteractionModel.create({
@@ -828,8 +834,8 @@ describe("InteractionModel", () => {
 
     test("date filter works with other filters", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent1 = await AgentModel.create({ name: "Agent 1", teams: [] });
-      const agent2 = await AgentModel.create({ name: "Agent 2", teams: [] });
+      const agent1 = await ProfileModel.create({ name: "Agent 1", teams: [] });
+      const agent2 = await ProfileModel.create({ name: "Agent 2", teams: [] });
 
       // Create interactions for both agents
       await InteractionModel.create({
@@ -878,7 +884,7 @@ describe("InteractionModel", () => {
   describe("getSessions date filtering", () => {
     test("filters sessions by date range", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Create interaction
       await InteractionModel.create({
@@ -915,7 +921,7 @@ describe("InteractionModel", () => {
       makeAdmin,
     }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await InteractionModel.create({
         profileId: agent.id,
@@ -989,7 +995,7 @@ describe("InteractionModel", () => {
 
     test("searches by response content", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await InteractionModel.create({
         profileId: agent.id,
@@ -1061,7 +1067,7 @@ describe("InteractionModel", () => {
 
     test("search returns multiple matching sessions", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await InteractionModel.create({
         profileId: agent.id,
@@ -1126,7 +1132,7 @@ describe("InteractionModel", () => {
 
     test("search with no matches returns empty", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await InteractionModel.create({
         profileId: agent.id,
@@ -1157,8 +1163,8 @@ describe("InteractionModel", () => {
 
     test("search combined with other filters", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent1 = await AgentModel.create({ name: "Agent 1", teams: [] });
-      const agent2 = await AgentModel.create({ name: "Agent 2", teams: [] });
+      const agent1 = await ProfileModel.create({ name: "Agent 1", teams: [] });
+      const agent2 = await ProfileModel.create({ name: "Agent 2", teams: [] });
 
       // Agent 1 with searchable content
       await InteractionModel.create({
@@ -1212,7 +1218,7 @@ describe("InteractionModel", () => {
 
     test("search combined with date filter", async ({ makeAdmin }) => {
       const admin = await makeAdmin();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       await InteractionModel.create({
         profileId: agent.id,
@@ -1253,13 +1259,13 @@ describe("InteractionModel", () => {
       const admin = await makeAdmin();
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Create a conversation with a searchable title
       const conversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "UniqueConversationTitle789 about quantum physics",
         selectedModel: "gpt-4",
       });
@@ -1297,7 +1303,7 @@ describe("InteractionModel", () => {
       const conversation2 = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Discussion about cooking",
         selectedModel: "gpt-4",
       });
@@ -1342,13 +1348,13 @@ describe("InteractionModel", () => {
       const admin = await makeAdmin();
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Conversation with "SharedSearchTerm" in title
       const conversation1 = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Discussion about SharedSearchTerm",
         selectedModel: "gpt-4",
       });
@@ -1374,7 +1380,7 @@ describe("InteractionModel", () => {
       const conversation2 = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Another discussion",
         selectedModel: "gpt-4",
       });
@@ -1402,7 +1408,7 @@ describe("InteractionModel", () => {
       const conversation3 = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Unrelated conversation",
         selectedModel: "gpt-4",
       });
@@ -1448,7 +1454,7 @@ describe("InteractionModel", () => {
       const admin = await makeAdmin();
       const user = await makeUser();
       const org = await makeOrganization();
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Create multiple conversations with searchable titles
       const searchTerm = "PaginationTestTitle";
@@ -1457,7 +1463,7 @@ describe("InteractionModel", () => {
         const conversation = await ConversationModel.create({
           userId: user.id,
           organizationId: org.id,
-          agentId: agent.id,
+          profileId: agent.id,
           title: `${searchTerm} conversation ${i}`,
           selectedModel: "gpt-4",
         });
@@ -1484,7 +1490,7 @@ describe("InteractionModel", () => {
       const otherConversation = await ConversationModel.create({
         userId: user.id,
         organizationId: org.id,
-        agentId: agent.id,
+        profileId: agent.id,
         title: "Unrelated title",
         selectedModel: "gpt-4",
       });
@@ -1540,7 +1546,7 @@ describe("InteractionModel", () => {
       const user1 = await makeUser({ name: "User One" });
       const user2 = await makeUser({ name: "User Two" });
 
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Create interactions for both users
       await InteractionModel.create({
@@ -1602,7 +1608,7 @@ describe("InteractionModel", () => {
       const admin = await makeAdmin();
       const user = await makeUser({ name: "Test User" });
 
-      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+      const agent = await ProfileModel.create({ name: "Agent", teams: [] });
 
       // Interaction with userId
       await InteractionModel.create({
@@ -1653,11 +1659,11 @@ describe("InteractionModel", () => {
       const team = await makeTeam(org.id, admin.id);
       await TeamModel.addMember(team.id, user.id);
 
-      const accessibleAgent = await AgentModel.create({
+      const accessibleAgent = await ProfileModel.create({
         name: "Accessible Agent",
         teams: [team.id],
       });
-      const inaccessibleAgent = await AgentModel.create({
+      const inaccessibleAgent = await ProfileModel.create({
         name: "Inaccessible Agent",
         teams: [],
       });

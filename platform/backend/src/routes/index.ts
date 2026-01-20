@@ -11,8 +11,6 @@ import vllmProxyRoutesV2 from "./proxy/routesv2/vllm";
 import zhipuaiProxyRoutesV2 from "./proxy/routesv2/zhipuai";
 
 export { default as a2aRoutes } from "./a2a";
-export { default as agentRoutes } from "./agent";
-export { default as agentToolRoutes } from "./agent-tool";
 export { default as authRoutes } from "./auth";
 export { default as autonomyPolicyRoutes } from "./autonomy-policies";
 export { default as browserStreamRoutes } from "./browser-stream";
@@ -37,6 +35,8 @@ export { default as optimizationRuleRoutes } from "./optimization-rule";
 export { default as organizationRoutes } from "./organization";
 export { default as organizationRoleRoutes } from "./organization-role";
 export { default as policyConfigSubagentRoutes } from "./policy-config-subagent";
+export { default as profileRoutes } from "./profile";
+export { default as profileToolRoutes } from "./profile-tool";
 export { default as promptAgentRoutes } from "./prompt-agents";
 export { default as promptRoutes } from "./prompts";
 // Anthropic proxy routes - V1 (legacy) by default, V2 (unified handler) via env var

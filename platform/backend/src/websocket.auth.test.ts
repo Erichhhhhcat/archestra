@@ -59,7 +59,7 @@ describe("websocket browser-stream authorization", () => {
   });
 
   test("rejects browser stream subscription for conversations the user does not own", async ({
-    makeAgent,
+    makeProfile,
     makeConversation,
     makeOrganization,
     makeUser,
@@ -67,7 +67,7 @@ describe("websocket browser-stream authorization", () => {
     const org = await makeOrganization();
     const owner = await makeUser();
     const otherUser = await makeUser();
-    const agent = await makeAgent();
+    const agent = await makeProfile();
     const conversation = await makeConversation(agent.id, {
       userId: owner.id,
       organizationId: org.id,

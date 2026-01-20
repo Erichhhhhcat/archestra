@@ -73,12 +73,12 @@ describe("StatisticsModel", () => {
       makeUser,
       makeOrganization,
       makeTeam,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
       const team = await makeTeam(org.id, user.id);
-      await makeAgent({ teams: [team.id] });
+      await makeProfile({ teams: [team.id] });
 
       const result = await StatisticsModel.getTeamStatistics(
         "24h",
@@ -93,12 +93,12 @@ describe("StatisticsModel", () => {
       makeUser,
       makeOrganization,
       makeTeam,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
       const team = await makeTeam(org.id, user.id);
-      await makeAgent({ teams: [team.id] });
+      await makeProfile({ teams: [team.id] });
 
       const startTime = new Date();
       startTime.setHours(startTime.getHours() - 2); // 2 hours ago
@@ -119,12 +119,12 @@ describe("StatisticsModel", () => {
       makeUser,
       makeOrganization,
       makeTeam,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
       const team = await makeTeam(org.id, user.id);
-      await makeAgent({ teams: [team.id] });
+      await makeProfile({ teams: [team.id] });
 
       // Test as non-admin (isAgentAdmin = false)
       const result = await StatisticsModel.getTeamStatistics(
@@ -142,12 +142,12 @@ describe("StatisticsModel", () => {
       makeUser,
       makeOrganization,
       makeTeam,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
       const team = await makeTeam(org.id, user.id);
-      await makeAgent({ teams: [team.id] });
+      await makeProfile({ teams: [team.id] });
 
       const result = await StatisticsModel.getAgentStatistics(
         "7d",
@@ -162,12 +162,12 @@ describe("StatisticsModel", () => {
       makeUser,
       makeOrganization,
       makeTeam,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       const org = await makeOrganization();
       const team = await makeTeam(org.id, user.id);
-      await makeAgent({ teams: [team.id] });
+      await makeProfile({ teams: [team.id] });
 
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
@@ -189,11 +189,11 @@ describe("StatisticsModel", () => {
     test("should return model statistics for standard timeframes", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       await makeOrganization();
-      await makeAgent();
+      await makeProfile();
 
       const result = await StatisticsModel.getModelStatistics(
         "30d",
@@ -207,11 +207,11 @@ describe("StatisticsModel", () => {
     test("should return model statistics for custom timeframes", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       await makeOrganization();
-      await makeAgent();
+      await makeProfile();
 
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
@@ -231,11 +231,11 @@ describe("StatisticsModel", () => {
     test("should calculate percentages correctly", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       await makeOrganization();
-      await makeAgent();
+      await makeProfile();
 
       const result = await StatisticsModel.getModelStatistics(
         "all",
@@ -259,11 +259,11 @@ describe("StatisticsModel", () => {
     test("should return overview statistics", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       await makeOrganization();
-      await makeAgent();
+      await makeProfile();
 
       const result = await StatisticsModel.getOverviewStatistics(
         "24h",
@@ -282,11 +282,11 @@ describe("StatisticsModel", () => {
     test("should work with custom timeframes", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       await makeOrganization();
-      await makeAgent();
+      await makeProfile();
 
       const monthAgo = new Date();
       monthAgo.setMonth(monthAgo.getMonth() - 1);
@@ -310,11 +310,11 @@ describe("StatisticsModel", () => {
     test("should handle different time ranges for custom timeframes", async ({
       makeUser,
       makeOrganization,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser();
       await makeOrganization();
-      await makeAgent();
+      await makeProfile();
 
       // Test short timeframe (should use minute buckets)
       const shortStart = new Date();
@@ -378,12 +378,12 @@ describe("StatisticsModel", () => {
       makeUser,
       makeOrganization,
       makeTeam,
-      makeAgent,
+      makeProfile,
     }) => {
       const user = await makeUser(); // Regular user without admin permissions
       const org = await makeOrganization();
       const team = await makeTeam(org.id, user.id);
-      await makeAgent({ teams: [team.id] });
+      await makeProfile({ teams: [team.id] });
 
       // Test as non-admin user (isAgentAdmin = false)
       // Non-admin users should only see agents they have access to through team membership

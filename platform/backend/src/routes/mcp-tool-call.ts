@@ -82,7 +82,7 @@ const mcpToolCallRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       if (agentId) {
         return reply.send(
-          await McpToolCallModel.getAllMcpToolCallsForAgentPaginated(
+          await McpToolCallModel.getAllMcpToolCallsForProfilePaginated(
             agentId,
             pagination,
             sorting,

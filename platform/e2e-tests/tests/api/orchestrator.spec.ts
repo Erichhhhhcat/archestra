@@ -61,13 +61,13 @@ test.describe("Orchestrator - MCP Server Installation and Execution", () => {
     test.beforeAll(
       async ({
         request,
-        createAgent,
+        createProfile,
         createMcpCatalogItem,
         installMcpServer,
         getTeamByName,
       }) => {
-        // Create agent for testing (needed for cleanup)
-        await createAgent(request, "Orchestrator Test Agent - Remote");
+        // Create profile for testing (needed for cleanup)
+        await createProfile(request, "Orchestrator Test Profile - Remote");
 
         // Get the Default Team (required for MCP server installation when Vault is enabled)
         const defaultTeam = await getTeamByName(request, "Default Team");
@@ -132,13 +132,13 @@ test.describe("Orchestrator - MCP Server Installation and Execution", () => {
       async ({
         request,
         makeApiRequest,
-        createAgent,
+        createProfile,
         installMcpServer,
         uninstallMcpServer,
         getTeamByName,
       }) => {
-        // Create agent for testing (needed for cleanup)
-        await createAgent(request, "Orchestrator Test Agent");
+        // Create profile for testing (needed for cleanup)
+        await createProfile(request, "Orchestrator Test Profile");
 
         // Get the Default Team (required for MCP server installation when Vault is enabled)
         const defaultTeam = await getTeamByName(request, "Default Team");
@@ -274,13 +274,13 @@ test.describe("Orchestrator - MCP Server Installation and Execution", () => {
     test.beforeAll(
       async ({
         request,
-        createAgent,
+        createProfile,
         createMcpCatalogItem,
         installMcpServer,
         getTeamByName,
       }) => {
-        // Create agent for testing (needed for cleanup)
-        await createAgent(request, "Orchestrator Test Agent - Docker");
+        // Create profile for testing (needed for cleanup)
+        await createProfile(request, "Orchestrator Test Profile - Docker");
 
         // Get the Default Team (required for MCP server installation when Vault is enabled)
         const defaultTeam = await getTeamByName(request, "Default Team");

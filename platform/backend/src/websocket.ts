@@ -18,7 +18,7 @@ const SCREENSHOT_INTERVAL_MS = 3000; // Stream at ~0.33 FPS (every 3 seconds)
 
 interface BrowserStreamSubscription {
   conversationId: string;
-  agentId: string;
+  profileId: string;
   userContext: BrowserUserContext;
   intervalId: NodeJS.Timeout;
   isSending: boolean;
@@ -237,13 +237,13 @@ class WebSocketService {
     // Unsubscribe from any existing stream first
     this.unsubscribeBrowserStream(ws);
 
-    // Get agentId from conversation with user/org scoping
-    const agentId = await ConversationModel.getAgentIdForUser(
+    // Get profileId from conversation with user/org scoping
+    const profileId = await ConversationModel.getProfileIdForUser(
       conversationId,
       clientContext.userId,
       clientContext.organizationId,
     );
-    if (!agentId) {
+    if (!profileId) {
       logger.warn(
         {
           conversationId,
@@ -263,7 +263,7 @@ class WebSocketService {
     }
 
     logger.info(
-      { conversationId, agentId },
+      { conversationId, profileId },
       "Browser stream client subscribed",
     );
 
@@ -274,13 +274,13 @@ class WebSocketService {
 
     // Select or create the tab for this conversation
     const tabResult = await browserStreamFeature.selectOrCreateTab(
-      agentId,
+      profileId,
       conversationId,
       userContext,
     );
     if (!tabResult.success) {
       logger.warn(
-        { conversationId, agentId, error: tabResult.error },
+        { conversationId, profileId, error: tabResult.error },
         "Failed to select/create browser tab",
       );
       // Continue anyway - screenshot will work on current tab
@@ -294,7 +294,7 @@ class WebSocketService {
 
       subscription.isSending = true;
       try {
-        await this.sendScreenshot(ws, agentId, conversationId, userContext);
+        await this.sendScreenshot(ws, profileId, conversationId, userContext);
       } finally {
         subscription.isSending = false;
       }
@@ -312,7 +312,7 @@ class WebSocketService {
     // Store subscription
     this.browserSubscriptions.set(ws, {
       conversationId,
-      agentId,
+      profileId,
       userContext,
       intervalId,
       isSending: false,
@@ -359,7 +359,7 @@ class WebSocketService {
 
     try {
       const result = await browserStreamFeature.navigate(
-        subscription.agentId,
+        subscription.profileId,
         conversationId,
         url,
         subscription.userContext,
@@ -414,7 +414,7 @@ class WebSocketService {
 
     try {
       const result = await browserStreamFeature.navigateBack(
-        subscription.agentId,
+        subscription.profileId,
         conversationId,
         subscription.userContext,
       );
@@ -471,7 +471,7 @@ class WebSocketService {
 
     try {
       const result = await browserStreamFeature.click(
-        subscription.agentId,
+        subscription.profileId,
         conversationId,
         subscription.userContext,
         element,
@@ -526,7 +526,7 @@ class WebSocketService {
 
     try {
       const result = await browserStreamFeature.type(
-        subscription.agentId,
+        subscription.profileId,
         conversationId,
         subscription.userContext,
         text,
@@ -576,7 +576,7 @@ class WebSocketService {
 
     try {
       const result = await browserStreamFeature.pressKey(
-        subscription.agentId,
+        subscription.profileId,
         conversationId,
         subscription.userContext,
         key,
@@ -623,7 +623,7 @@ class WebSocketService {
 
     try {
       const result = await browserStreamFeature.getSnapshot(
-        subscription.agentId,
+        subscription.profileId,
         conversationId,
         subscription.userContext,
       );
@@ -652,7 +652,7 @@ class WebSocketService {
    */
   private async sendScreenshot(
     ws: WebSocket,
-    agentId: string,
+    profileId: string,
     conversationId: string,
     userContext: BrowserUserContext,
   ): Promise<void> {
@@ -662,7 +662,7 @@ class WebSocketService {
 
     try {
       const result = await browserStreamFeature.takeScreenshot(
-        agentId,
+        profileId,
         conversationId,
         userContext,
       );

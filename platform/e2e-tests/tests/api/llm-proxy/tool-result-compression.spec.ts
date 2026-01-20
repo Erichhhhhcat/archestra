@@ -349,7 +349,7 @@ for (const config of testConfigs) {
 
     test("compresses tool results when compression is enabled", async ({
       request,
-      createAgent,
+      createProfile,
       updateOrganization,
       makeApiRequest,
     }) => {
@@ -360,7 +360,7 @@ for (const config of testConfigs) {
       });
 
       // 2. Create a test profile
-      const createResponse = await createAgent(
+      const createResponse = await createProfile(
         request,
         `${config.providerName} Compression Enabled Test Profile`,
       );
@@ -384,7 +384,7 @@ for (const config of testConfigs) {
 
     test("does not compress tool results when compression is disabled", async ({
       request,
-      createAgent,
+      createProfile,
       updateOrganization,
       makeApiRequest,
     }) => {
@@ -395,7 +395,7 @@ for (const config of testConfigs) {
       });
 
       // 2. Create a test profile
-      const createResponse = await createAgent(
+      const createResponse = await createProfile(
         request,
         `${config.providerName} Compression Disabled Test Profile`,
       );
@@ -417,7 +417,7 @@ for (const config of testConfigs) {
       expect(response.ok()).toBeTruthy();
     });
 
-    test.afterEach(async ({ request, deleteAgent, updateOrganization }) => {
+    test.afterEach(async ({ request, deleteProfile, updateOrganization }) => {
       // Restore original compression settings
       await updateOrganization(request, {
         convertToolResultsToToon: originalCompressionEnabled,
@@ -426,7 +426,7 @@ for (const config of testConfigs) {
 
       // Clean up test profile
       if (profileId) {
-        await deleteAgent(request, profileId).catch(() => {});
+        await deleteProfile(request, profileId).catch(() => {});
         profileId = "";
       }
     });

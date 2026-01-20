@@ -13,19 +13,19 @@ import { userHasPermission } from "@/auth/utils";
 import { getKnowledgeGraphProvider } from "@/knowledge-graph";
 import logger from "@/logging";
 import {
-  AgentModel,
-  AgentTeamModel,
   ConversationModel,
   InternalMcpCatalogModel,
   LimitModel,
   McpServerModel,
+  ProfileModel,
+  ProfileTeamModel,
   PromptAgentModel,
   ToolInvocationPolicyModel,
   ToolModel,
   TrustedDataPolicyModel,
 } from "@/models";
-import { assignToolToAgent } from "@/routes/agent-tool";
 import type { TokenAuthResult } from "@/routes/mcp-gateway.utils";
+import { assignToolToProfile } from "@/routes/profile-tool";
 import type { InternalMcpCatalog } from "@/types";
 import {
   AutonomyPolicyOperator,
@@ -190,7 +190,7 @@ export async function executeArchestraTool(
     const userId = tokenAuth?.userId;
     if (userId) {
       const userAccessibleAgentIds =
-        await AgentTeamModel.getUserAccessibleAgentIds(userId, false);
+        await ProfileTeamModel.getUserAccessibleProfileIds(userId, false);
       if (!userAccessibleAgentIds.includes(agent.profileId)) {
         return {
           content: [
@@ -374,7 +374,7 @@ export async function executeArchestraTool(
       }
 
       // Create the profile
-      const newProfile = await AgentModel.create({
+      const newProfile = await ProfileModel.create({
         name,
         teams,
         labels,
@@ -1390,7 +1390,7 @@ export async function executeArchestraTool(
 
       const results = await Promise.allSettled(
         assignments.map((assignment) =>
-          assignToolToAgent(
+          assignToolToProfile(
             assignment.profileId,
             assignment.toolId,
             assignment.credentialSourceMcpServerId,
@@ -1576,7 +1576,7 @@ export async function executeArchestraTool(
         };
       }
 
-      const requestedProfile = await AgentModel.findById(id);
+      const requestedProfile = await ProfileModel.findById(id);
       if (!requestedProfile) {
         return {
           content: [
@@ -2564,7 +2564,7 @@ export async function getAgentTools(context: {
 
   // Get all agent delegation tools from the database with profile info
   const allToolsWithDetails =
-    await ToolModel.getAgentDelegationToolsWithDetails(promptId);
+    await ToolModel.getProfileDelegationToolsWithDetails(promptId);
 
   // Filter by user access if user ID is provided
   let accessibleTools = allToolsWithDetails;
@@ -2578,7 +2578,7 @@ export async function getAgentTools(context: {
     );
 
     const userAccessibleAgentIds =
-      await AgentTeamModel.getUserAccessibleAgentIds(userId, isAgentAdmin);
+      await ProfileTeamModel.getUserAccessibleProfileIds(userId, isAgentAdmin);
     accessibleTools = allToolsWithDetails.filter((t) =>
       userAccessibleAgentIds.includes(t.profileId),
     );
@@ -2598,13 +2598,13 @@ export async function getAgentTools(context: {
   // Convert DB tools to MCP Tool format
   return accessibleTools.map((t) => ({
     name: t.tool.name,
-    title: t.agentPromptName,
+    title: t.delegatePromptName,
     description:
       t.tool.description ||
-      t.agentPromptSystemPrompt?.substring(0, 500) ||
-      `Call the "${t.agentPromptName}" agent to perform tasks.`,
+      t.delegatePromptSystemPrompt?.substring(0, 500) ||
+      `Call the "${t.delegatePromptName}" agent to perform tasks.`,
     inputSchema: t.tool.parameters as Tool["inputSchema"],
     annotations: {},
-    _meta: { agentPromptId: t.agentPromptId },
+    _meta: { delegatePromptId: t.delegatePromptId },
   }));
 }

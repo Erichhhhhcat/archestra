@@ -5,16 +5,16 @@ describe("ConversationModel", () => {
   test("can create a conversation", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Test Agent", teams: [] });
 
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Test Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -25,9 +25,9 @@ describe("ConversationModel", () => {
     expect(conversation.selectedModel).toBe("claude-3-haiku-20240307");
     expect(conversation.userId).toBe(user.id);
     expect(conversation.organizationId).toBe(org.id);
-    expect(conversation.agentId).toBe(agent.id);
+    expect(conversation.profileId).toBe(profile.id);
     expect(conversation.agent).toBeDefined();
-    expect(conversation.agent.id).toBe(agent.id);
+    expect(conversation.agent.id).toBe(profile.id);
     expect(conversation.agent.name).toBe("Test Agent");
     expect(conversation.createdAt).toBeDefined();
     expect(conversation.updatedAt).toBeDefined();
@@ -37,16 +37,16 @@ describe("ConversationModel", () => {
   test("can find conversation by id", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Find Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Find Test Agent", teams: [] });
 
     const created = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Find Test",
       selectedModel: "claude-3-opus-20240229",
     });
@@ -61,7 +61,7 @@ describe("ConversationModel", () => {
     expect(found?.id).toBe(created.id);
     expect(found?.title).toBe("Find Test");
     expect(found?.selectedModel).toBe("claude-3-opus-20240229");
-    expect(found?.agent.id).toBe(agent.id);
+    expect(found?.agent.id).toBe(profile.id);
     expect(found?.agent.name).toBe("Find Test Agent");
     expect(Array.isArray(found?.messages)).toBe(true);
   });
@@ -69,16 +69,16 @@ describe("ConversationModel", () => {
   test("can find all conversations for a user", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "List Agent", teams: [] });
+    const profile = await makeProfile({ name: "List Agent", teams: [] });
 
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "First Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -86,7 +86,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Second Conversation",
       selectedModel: "claude-3-opus-20240229",
     });
@@ -105,16 +105,16 @@ describe("ConversationModel", () => {
   test("can update a conversation", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Update Agent", teams: [] });
+    const profile = await makeProfile({ name: "Update Agent", teams: [] });
 
     const created = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Original Title",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -133,23 +133,23 @@ describe("ConversationModel", () => {
     expect(updated?.title).toBe("Updated Title");
     expect(updated?.selectedModel).toBe("claude-3-opus-20240229");
     expect(updated?.id).toBe(created.id);
-    expect(updated?.agent.id).toBe(agent.id);
+    expect(updated?.agent.id).toBe(profile.id);
     expect(Array.isArray(updated?.messages)).toBe(true);
   });
 
   test("can delete a conversation", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Delete Agent", teams: [] });
+    const profile = await makeProfile({ name: "Delete Agent", teams: [] });
 
     const created = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "To Be Deleted",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -167,17 +167,17 @@ describe("ConversationModel", () => {
   test("returns conversations ordered by updatedAt descending", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Order Agent", teams: [] });
+    const profile = await makeProfile({ name: "Order Agent", teams: [] });
 
     // Create conversations with slight delays to ensure different timestamps
     const first = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "First",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -188,7 +188,7 @@ describe("ConversationModel", () => {
     const second = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Second",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -206,17 +206,20 @@ describe("ConversationModel", () => {
   test("updated conversation moves to top of list", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Update Order Agent", teams: [] });
+    const profile = await makeProfile({
+      name: "Update Order Agent",
+      teams: [],
+    });
 
     // Create first conversation
     const first = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "First",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -227,7 +230,7 @@ describe("ConversationModel", () => {
     const second = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Second",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -254,17 +257,20 @@ describe("ConversationModel", () => {
   test("adding a message moves conversation to top of list", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Message Order Agent", teams: [] });
+    const profile = await makeProfile({
+      name: "Message Order Agent",
+      teams: [],
+    });
 
     // Create first conversation
     const first = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "First",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -275,7 +281,7 @@ describe("ConversationModel", () => {
     const second = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Second",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -341,19 +347,19 @@ describe("ConversationModel", () => {
   test("isolates conversations by user and organization", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user1 = await makeUser();
     const user2 = await makeUser();
     const org1 = await makeOrganization();
     const org2 = await makeOrganization();
-    const agent = await makeAgent({ name: "Isolation Agent", teams: [] });
+    const profile = await makeProfile({ name: "Isolation Agent", teams: [] });
 
     // Create conversation for user1 in org1
     await ConversationModel.create({
       userId: user1.id,
       organizationId: org1.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "User1 Org1",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -362,7 +368,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user2.id,
       organizationId: org2.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "User2 Org2",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -391,11 +397,11 @@ describe("ConversationModel", () => {
   test("create returns conversation with empty messages array", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Empty Messages Agent",
       teams: [],
     });
@@ -403,7 +409,7 @@ describe("ConversationModel", () => {
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "New Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -416,16 +422,16 @@ describe("ConversationModel", () => {
   test("findById returns conversation with empty messages array when no messages exist", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "No Messages Agent", teams: [] });
+    const profile = await makeProfile({ name: "No Messages Agent", teams: [] });
 
     const created = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "No Messages",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -444,16 +450,16 @@ describe("ConversationModel", () => {
   test("findAll returns conversations with empty messages arrays when no messages exist", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "No Messages Agent", teams: [] });
+    const profile = await makeProfile({ name: "No Messages Agent", teams: [] });
 
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "No Messages 1",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -461,7 +467,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "No Messages 2",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -479,16 +485,16 @@ describe("ConversationModel", () => {
   test("findById merges database UUIDs into message content", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "ID Merge Agent", teams: [] });
+    const profile = await makeProfile({ name: "ID Merge Agent", teams: [] });
 
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "ID Merge Test",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -519,16 +525,19 @@ describe("ConversationModel", () => {
   test("findById merges database UUIDs into multiple messages", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "ID Merge All Agent", teams: [] });
+    const profile = await makeProfile({
+      name: "ID Merge All Agent",
+      teams: [],
+    });
 
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "ID Merge All Test",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -572,16 +581,16 @@ describe("ConversationModel", () => {
   test("findById returns messages ordered by createdAt ascending", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Order Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Order Test Agent", teams: [] });
 
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Message Order Test",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -637,16 +646,16 @@ describe("ConversationModel", () => {
   test("findById returns messages ordered by createdAt ascending for multiple conversations", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Order All Agent", teams: [] });
+    const profile = await makeProfile({ name: "Order All Agent", teams: [] });
 
     const conversation1 = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Conversation 1",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -654,7 +663,7 @@ describe("ConversationModel", () => {
     const conversation2 = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Conversation 2",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -728,16 +737,19 @@ describe("ConversationModel", () => {
   test("can create a conversation with selectedProvider", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Provider Test Agent", teams: [] });
+    const profile = await makeProfile({
+      name: "Provider Test Agent",
+      teams: [],
+    });
 
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Provider Test Conversation",
       selectedModel: "gpt-4o",
       selectedProvider: "openai",
@@ -751,11 +763,11 @@ describe("ConversationModel", () => {
   test("selectedProvider is null when not provided", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "No Provider Agent",
       teams: [],
     });
@@ -763,7 +775,7 @@ describe("ConversationModel", () => {
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "No Provider Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -775,11 +787,11 @@ describe("ConversationModel", () => {
   test("can update conversation selectedProvider", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Update Provider Agent",
       teams: [],
     });
@@ -787,7 +799,7 @@ describe("ConversationModel", () => {
     const created = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Update Provider Test",
       selectedModel: "claude-3-haiku-20240307",
       selectedProvider: "anthropic",
@@ -811,11 +823,11 @@ describe("ConversationModel", () => {
   test("findById returns conversation with selectedProvider", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Find Provider Agent",
       teams: [],
     });
@@ -823,7 +835,7 @@ describe("ConversationModel", () => {
     const created = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Find Provider Test",
       selectedModel: "gpt-4o",
       selectedProvider: "openai",
@@ -843,11 +855,11 @@ describe("ConversationModel", () => {
   test("findAll returns conversations with selectedProvider", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Find All Provider Agent",
       teams: [],
     });
@@ -855,7 +867,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Anthropic Conversation",
       selectedModel: "claude-3-haiku-20240307",
       selectedProvider: "anthropic",
@@ -864,7 +876,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "OpenAI Conversation",
       selectedModel: "gpt-4o",
       selectedProvider: "openai",
@@ -887,16 +899,19 @@ describe("ConversationModel", () => {
   test("findAll with search query filters by conversation title", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Search Title Agent", teams: [] });
+    const profile = await makeProfile({
+      name: "Search Title Agent",
+      teams: [],
+    });
 
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Python Tutorial",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -904,7 +919,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "JavaScript Guide",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -918,16 +933,19 @@ describe("ConversationModel", () => {
   test("findAll with search query filters by message content", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Search Content Agent", teams: [] });
+    const profile = await makeProfile({
+      name: "Search Content Agent",
+      teams: [],
+    });
 
     const conv1 = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Conversation 1",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -935,7 +953,7 @@ describe("ConversationModel", () => {
     const conv2 = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Conversation 2",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -971,11 +989,11 @@ describe("ConversationModel", () => {
   test("findAll with search query includes messages for preview snippets", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Search Messages Agent",
       teams: [],
     });
@@ -983,7 +1001,7 @@ describe("ConversationModel", () => {
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Test Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1011,11 +1029,11 @@ describe("ConversationModel", () => {
   test("findAll without search query returns empty messages arrays", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "No Search Messages Agent",
       teams: [],
     });
@@ -1023,7 +1041,7 @@ describe("ConversationModel", () => {
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Test Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1050,11 +1068,11 @@ describe("ConversationModel", () => {
   test("findAll search is case-insensitive", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Case Insensitive Agent",
       teams: [],
     });
@@ -1062,7 +1080,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Python Tutorial",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1091,13 +1109,13 @@ describe("ConversationModel", () => {
   test("findAll search filters by user and organization", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user1 = await makeUser();
     const user2 = await makeUser();
     const org1 = await makeOrganization();
     const org2 = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Isolation Search Agent",
       teams: [],
     });
@@ -1105,7 +1123,7 @@ describe("ConversationModel", () => {
     const conv1 = await ConversationModel.create({
       userId: user1.id,
       organizationId: org1.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Python Tutorial",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1113,7 +1131,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user2.id,
       organizationId: org2.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Python Guide",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1138,11 +1156,11 @@ describe("ConversationModel", () => {
   test("findAll with empty or whitespace search query behaves like no search", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Whitespace Search Agent",
       teams: [],
     });
@@ -1150,7 +1168,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Conversation 1",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1158,7 +1176,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Conversation 2",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1181,16 +1199,19 @@ describe("ConversationModel", () => {
   test("findAll search matches partial words in title", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Partial Match Agent", teams: [] });
+    const profile = await makeProfile({
+      name: "Partial Match Agent",
+      teams: [],
+    });
 
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "JavaScript Tutorial",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1204,11 +1225,11 @@ describe("ConversationModel", () => {
   test("findAll search matches partial words in message content", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Partial Content Agent",
       teams: [],
     });
@@ -1216,7 +1237,7 @@ describe("ConversationModel", () => {
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Test",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1241,11 +1262,11 @@ describe("ConversationModel", () => {
   test("findAll search escapes percent sign in search query", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Escape Percent Agent",
       teams: [],
     });
@@ -1254,7 +1275,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "100% Complete",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1263,7 +1284,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Other Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1279,11 +1300,11 @@ describe("ConversationModel", () => {
   test("findAll search escapes underscore in search query", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Escape Underscore Agent",
       teams: [],
     });
@@ -1292,7 +1313,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "file_name",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1301,7 +1322,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "filename",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1317,11 +1338,11 @@ describe("ConversationModel", () => {
   test("findAll search escapes backslash in search query", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Escape Backslash Agent",
       teams: [],
     });
@@ -1330,7 +1351,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "C:\\Users\\test",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1339,7 +1360,7 @@ describe("ConversationModel", () => {
     await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "C Users test",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1354,11 +1375,11 @@ describe("ConversationModel", () => {
   test("findAll search limits messages per conversation for preview", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({
+    const profile = await makeProfile({
       name: "Message Limit Agent",
       teams: [],
     });
@@ -1366,7 +1387,7 @@ describe("ConversationModel", () => {
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Many Messages",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1400,16 +1421,19 @@ describe("ConversationModel", () => {
   test("findAll search returns results ordered by updatedAt descending", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Search Order Agent", teams: [] });
+    const profile = await makeProfile({
+      name: "Search Order Agent",
+      teams: [],
+    });
 
     const conv1 = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Python First",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -1419,7 +1443,7 @@ describe("ConversationModel", () => {
     const conv2 = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Python Second",
       selectedModel: "claude-3-haiku-20240307",
     });

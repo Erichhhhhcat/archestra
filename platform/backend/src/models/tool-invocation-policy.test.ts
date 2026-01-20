@@ -9,15 +9,15 @@ const mockContext: PolicyEvaluationContext = {
 describe("ToolInvocationPolicyModel", () => {
   describe("evaluateBatch", () => {
     test("returns success when all tools are allowed", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
     }) => {
-      const agent = await makeAgent();
-      const tool1 = await makeTool({ agentId: agent.id, name: "tool-1" });
-      const tool2 = await makeTool({ agentId: agent.id, name: "tool-2" });
-      await makeAgentTool(agent.id, tool1.id);
-      await makeAgentTool(agent.id, tool2.id);
+      const agent = await makeProfile();
+      const tool1 = await makeTool({ profileId: agent.id, name: "tool-1" });
+      const tool2 = await makeTool({ profileId: agent.id, name: "tool-2" });
+      await makeProfileTool(agent.id, tool1.id);
+      await makeProfileTool(agent.id, tool2.id);
 
       const result = await ToolInvocationPolicyModel.evaluateBatch(
         agent.id,
@@ -36,16 +36,16 @@ describe("ToolInvocationPolicyModel", () => {
     });
 
     test("returns first blocked tool when multiple tools are blocked", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
       makeToolPolicy,
     }) => {
-      const agent = await makeAgent();
-      const tool1 = await makeTool({ agentId: agent.id, name: "tool-1" });
-      const tool2 = await makeTool({ agentId: agent.id, name: "tool-2" });
-      await makeAgentTool(agent.id, tool1.id);
-      await makeAgentTool(agent.id, tool2.id);
+      const agent = await makeProfile();
+      const tool1 = await makeTool({ profileId: agent.id, name: "tool-1" });
+      const tool2 = await makeTool({ profileId: agent.id, name: "tool-2" });
+      await makeProfileTool(agent.id, tool1.id);
+      await makeProfileTool(agent.id, tool2.id);
 
       // Block both tools with specific conditions
       await makeToolPolicy(tool1.id, {
@@ -80,10 +80,10 @@ describe("ToolInvocationPolicyModel", () => {
     });
 
     test("returns success when only Archestra tools are in the batch", async ({
-      makeAgent,
+      makeProfile,
       seedAndAssignArchestraTools,
     }) => {
-      const agent = await makeAgent();
+      const agent = await makeProfile();
       await seedAndAssignArchestraTools(agent.id);
 
       const result = await ToolInvocationPolicyModel.evaluateBatch(
@@ -102,17 +102,20 @@ describe("ToolInvocationPolicyModel", () => {
     });
 
     test("skips Archestra tools and evaluates non-Archestra tools", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
       makeToolPolicy,
       seedAndAssignArchestraTools,
     }) => {
-      const agent = await makeAgent();
+      const agent = await makeProfile();
       await seedAndAssignArchestraTools(agent.id);
 
-      const tool = await makeTool({ agentId: agent.id, name: "regular-tool" });
-      await makeAgentTool(agent.id, tool.id);
+      const tool = await makeTool({
+        profileId: agent.id,
+        name: "regular-tool",
+      });
+      await makeProfileTool(agent.id, tool.id);
 
       await makeToolPolicy(tool.id, {
         conditions: [{ key: "action", operator: "equal", value: "delete" }],
@@ -137,9 +140,9 @@ describe("ToolInvocationPolicyModel", () => {
     });
 
     test("returns success for empty tool calls array", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       const result = await ToolInvocationPolicyModel.evaluateBatch(
         agent.id,
@@ -154,18 +157,18 @@ describe("ToolInvocationPolicyModel", () => {
     });
 
     test("allows tool with allow_when_context_is_untrusted default policy", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
       makeToolPolicy,
     }) => {
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       const tool = await makeTool({
-        agentId: agent.id,
+        profileId: agent.id,
         name: "permissive-tool",
       });
-      await makeAgentTool(agent.id, tool.id);
+      await makeProfileTool(agent.id, tool.id);
       // Delete auto-created default policies to set up our own
       await ToolInvocationPolicyModel.deleteByToolId(tool.id);
 
@@ -189,13 +192,13 @@ describe("ToolInvocationPolicyModel", () => {
     });
 
     test("blocks tool when no policies exist and globalToolPolicy is restrictive", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
     }) => {
-      const agent = await makeAgent();
-      const tool = await makeTool({ agentId: agent.id, name: "strict-tool" });
-      await makeAgentTool(agent.id, tool.id);
+      const agent = await makeProfile();
+      const tool = await makeTool({ profileId: agent.id, name: "strict-tool" });
+      await makeProfileTool(agent.id, tool.id);
       // Delete auto-created default policies to test global policy fallback
       await ToolInvocationPolicyModel.deleteByToolId(tool.id);
 
@@ -214,13 +217,16 @@ describe("ToolInvocationPolicyModel", () => {
     });
 
     test("YOLO mode: allows all tools when globalToolPolicy is permissive", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
     }) => {
-      const agent = await makeAgent();
-      const tool = await makeTool({ agentId: agent.id, name: "lenient-tool" });
-      await makeAgentTool(agent.id, tool.id);
+      const agent = await makeProfile();
+      const tool = await makeTool({
+        profileId: agent.id,
+        name: "lenient-tool",
+      });
+      await makeProfileTool(agent.id, tool.id);
 
       const result = await ToolInvocationPolicyModel.evaluateBatch(
         agent.id,
@@ -235,14 +241,17 @@ describe("ToolInvocationPolicyModel", () => {
     });
 
     test("YOLO mode: ignores block policies when globalToolPolicy is permissive", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
       makeToolPolicy,
     }) => {
-      const agent = await makeAgent();
-      const tool = await makeTool({ agentId: agent.id, name: "blocked-tool" });
-      await makeAgentTool(agent.id, tool.id);
+      const agent = await makeProfile();
+      const tool = await makeTool({
+        profileId: agent.id,
+        name: "blocked-tool",
+      });
+      await makeProfileTool(agent.id, tool.id);
 
       // Create a block policy - should be ignored in YOLO mode
       await makeToolPolicy(tool.id, {
@@ -265,14 +274,17 @@ describe("ToolInvocationPolicyModel", () => {
     });
 
     test("allows tool when explicit allow rule matches in untrusted context", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
       makeToolPolicy,
     }) => {
-      const agent = await makeAgent();
-      const tool = await makeTool({ agentId: agent.id, name: "guarded-tool" });
-      await makeAgentTool(agent.id, tool.id);
+      const agent = await makeProfile();
+      const tool = await makeTool({
+        profileId: agent.id,
+        name: "guarded-tool",
+      });
+      await makeProfileTool(agent.id, tool.id);
 
       // Specific policy that allows certain paths in untrusted context
       await makeToolPolicy(tool.id, {
@@ -299,14 +311,14 @@ describe("ToolInvocationPolicyModel", () => {
     });
 
     test("block_always takes precedence in policy evaluation", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
       makeToolPolicy,
     }) => {
-      const agent = await makeAgent();
-      const tool = await makeTool({ agentId: agent.id, name: "email-tool" });
-      await makeAgentTool(agent.id, tool.id);
+      const agent = await makeProfile();
+      const tool = await makeTool({ profileId: agent.id, name: "email-tool" });
+      await makeProfileTool(agent.id, tool.id);
 
       // Default allow policy
       await makeToolPolicy(tool.id, {
@@ -341,16 +353,19 @@ describe("ToolInvocationPolicyModel", () => {
     });
 
     test("evaluates multiple tools with mixed results correctly", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
       makeToolPolicy,
     }) => {
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       // Tool 1: allowed with default policy
-      const tool1 = await makeTool({ agentId: agent.id, name: "allowed-tool" });
-      await makeAgentTool(agent.id, tool1.id);
+      const tool1 = await makeTool({
+        profileId: agent.id,
+        name: "allowed-tool",
+      });
+      await makeProfileTool(agent.id, tool1.id);
       await makeToolPolicy(tool1.id, {
         conditions: [],
         action: "allow_when_context_is_untrusted",
@@ -358,8 +373,11 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       // Tool 2: will be blocked by specific policy
-      const tool2 = await makeTool({ agentId: agent.id, name: "blocked-tool" });
-      await makeAgentTool(agent.id, tool2.id);
+      const tool2 = await makeTool({
+        profileId: agent.id,
+        name: "blocked-tool",
+      });
+      await makeProfileTool(agent.id, tool2.id);
       await makeToolPolicy(tool2.id, {
         conditions: [],
         action: "allow_when_context_is_untrusted",
@@ -373,10 +391,10 @@ describe("ToolInvocationPolicyModel", () => {
 
       // Tool 3: would also be blocked, but tool 2 should be returned first
       const tool3 = await makeTool({
-        agentId: agent.id,
+        profileId: agent.id,
         name: "another-blocked",
       });
-      await makeAgentTool(agent.id, tool3.id);
+      await makeProfileTool(agent.id, tool3.id);
       await makeToolPolicy(tool3.id, {
         conditions: [{ key: "bad", operator: "equal", value: "yes" }],
         action: "block_always",
@@ -402,14 +420,14 @@ describe("ToolInvocationPolicyModel", () => {
 
     describe("operator evaluation", () => {
       test("equal operator works correctly", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [{ key: "status", operator: "equal", value: "active" }],
@@ -437,14 +455,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("notEqual operator works correctly", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [
@@ -474,14 +492,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("contains operator works correctly", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [
@@ -521,14 +539,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("notContains operator works correctly", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [
@@ -568,14 +586,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("startsWith operator works correctly", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [{ key: "path", operator: "startsWith", value: "/tmp/" }],
@@ -608,14 +626,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("endsWith operator works correctly", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [{ key: "file", operator: "endsWith", value: ".exe" }],
@@ -643,14 +661,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("regex operator works correctly", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [
@@ -696,14 +714,14 @@ describe("ToolInvocationPolicyModel", () => {
 
     describe("nested argument paths", () => {
       test("evaluates nested paths using lodash get", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [
@@ -747,14 +765,14 @@ describe("ToolInvocationPolicyModel", () => {
 
     describe("missing arguments", () => {
       test("condition does not match when argument is missing", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
         // Delete auto-created default policies to test global policy fallback
         await ToolInvocationPolicyModel.deleteByToolId(tool.id);
 
@@ -782,14 +800,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("block policy does not apply when argument is missing", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [{ key: "optional", operator: "equal", value: "bad" }],
@@ -812,14 +830,14 @@ describe("ToolInvocationPolicyModel", () => {
 
     describe("specific vs default policy precedence", () => {
       test("specific policy takes precedence over default policy", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         // Default policy: block in untrusted context
         await makeToolPolicy(tool.id, {
@@ -855,14 +873,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("falls back to default policy when specific policy does not match", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
         // Delete auto-created default policies to set up our own
         await ToolInvocationPolicyModel.deleteByToolId(tool.id);
 
@@ -902,14 +920,14 @@ describe("ToolInvocationPolicyModel", () => {
 
     describe("multiple conditions (AND logic)", () => {
       test("applies when all input conditions match", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [
@@ -938,14 +956,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("does not apply when only some input conditions match", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [
@@ -973,14 +991,17 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("handles mixed context and input conditions", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "mixed-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({
+          profileId: agent.id,
+          name: "mixed-tool",
+        });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [
@@ -1032,14 +1053,14 @@ describe("ToolInvocationPolicyModel", () => {
 
     describe("context-based conditions", () => {
       test("blocks when context.externalAgentId matches with equal operator", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [
@@ -1069,14 +1090,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("allows when context.externalAgentId does not match with equal operator", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [
@@ -1105,14 +1126,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("blocks when context.externalAgentId matches with notEqual operator", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [
@@ -1142,14 +1163,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("blocks when context.teamIds matches with contains operator", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [
@@ -1178,14 +1199,14 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       test("allows when context.teamIds does not match any teamIds", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeToolPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "test-tool" });
+        await makeProfileTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
           conditions: [

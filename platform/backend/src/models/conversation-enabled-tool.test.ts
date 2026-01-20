@@ -6,20 +6,20 @@ describe("ConversationEnabledToolModel", () => {
   test("returns todo_write and artifact_write tools enabled by default", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
     seedAndAssignArchestraTools,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Test Agent", teams: [] });
 
-    // Seed and assign Archestra tools to the agent
-    await seedAndAssignArchestraTools(agent.id);
+    // Seed and assign Archestra tools to the profile
+    await seedAndAssignArchestraTools(profile.id);
 
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Test Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -35,20 +35,20 @@ describe("ConversationEnabledToolModel", () => {
   test("hasCustomSelection returns true for new conversation (Archestra tools disabled by default)", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
     seedAndAssignArchestraTools,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Test Agent", teams: [] });
 
-    // Seed and assign Archestra tools to the agent
-    await seedAndAssignArchestraTools(agent.id);
+    // Seed and assign Archestra tools to the profile
+    await seedAndAssignArchestraTools(profile.id);
 
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Test Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -64,19 +64,19 @@ describe("ConversationEnabledToolModel", () => {
   test("can set enabled tools for a conversation", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
     makeTool,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Test Agent", teams: [] });
     const tool1 = await makeTool({ name: "tool1" });
     const tool2 = await makeTool({ name: "tool2" });
 
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Test Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -98,18 +98,18 @@ describe("ConversationEnabledToolModel", () => {
   test("hasCustomSelection returns true after setting tools", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
     makeTool,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Test Agent", teams: [] });
     const tool = await makeTool({ name: "tool1" });
 
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Test Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -128,12 +128,12 @@ describe("ConversationEnabledToolModel", () => {
   test("setEnabledTools replaces existing selection", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
     makeTool,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Test Agent", teams: [] });
     const tool1 = await makeTool({ name: "tool1" });
     const tool2 = await makeTool({ name: "tool2" });
     const tool3 = await makeTool({ name: "tool3" });
@@ -141,7 +141,7 @@ describe("ConversationEnabledToolModel", () => {
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Test Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -171,18 +171,18 @@ describe("ConversationEnabledToolModel", () => {
   test("clearCustomSelection removes all enabled tool entries", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
     makeTool,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Test Agent", teams: [] });
     const tool = await makeTool({ name: "tool1" });
 
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Test Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -215,18 +215,18 @@ describe("ConversationEnabledToolModel", () => {
   test("setEnabledTools with empty array maintains custom selection", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
     makeTool,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Test Agent", teams: [] });
     const tool = await makeTool({ name: "tool1" });
 
     const conversation = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Test Conversation",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -248,19 +248,19 @@ describe("ConversationEnabledToolModel", () => {
   test("findByConversations returns map of tool IDs per conversation", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
     makeTool,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Test Agent", teams: [] });
     const tool1 = await makeTool({ name: "tool1" });
     const tool2 = await makeTool({ name: "tool2" });
 
     const conversation1 = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Conversation 1",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -268,7 +268,7 @@ describe("ConversationEnabledToolModel", () => {
     const conversation2 = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Conversation 2",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -295,20 +295,20 @@ describe("ConversationEnabledToolModel", () => {
   test("findByConversations returns todo_write and artifact_write for conversations by default", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
     seedAndAssignArchestraTools,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Test Agent", teams: [] });
 
-    // Seed and assign Archestra tools to the agent
-    await seedAndAssignArchestraTools(agent.id);
+    // Seed and assign Archestra tools to the profile
+    await seedAndAssignArchestraTools(profile.id);
 
     const conversation1 = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Conversation 1",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -316,7 +316,7 @@ describe("ConversationEnabledToolModel", () => {
     const conversation2 = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Conversation 2",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -340,23 +340,23 @@ describe("ConversationEnabledToolModel", () => {
   test("isolates enabled tools between conversations", async ({
     makeUser,
     makeOrganization,
-    makeAgent,
+    makeProfile,
     makeTool,
     seedAndAssignArchestraTools,
   }) => {
     const user = await makeUser();
     const org = await makeOrganization();
-    const agent = await makeAgent({ name: "Test Agent", teams: [] });
+    const profile = await makeProfile({ name: "Test Agent", teams: [] });
     const tool1 = await makeTool({ name: "tool1" });
     const tool2 = await makeTool({ name: "tool2" });
 
-    // Seed and assign Archestra tools to the agent
-    await seedAndAssignArchestraTools(agent.id);
+    // Seed and assign Archestra tools to the profile
+    await seedAndAssignArchestraTools(profile.id);
 
     const conversation1 = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Conversation 1",
       selectedModel: "claude-3-haiku-20240307",
     });
@@ -364,7 +364,7 @@ describe("ConversationEnabledToolModel", () => {
     const conversation2 = await ConversationModel.create({
       userId: user.id,
       organizationId: org.id,
-      agentId: agent.id,
+      profileId: profile.id,
       title: "Conversation 2",
       selectedModel: "claude-3-haiku-20240307",
     });

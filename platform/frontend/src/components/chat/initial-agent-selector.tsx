@@ -85,7 +85,9 @@ export function InitialAgentSelector({
                 <CommandItem
                   key={prompt.id}
                   value={prompt.name}
-                  onSelect={() => handlePromptSelect(prompt.id, prompt.agentId)}
+                  onSelect={() =>
+                    handlePromptSelect(prompt.id, prompt.profileId)
+                  }
                 >
                   {prompt.name}
                   <Check

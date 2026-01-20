@@ -102,10 +102,10 @@ beforeEach(async () => {
     await pgliteClient.exec(truncateSql);
   }
 
-  // Re-insert the default agent that tests expect to exist
-  // This matches what the migrations create (initially 'Default Agent', renamed to 'Default Profile')
+  // Re-insert the default profile that tests expect to exist
+  // This matches what the migrations create
   const seedSql = `
-    INSERT INTO agents (id, name, is_demo, is_default, created_at, updated_at)
+    INSERT INTO profiles (id, name, is_demo, is_default, created_at, updated_at)
     VALUES (
       gen_random_uuid(),
       'Default Profile',
@@ -119,7 +119,7 @@ beforeEach(async () => {
   try {
     await pgliteClient.exec(seedSql);
   } catch {
-    // Ignore if default agent already exists or table doesn't have expected structure
+    // Ignore if default profile already exists or table doesn't have expected structure
   }
 });
 

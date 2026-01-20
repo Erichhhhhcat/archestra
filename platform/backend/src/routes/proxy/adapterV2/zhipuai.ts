@@ -972,8 +972,8 @@ export const zhipuaiAdapterFactory: LLMProvider<
       return new MockZhipuaiClient() as unknown as ZhipuaiClient;
     }
 
-    const customFetch = options?.agent
-      ? getObservableFetch("zhipuai", options.agent, options.externalAgentId)
+    const customFetch = options?.profile
+      ? getObservableFetch("zhipuai", options.profile, options.externalAgentId)
       : undefined;
 
     return new ZhipuaiClient(apiKey, options?.baseUrl, customFetch);

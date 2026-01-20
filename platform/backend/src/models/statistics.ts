@@ -9,7 +9,7 @@ import type {
   StatisticsTimeSeriesData,
   TeamStatistics,
 } from "@/types";
-import AgentTeamModel from "./agent-team";
+import ProfileTeamModel from "./profile-team";
 
 class StatisticsModel {
   /**
@@ -274,14 +274,14 @@ class StatisticsModel {
     const interval = StatisticsModel.getTimeframeInterval(timeframe);
     const timeBucket = StatisticsModel.getTimeBucket(timeframe);
 
-    // Get accessible agent IDs for users that are not agent admins
-    let accessibleAgentIds: string[] = [];
+    // Get accessible profile IDs for users that are not agent admins
+    let accessibleProfileIds: string[] = [];
     if (userId && !isAgentAdmin) {
-      accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
+      accessibleProfileIds = await ProfileTeamModel.getUserAccessibleProfileIds(
         userId,
         false,
       );
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return [];
       }
     }
@@ -300,16 +300,16 @@ class StatisticsModel {
       })
       .from(schema.interactionsTable)
       .innerJoin(
-        schema.agentsTable,
-        eq(schema.interactionsTable.profileId, schema.agentsTable.id),
+        schema.profilesTable,
+        eq(schema.interactionsTable.profileId, schema.profilesTable.id),
       )
       .innerJoin(
-        schema.agentTeamsTable,
-        eq(schema.agentsTable.id, schema.agentTeamsTable.agentId),
+        schema.profileTeamsTable,
+        eq(schema.profilesTable.id, schema.profileTeamsTable.profileId),
       )
       .innerJoin(
         schema.teamsTable,
-        eq(schema.agentTeamsTable.teamId, schema.teamsTable.id),
+        eq(schema.profileTeamsTable.teamId, schema.teamsTable.id),
       )
       .where(
         and(
@@ -336,8 +336,8 @@ class StatisticsModel {
                     ]
                   : [];
               })()),
-          ...(accessibleAgentIds.length > 0
-            ? [inArray(schema.agentsTable.id, accessibleAgentIds)]
+          ...(accessibleProfileIds.length > 0
+            ? [inArray(schema.profilesTable.id, accessibleProfileIds)]
             : []),
         ),
       )
@@ -381,16 +381,16 @@ class StatisticsModel {
       )
       .groupBy(schema.teamsTable.id);
 
-    // Get agent counts per team
-    const teamAgentCounts = await db
+    // Get profile counts per team
+    const teamProfileCounts = await db
       .select({
         teamId: schema.teamsTable.id,
-        agentCount: sql<number>`CAST(COUNT(DISTINCT ${schema.agentTeamsTable.agentId}) AS INTEGER)`,
+        profileCount: sql<number>`CAST(COUNT(DISTINCT ${schema.profileTeamsTable.profileId}) AS INTEGER)`,
       })
       .from(schema.teamsTable)
       .leftJoin(
-        schema.agentTeamsTable,
-        eq(schema.teamsTable.id, schema.agentTeamsTable.teamId),
+        schema.profileTeamsTable,
+        eq(schema.teamsTable.id, schema.profileTeamsTable.teamId),
       )
       .groupBy(schema.teamsTable.id);
 
@@ -405,14 +405,15 @@ class StatisticsModel {
         const memberCount =
           teamMemberCounts.find((t) => t.teamId === row.teamId)?.memberCount ||
           0;
-        const agentCount =
-          teamAgentCounts.find((t) => t.teamId === row.teamId)?.agentCount || 0;
+        const profileCount =
+          teamProfileCounts.find((t) => t.teamId === row.teamId)
+            ?.profileCount || 0;
 
         teamMap.set(row.teamId, {
           teamId: row.teamId,
           teamName: row.teamName,
           members: memberCount,
-          agents: agentCount,
+          agents: profileCount,
           requests: 0,
           inputTokens: 0,
           outputTokens: 0,
@@ -447,14 +448,14 @@ class StatisticsModel {
     const interval = StatisticsModel.getTimeframeInterval(timeframe);
     const timeBucket = StatisticsModel.getTimeBucket(timeframe);
 
-    // Get accessible agent IDs for users that are non-agent admins
-    let accessibleAgentIds: string[] = [];
+    // Get accessible profile IDs for users that are non-agent admins
+    let accessibleProfileIds: string[] = [];
     if (userId && !isAgentAdmin) {
-      accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
+      accessibleProfileIds = await ProfileTeamModel.getUserAccessibleProfileIds(
         userId,
         false,
       );
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return [];
       }
     }
@@ -462,8 +463,8 @@ class StatisticsModel {
     // Use stored cost from interactions instead of recalculating with average prices
     const query = db
       .select({
-        agentId: schema.agentsTable.id,
-        agentName: schema.agentsTable.name,
+        agentId: schema.profilesTable.id,
+        agentName: schema.profilesTable.name,
         teamName: schema.teamsTable.name,
         timeBucket: sql<string>`DATE_TRUNC(${sql.raw(`'${timeBucket}'`)}, ${schema.interactionsTable.createdAt})`,
         requests: sql<number>`CAST(COUNT(*) AS INTEGER)`,
@@ -473,16 +474,16 @@ class StatisticsModel {
       })
       .from(schema.interactionsTable)
       .innerJoin(
-        schema.agentsTable,
-        eq(schema.interactionsTable.profileId, schema.agentsTable.id),
+        schema.profilesTable,
+        eq(schema.interactionsTable.profileId, schema.profilesTable.id),
       )
       .leftJoin(
-        schema.agentTeamsTable,
-        eq(schema.agentsTable.id, schema.agentTeamsTable.agentId),
+        schema.profileTeamsTable,
+        eq(schema.profilesTable.id, schema.profileTeamsTable.profileId),
       )
       .leftJoin(
         schema.teamsTable,
-        eq(schema.agentTeamsTable.teamId, schema.teamsTable.id),
+        eq(schema.profileTeamsTable.teamId, schema.teamsTable.id),
       )
       .where(
         and(
@@ -509,14 +510,14 @@ class StatisticsModel {
                     ]
                   : [];
               })()),
-          ...(accessibleAgentIds.length > 0
-            ? [inArray(schema.agentsTable.id, accessibleAgentIds)]
+          ...(accessibleProfileIds.length > 0
+            ? [inArray(schema.profilesTable.id, accessibleProfileIds)]
             : []),
         ),
       )
       .groupBy(
-        schema.agentsTable.id,
-        schema.agentsTable.name,
+        schema.profilesTable.id,
+        schema.profilesTable.name,
         schema.teamsTable.name,
         sql`DATE_TRUNC(${sql.raw(`'${timeBucket}'`)}, ${schema.interactionsTable.createdAt})`,
       )
@@ -585,15 +586,15 @@ class StatisticsModel {
     const interval = StatisticsModel.getTimeframeInterval(timeframe);
     const timeBucket = StatisticsModel.getTimeBucket(timeframe);
 
-    // Get accessible agent IDs for users that are non-agent admins
-    let accessibleAgentIds: string[] = [];
+    // Get accessible profile IDs for users that are non-agent admins
+    let accessibleProfileIds: string[] = [];
     if (userId && !isAgentAdmin) {
-      accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
+      accessibleProfileIds = await ProfileTeamModel.getUserAccessibleProfileIds(
         userId,
         false,
       );
 
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return [];
       }
     }
@@ -610,8 +611,8 @@ class StatisticsModel {
       })
       .from(schema.interactionsTable)
       .innerJoin(
-        schema.agentsTable,
-        eq(schema.interactionsTable.profileId, schema.agentsTable.id),
+        schema.profilesTable,
+        eq(schema.interactionsTable.profileId, schema.profilesTable.id),
       )
       .where(
         and(
@@ -638,8 +639,8 @@ class StatisticsModel {
                     ]
                   : [];
               })()),
-          ...(accessibleAgentIds.length > 0
-            ? [inArray(schema.agentsTable.id, accessibleAgentIds)]
+          ...(accessibleProfileIds.length > 0
+            ? [inArray(schema.profilesTable.id, accessibleProfileIds)]
             : []),
         ),
       )
@@ -783,15 +784,15 @@ class StatisticsModel {
     const interval = StatisticsModel.getTimeframeInterval(timeframe);
     const timeBucket = StatisticsModel.getTimeBucket(timeframe);
 
-    // Get accessible agent IDs for users that are non-agent admins
-    let accessibleAgentIds: string[] = [];
+    // Get accessible profile IDs for users that are non-agent admins
+    let accessibleProfileIds: string[] = [];
     if (userId && !isAgentAdmin) {
-      accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
+      accessibleProfileIds = await ProfileTeamModel.getUserAccessibleProfileIds(
         userId,
         false,
       );
 
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return {
           totalBaselineCost: 0,
           totalActualCost: 0,
@@ -812,8 +813,8 @@ class StatisticsModel {
       })
       .from(schema.interactionsTable)
       .innerJoin(
-        schema.agentsTable,
-        eq(schema.interactionsTable.profileId, schema.agentsTable.id),
+        schema.profilesTable,
+        eq(schema.interactionsTable.profileId, schema.profilesTable.id),
       )
       .where(
         and(
@@ -840,8 +841,8 @@ class StatisticsModel {
                     ]
                   : [];
               })()),
-          ...(accessibleAgentIds.length > 0
-            ? [inArray(schema.agentsTable.id, accessibleAgentIds)]
+          ...(accessibleProfileIds.length > 0
+            ? [inArray(schema.profilesTable.id, accessibleProfileIds)]
             : []),
         ),
       )

@@ -17,19 +17,19 @@ import {
 } from "@/llm-metrics";
 import logger from "@/logging";
 import {
-  AgentModel,
-  AgentTeamModel,
   InteractionModel,
   LimitValidationService,
+  ProfileModel,
+  ProfileTeamModel,
   TokenPriceModel,
 } from "@/models";
 import {
-  type Agent,
   ApiError,
   type InteractionRequest,
   type InteractionResponse,
   type LLMProvider,
   type LLMStreamAdapter,
+  type Profile,
   type ToonCompressionResult,
 } from "@/types";
 import * as utils from "./utils";
@@ -37,7 +37,7 @@ import type { SessionSource } from "./utils/session-id";
 
 export interface Context {
   organizationId: string;
-  agentId?: string;
+  profileId?: string;
   externalAgentId?: string;
   userId?: string;
   sessionId?: string | null;
@@ -75,7 +75,7 @@ export async function handleLLMProxy<
   provider: LLMProvider<TRequest, TResponse, TMessages, TChunk, THeaders>,
   context: Context,
 ): Promise<FastifyReply> {
-  const { agentId, externalAgentId } = context;
+  const { profileId, externalAgentId } = context;
   const providerName = provider.provider;
 
   // Extract session info if not already provided in context
@@ -100,7 +100,7 @@ export async function handleLLMProxy<
 
   logger.debug(
     {
-      agentId,
+      profileId,
       model: requestAdapter.getModel(),
       stream: requestAdapter.isStreaming(),
       messagesCount,
@@ -109,38 +109,42 @@ export async function handleLLMProxy<
     `[${providerName}Proxy] handleLLMProxy: request received`,
   );
 
-  // Resolve agent
-  let resolvedAgent: Agent;
-  if (agentId) {
+  // Resolve profile
+  let resolvedProfile: Profile;
+  if (profileId) {
     logger.debug(
-      { agentId },
-      `[${providerName}Proxy] Resolving explicit agent by ID`,
+      { profileId },
+      `[${providerName}Proxy] Resolving explicit profile by ID`,
     );
-    const agent = await AgentModel.findById(agentId);
-    if (!agent) {
-      logger.debug({ agentId }, `[${providerName}Proxy] Agent not found`);
+    const profile = await ProfileModel.findById(profileId);
+    if (!profile) {
+      logger.debug({ profileId }, `[${providerName}Proxy] Profile not found`);
       return reply.status(404).send({
         error: {
-          message: `Agent with ID ${agentId} not found`,
+          message: `Profile with ID ${profileId} not found`,
           type: "not_found",
         },
       });
     }
-    resolvedAgent = agent;
+    resolvedProfile = profile;
   } else {
     logger.debug(
       { userAgent: (headers as Record<string, unknown>)["user-agent"] },
-      `[${providerName}Proxy] Resolving default agent by user-agent`,
+      `[${providerName}Proxy] Resolving default profile by user-agent`,
     );
-    resolvedAgent = await AgentModel.getAgentOrCreateDefault(
+    resolvedProfile = await ProfileModel.getProfileOrCreateDefault(
       (headers as Record<string, unknown>)["user-agent"] as string | undefined,
     );
   }
 
-  const resolvedAgentId = resolvedAgent.id;
+  const resolvedProfileId = resolvedProfile.id;
   logger.debug(
-    { resolvedAgentId, agentName: resolvedAgent.name, wasExplicit: !!agentId },
-    `[${providerName}Proxy] Agent resolved`,
+    {
+      resolvedProfileId,
+      profileName: resolvedProfile.name,
+      wasExplicit: !!profileId,
+    },
+    `[${providerName}Proxy] Profile resolved`,
   );
 
   // Extract API key
@@ -149,16 +153,16 @@ export async function handleLLMProxy<
   // Check usage limits
   try {
     logger.debug(
-      { resolvedAgentId },
+      { resolvedProfileId },
       `[${providerName}Proxy] Checking usage limits`,
     );
     const limitViolation =
-      await LimitValidationService.checkLimitsBeforeRequest(resolvedAgentId);
+      await LimitValidationService.checkLimitsBeforeRequest(resolvedProfileId);
 
     if (limitViolation) {
       const [_refusalMessage, contentMessage] = limitViolation;
       logger.info(
-        { resolvedAgentId, reason: "token_cost_limit_exceeded" },
+        { resolvedProfileId, reason: "token_cost_limit_exceeded" },
         `${providerName} request blocked due to token cost limit`,
       );
       return reply.status(429).send({
@@ -170,7 +174,7 @@ export async function handleLLMProxy<
       });
     }
     logger.debug(
-      { resolvedAgentId },
+      { resolvedProfileId },
       `[${providerName}Proxy] Limit check passed`,
     );
 
@@ -187,7 +191,7 @@ export async function handleLLMProxy<
           toolParameters: t.inputSchema,
           toolDescription: t.description,
         })),
-        resolvedAgentId,
+        resolvedProfileId,
       );
     }
 
@@ -197,7 +201,7 @@ export async function handleLLMProxy<
     // Cast messages since getOptimizedModel expects specific provider types
     // but our generic adapter provides the correct type at runtime
     const optimizedModel = await utils.costOptimization.getOptimizedModel(
-      resolvedAgent,
+      resolvedProfile,
       requestAdapter.getProviderMessages() as Parameters<
         typeof utils.costOptimization.getOptimizedModel
       >[1],
@@ -210,12 +214,12 @@ export async function handleLLMProxy<
     if (optimizedModel) {
       requestAdapter.setModel(optimizedModel);
       logger.info(
-        { resolvedAgentId, optimizedModel },
+        { resolvedProfileId, optimizedModel },
         "Optimized model selected",
       );
     } else {
       logger.info(
-        { resolvedAgentId, baselineModel },
+        { resolvedProfileId, baselineModel },
         "No matching optimized model found, proceeding with baseline model",
       );
     }
@@ -250,16 +254,17 @@ export async function handleLLMProxy<
 
     // Get global tool policy from organization (with fallback) - needed for both trusted data and tool invocation
     const globalToolPolicy =
-      await utils.toolInvocation.getGlobalToolPolicy(resolvedAgentId);
+      await utils.toolInvocation.getGlobalToolPolicy(resolvedProfileId);
 
     // Fetch team IDs for policy evaluation context (needed for trusted data evaluation)
-    const teamIds = await AgentTeamModel.getTeamsForAgent(resolvedAgentId);
+    const teamIds =
+      await ProfileTeamModel.getTeamsForProfile(resolvedProfileId);
 
     // Evaluate trusted data policies
     logger.debug(
       {
-        resolvedAgentId,
-        considerContextUntrusted: resolvedAgent.considerContextUntrusted,
+        resolvedProfileId,
+        considerContextUntrusted: resolvedProfile.considerContextUntrusted,
         globalToolPolicy,
       },
       `[${providerName}Proxy] Evaluating trusted data policies`,
@@ -269,10 +274,10 @@ export async function handleLLMProxy<
     const { toolResultUpdates, contextIsTrusted } =
       await utils.trustedData.evaluateIfContextIsTrusted(
         commonMessages,
-        resolvedAgentId,
+        resolvedProfileId,
         apiKey,
         providerName,
-        resolvedAgent.considerContextUntrusted,
+        resolvedProfile.considerContextUntrusted,
         globalToolPolicy,
         { teamIds, externalAgentId },
         // Streaming callbacks for dual LLM progress
@@ -308,7 +313,7 @@ export async function handleLLMProxy<
 
     logger.info(
       {
-        resolvedAgentId,
+        resolvedProfileId,
         toolResultUpdatesCount: Object.keys(toolResultUpdates).length,
         contextIsTrusted,
       },
@@ -323,7 +328,7 @@ export async function handleLLMProxy<
     };
 
     const shouldApplyToonCompression =
-      await utils.toonConversion.shouldApplyToonCompression(resolvedAgentId);
+      await utils.toonConversion.shouldApplyToonCompression(resolvedProfileId);
 
     if (shouldApplyToonCompression) {
       toonStats = await requestAdapter.applyToonCompression(actualModel);
@@ -352,7 +357,7 @@ export async function handleLLMProxy<
     const client = provider.createClient(apiKey, {
       baseUrl: provider.getBaseUrl(),
       mockMode: config.benchmark.mockMode,
-      agent: resolvedAgent,
+      profile: resolvedProfile,
       externalAgentId,
       defaultHeaders:
         Object.keys(headersToForward).length > 0 ? headersToForward : undefined,
@@ -380,7 +385,7 @@ export async function handleLLMProxy<
         reply,
         provider,
         streamAdapter,
-        resolvedAgent,
+        resolvedProfile,
         contextIsTrusted,
         baselineModel,
         actualModel,
@@ -400,7 +405,7 @@ export async function handleLLMProxy<
         finalRequest,
         reply,
         provider,
-        resolvedAgent,
+        resolvedProfile,
         contextIsTrusted,
         baselineModel,
         actualModel,
@@ -441,7 +446,7 @@ async function handleStreaming<
   reply: FastifyReply,
   provider: LLMProvider<TRequest, TResponse, TMessages, TChunk, THeaders>,
   streamAdapter: LLMStreamAdapter<TChunk, TResponse>,
-  agent: Agent,
+  profile: Profile,
   contextIsTrusted: boolean,
   baselineModel: string,
   actualModel: string,
@@ -472,7 +477,7 @@ async function handleStreaming<
       providerName,
       actualModel,
       true,
-      agent,
+      profile,
       async (llmSpan) => {
         const result = await provider.executeStream(client, request);
         llmSpan.end();
@@ -488,7 +493,7 @@ async function handleStreaming<
         const ttftSeconds = (firstChunkTime - streamStartTime) / 1000;
         reportTimeToFirstToken(
           providerName,
-          agent,
+          profile,
           actualModel,
           ttftSeconds,
           externalAgentId,
@@ -540,7 +545,7 @@ async function handleStreaming<
 
       toolInvocationRefusal = await utils.toolInvocation.evaluatePolicies(
         toolCallsForPolicy,
-        agent.id,
+        profile.id,
         {
           teamIds: teamIds ?? [],
           externalAgentId,
@@ -567,7 +572,7 @@ async function handleStreaming<
 
       reportBlockedTools(
         providerName,
-        agent,
+        profile,
         toolCalls.length,
         actualModel,
         externalAgentId,
@@ -605,7 +610,7 @@ async function handleStreaming<
     if (usage) {
       reportLLMTokens(
         providerName,
-        agent,
+        profile,
         { input: usage.inputTokens, output: usage.outputTokens },
         actualModel,
         externalAgentId,
@@ -615,7 +620,7 @@ async function handleStreaming<
         const totalDurationSeconds = (Date.now() - streamStartTime) / 1000;
         reportTokensPerSecond(
           providerName,
-          agent,
+          profile,
           actualModel,
           usage.outputTokens,
           totalDurationSeconds,
@@ -636,14 +641,14 @@ async function handleStreaming<
 
       reportLLMCost(
         providerName,
-        agent,
+        profile,
         actualModel,
         actualCost,
         externalAgentId,
       );
 
       await InteractionModel.create({
-        profileId: agent.id,
+        profileId: profile.id,
         externalAgentId,
         userId,
         sessionId,
@@ -682,7 +687,7 @@ async function handleNonStreaming<
   request: TRequest,
   reply: FastifyReply,
   provider: LLMProvider<TRequest, TResponse, TMessages, TChunk, THeaders>,
-  agent: Agent,
+  profile: Profile,
   contextIsTrusted: boolean,
   baselineModel: string,
   actualModel: string,
@@ -709,7 +714,7 @@ async function handleNonStreaming<
     providerName,
     actualModel,
     false,
-    agent,
+    profile,
     async (llmSpan: { end: () => void }) => {
       const result = await provider.execute(client, request);
       llmSpan.end();
@@ -736,7 +741,7 @@ async function handleNonStreaming<
             ? tc.arguments
             : JSON.stringify(tc.arguments),
       })),
-      agent.id,
+      profile.id,
       {
         teamIds: teamIds ?? [],
         externalAgentId,
@@ -760,7 +765,7 @@ async function handleNonStreaming<
 
       reportBlockedTools(
         providerName,
-        agent,
+        profile,
         toolCalls.length,
         actualModel,
         externalAgentId,
@@ -781,14 +786,14 @@ async function handleNonStreaming<
 
       reportLLMCost(
         providerName,
-        agent,
+        profile,
         actualModel,
         actualCost,
         externalAgentId,
       );
 
       await InteractionModel.create({
-        profileId: agent.id,
+        profileId: profile.id,
         externalAgentId,
         userId,
         sessionId,
@@ -821,7 +826,7 @@ async function handleNonStreaming<
   // mocked API clients can't use an observable fetch.
   // reportLLMTokens(
   //   providerName,
-  //   agent,
+  //   profile,
   //   { input: usage.inputTokens, output: usage.outputTokens },
   //   actualModel,
   //   externalAgentId,
@@ -838,10 +843,16 @@ async function handleNonStreaming<
     usage.outputTokens,
   );
 
-  reportLLMCost(providerName, agent, actualModel, actualCost, externalAgentId);
+  reportLLMCost(
+    providerName,
+    profile,
+    actualModel,
+    actualCost,
+    externalAgentId,
+  );
 
   await InteractionModel.create({
-    profileId: agent.id,
+    profileId: profile.id,
     externalAgentId,
     userId,
     sessionId,

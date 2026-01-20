@@ -117,59 +117,59 @@ export const predefinedPermissionsMap: Record<PredefinedRoleName, Permissions> =
 export const requiredEndpointPermissionsMap: Partial<
   Record<RouteId, Permissions>
 > = {
-  [RouteId.GetAgents]: {
+  [RouteId.GetProfiles]: {
     profile: ["read"],
   },
-  [RouteId.GetAllAgents]: {
+  [RouteId.GetAllProfiles]: {
     profile: ["read"],
   },
-  [RouteId.GetAgent]: {
+  [RouteId.GetProfile]: {
     profile: ["read"],
   },
-  [RouteId.GetDefaultAgent]: {
+  [RouteId.GetDefaultProfile]: {
     profile: ["read"],
   },
-  [RouteId.CreateAgent]: {
+  [RouteId.CreateProfile]: {
     profile: ["create"],
   },
-  [RouteId.UpdateAgent]: {
+  [RouteId.UpdateProfile]: {
     profile: ["update"],
   },
-  [RouteId.DeleteAgent]: {
+  [RouteId.DeleteProfile]: {
     profile: ["delete"],
   },
-  [RouteId.GetAgentTools]: {
+  [RouteId.GetProfileTools]: {
     profile: ["read"],
     tool: ["read"],
   },
-  [RouteId.GetAllAgentTools]: {
+  [RouteId.GetAllProfileTools]: {
     profile: ["read"],
     tool: ["read"],
   },
-  [RouteId.GetAgentAvailableTokens]: {
+  [RouteId.GetProfileAvailableTokens]: {
     profile: ["read"],
   },
   [RouteId.GetUnassignedTools]: {
     tool: ["read"],
   },
-  [RouteId.AssignToolToAgent]: {
+  [RouteId.AssignToolToProfile]: {
     profile: ["update"],
   },
   [RouteId.BulkAssignTools]: {
     profile: ["update"],
   },
-  [RouteId.BulkUpdateAgentTools]: {
+  [RouteId.BulkUpdateProfileTools]: {
     profile: ["update"],
     tool: ["update"],
   },
-  [RouteId.AutoConfigureAgentToolPolicies]: {
+  [RouteId.AutoConfigureProfileToolPolicies]: {
     profile: ["update"],
     tool: ["update"],
   },
-  [RouteId.UnassignToolFromAgent]: {
+  [RouteId.UnassignToolFromProfile]: {
     profile: ["update"],
   },
-  [RouteId.UpdateAgentTool]: {
+  [RouteId.UpdateProfileTool]: {
     profile: ["update"],
     tool: ["update"],
   },
@@ -440,7 +440,7 @@ export const requiredEndpointPermissionsMap: Partial<
   [RouteId.GetChatConversation]: {
     conversation: ["read"],
   },
-  [RouteId.GetChatAgentMcpTools]: {
+  [RouteId.GetChatProfileMcpTools]: {
     profile: ["read"],
   },
   [RouteId.CreateChatConversation]: {
@@ -515,27 +515,27 @@ export const requiredEndpointPermissionsMap: Partial<
   [RouteId.DeletePrompt]: {
     prompt: ["delete"],
   },
-  [RouteId.GetAllPromptAgentConnections]: {
+  [RouteId.GetAllPromptProfileConnections]: {
     prompt: ["read"],
   },
-  [RouteId.GetPromptAgents]: {
+  [RouteId.GetPromptProfiles]: {
     prompt: ["read"],
   },
-  [RouteId.SyncPromptAgents]: {
+  [RouteId.SyncPromptProfiles]: {
     prompt: ["update"],
   },
-  [RouteId.DeletePromptAgent]: {
+  [RouteId.DeletePromptProfile]: {
     prompt: ["update"],
   },
-  [RouteId.GetAgentPrompts]: {
+  [RouteId.GetProfilePrompts]: {
     profile: ["read"],
     prompt: ["read"],
   },
-  [RouteId.AssignAgentPrompts]: {
+  [RouteId.AssignProfilePrompts]: {
     profile: ["update"],
     prompt: ["read"],
   },
-  [RouteId.DeleteAgentPrompt]: {
+  [RouteId.DeleteProfilePrompt]: {
     profile: ["update"],
     prompt: ["read"],
   },
@@ -618,7 +618,7 @@ export const requiredEndpointPermissionsMap: Partial<
   [RouteId.GetTeamStatistics]: {
     interaction: ["read"],
   },
-  [RouteId.GetAgentStatistics]: {
+  [RouteId.GetProfileStatistics]: {
     interaction: ["read"],
   },
   [RouteId.GetModelStatistics]: {

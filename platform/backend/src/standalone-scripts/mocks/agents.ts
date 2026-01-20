@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
-import type { InsertAgent } from "@/types";
+import type { InsertProfile } from "@/types";
 import { randomBool, randomElement } from "./utils";
 
-const AGENT_NAME_TEMPLATES = [
+const PROFILE_NAME_TEMPLATES = [
   "Data Analyst",
   "API Monitor",
   "Security Scanner",
@@ -25,7 +25,7 @@ const AGENT_NAME_TEMPLATES = [
   "Support Agent",
 ];
 
-const AGENT_SUFFIXES = [
+const PROFILE_SUFFIXES = [
   "",
   " Pro",
   " Advanced",
@@ -39,34 +39,34 @@ const AGENT_SUFFIXES = [
 ];
 
 /**
- * Generate a unique agent name by combining templates and suffixes
+ * Generate a unique profile name by combining templates and suffixes
  */
-function generateAgentName(index: number): string {
-  const template = randomElement(AGENT_NAME_TEMPLATES);
+function generateProfileName(index: number): string {
+  const template = randomElement(PROFILE_NAME_TEMPLATES);
   const suffix =
-    index < AGENT_NAME_TEMPLATES.length * 3
-      ? randomElement(AGENT_SUFFIXES)
+    index < PROFILE_NAME_TEMPLATES.length * 3
+      ? randomElement(PROFILE_SUFFIXES)
       : ` #${Math.floor(index / 10) + 1}`;
   return `${template}${suffix}`;
 }
 
-type MockAgent = InsertAgent & { id: string };
+type MockProfile = InsertProfile & { id: string };
 
 /**
- * Generate mock agent data
- * @param count - Number of agents to generate (defaults to 90)
+ * Generate mock profile data
+ * @param count - Number of profiles to generate (defaults to 90)
  */
-export function generateMockAgents(count = 90): MockAgent[] {
-  const agents: MockAgent[] = [];
+export function generateMockProfiles(count = 90): MockProfile[] {
+  const profiles: MockProfile[] = [];
 
   for (let i = 0; i < count; i++) {
-    agents.push({
+    profiles.push({
       id: randomUUID(),
-      name: generateAgentName(i),
-      isDemo: randomBool(0.3), // 30% chance of being a demo agent
+      name: generateProfileName(i),
+      isDemo: randomBool(0.3), // 30% chance of being a demo profile
       teams: [],
     });
   }
 
-  return agents;
+  return profiles;
 }

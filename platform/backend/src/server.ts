@@ -52,7 +52,7 @@ import { initializeMetrics } from "@/llm-metrics";
 import logger from "@/logging";
 import { McpServerRuntimeManager } from "@/mcp-server-runtime";
 import { enterpriseLicenseMiddleware } from "@/middleware";
-import AgentLabelModel from "@/models/agent-label";
+import ProfileLabelModel from "@/models/profile-label";
 import {
   Anthropic,
   ApiError,
@@ -515,8 +515,8 @@ const start = async () => {
   try {
     await seedRequiredStartingData();
 
-    // Initialize metrics with keys of custom agent labels
-    const labelKeys = await AgentLabelModel.getAllKeys();
+    // Initialize metrics with keys of custom profile labels
+    const labelKeys = await ProfileLabelModel.getAllKeys();
     initializeMetrics(labelKeys);
 
     // Start metrics server

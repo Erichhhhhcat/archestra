@@ -62,7 +62,7 @@ describe("browser-stream routes authorization", () => {
   });
 
   test("denies access to conversations not owned by the caller", async ({
-    makeAgent,
+    makeProfile,
     makeConversation,
     makeOrganization,
     makeUser,
@@ -70,7 +70,7 @@ describe("browser-stream routes authorization", () => {
     const org = await makeOrganization();
     const owner = await makeUser();
     const otherUser = await makeUser();
-    const agent = await makeAgent();
+    const agent = await makeProfile();
     const conversation = await makeConversation(agent.id, {
       userId: owner.id,
       organizationId: org.id,
@@ -99,14 +99,14 @@ describe("browser-stream routes authorization", () => {
   });
 
   test("allows owners to access their conversation browser stream", async ({
-    makeAgent,
+    makeProfile,
     makeConversation,
     makeOrganization,
     makeUser,
   }) => {
     const org = await makeOrganization();
     const owner = (await makeUser()) as User;
-    const agent = await makeAgent();
+    const agent = await makeProfile();
     const conversation = await makeConversation(agent.id, {
       userId: owner.id,
       organizationId: org.id,
@@ -160,14 +160,14 @@ describe("browser tab cleanup on conversation deletion", () => {
   });
 
   test("closes browser tab when conversation is deleted via API", async ({
-    makeAgent,
+    makeProfile,
     makeConversation,
     makeOrganization,
     makeUser,
   }) => {
     const org = await makeOrganization();
     const owner = (await makeUser()) as User;
-    const agent = await makeAgent();
+    const agent = await makeProfile();
     const conversation = await makeConversation(agent.id, {
       userId: owner.id,
       organizationId: org.id,

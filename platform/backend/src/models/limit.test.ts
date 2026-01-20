@@ -4,9 +4,9 @@ import LimitModel, { LimitValidationService } from "./limit";
 describe("LimitModel", () => {
   describe("create", () => {
     test("can create a token_cost limit for an agent", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const limit = await LimitModel.create({
         entityType: "agent",
@@ -65,9 +65,9 @@ describe("LimitModel", () => {
     });
 
     test("can create a token_cost limit with multiple models", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const limit = await LimitModel.create({
         entityType: "agent",
@@ -102,9 +102,9 @@ describe("LimitModel", () => {
   });
 
   describe("findAll", () => {
-    test("can retrieve all limits", async ({ makeAgent }) => {
-      const agent1 = await makeAgent({ name: "Agent 1" });
-      const agent2 = await makeAgent({ name: "Agent 2" });
+    test("can retrieve all limits", async ({ makeProfile }) => {
+      const agent1 = await makeProfile({ name: "Agent 1" });
+      const agent2 = await makeProfile({ name: "Agent 2" });
 
       await LimitModel.create({
         entityType: "agent",
@@ -127,10 +127,10 @@ describe("LimitModel", () => {
     });
 
     test("can filter limits by entity type", async ({
-      makeAgent,
+      makeProfile,
       makeOrganization,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
       const org = await makeOrganization();
 
       await LimitModel.create({
@@ -158,9 +158,9 @@ describe("LimitModel", () => {
       expect(orgLimits[0].entityType).toBe("organization");
     });
 
-    test("can filter limits by entity ID", async ({ makeAgent }) => {
-      const agent1 = await makeAgent({ name: "Agent 1" });
-      const agent2 = await makeAgent({ name: "Agent 2" });
+    test("can filter limits by entity ID", async ({ makeProfile }) => {
+      const agent1 = await makeProfile({ name: "Agent 1" });
+      const agent2 = await makeProfile({ name: "Agent 2" });
 
       await LimitModel.create({
         entityType: "agent",
@@ -184,10 +184,10 @@ describe("LimitModel", () => {
     });
 
     test("can filter limits by both entity type and ID", async ({
-      makeAgent,
+      makeProfile,
       makeOrganization,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
       const org = await makeOrganization();
 
       await LimitModel.create({
@@ -214,8 +214,8 @@ describe("LimitModel", () => {
   });
 
   describe("findById", () => {
-    test("can find a limit by ID", async ({ makeAgent }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+    test("can find a limit by ID", async ({ makeProfile }) => {
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const created = await LimitModel.create({
         entityType: "agent",
@@ -240,8 +240,8 @@ describe("LimitModel", () => {
   });
 
   describe("patch", () => {
-    test("can update a limit value", async ({ makeAgent }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+    test("can update a limit value", async ({ makeProfile }) => {
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const limit = await LimitModel.create({
         entityType: "agent",
@@ -272,8 +272,8 @@ describe("LimitModel", () => {
   });
 
   describe("delete", () => {
-    test("can delete a limit", async ({ makeAgent }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+    test("can delete a limit", async ({ makeProfile }) => {
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const limit = await LimitModel.create({
         entityType: "agent",
@@ -300,9 +300,9 @@ describe("LimitModel", () => {
 
   describe("getAgentTokenUsage", () => {
     test("can get token usage for an agent with no interactions", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const usage = await LimitModel.getAgentTokenUsage(agent.id);
 
@@ -313,10 +313,10 @@ describe("LimitModel", () => {
     });
 
     test("can get token usage for an agent with interactions", async ({
-      makeAgent,
+      makeProfile,
       makeInteraction,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       await makeInteraction(agent.id, {
         inputTokens: 100,
@@ -348,8 +348,8 @@ describe("LimitModel", () => {
   });
 
   describe("updateTokenLimitUsage", () => {
-    test("should update token usage for a limit", async ({ makeAgent }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+    test("should update token usage for a limit", async ({ makeProfile }) => {
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const limit = await LimitModel.create({
         entityType: "agent",
@@ -376,9 +376,9 @@ describe("LimitModel", () => {
     });
 
     test("should increment token usage on multiple updates", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const limit = await LimitModel.create({
         entityType: "agent",
@@ -412,9 +412,9 @@ describe("LimitModel", () => {
     });
 
     test("should update only the specified model in a multi-model limit", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       // Create limit with multiple models
       const limit = await LimitModel.create({
@@ -451,9 +451,9 @@ describe("LimitModel", () => {
     });
 
     test("should update multiple limits that contain the same model", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       // Create two limits, both containing gpt-4o
       const limit1 = await LimitModel.create({
@@ -497,9 +497,9 @@ describe("LimitModel", () => {
 
   describe("getModelUsageBreakdown", () => {
     test("should return empty array for limit with no usage", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const limit = await LimitModel.create({
         entityType: "agent",
@@ -519,9 +519,9 @@ describe("LimitModel", () => {
     });
 
     test("should calculate cost correctly for multiple models", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const limit = await LimitModel.create({
         entityType: "agent",
@@ -653,9 +653,9 @@ describe("LimitModel", () => {
 
   describe("resetLimitUsage", () => {
     test("should reset usage counters and set lastCleanup", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const limit = await LimitModel.create({
         entityType: "agent",
@@ -690,8 +690,8 @@ describe("LimitModel", () => {
   });
 
   describe("findLimitsForValidation", () => {
-    test("should find limits for validation", async ({ makeAgent }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+    test("should find limits for validation", async ({ makeProfile }) => {
+      const agent = await makeProfile({ name: "Test Agent" });
 
       await LimitModel.create({
         entityType: "agent",
@@ -712,10 +712,10 @@ describe("LimitModel", () => {
     });
 
     test("should not find limits for other entity types", async ({
-      makeAgent,
+      makeProfile,
       makeOrganization,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
       const org = await makeOrganization();
 
       await LimitModel.create({

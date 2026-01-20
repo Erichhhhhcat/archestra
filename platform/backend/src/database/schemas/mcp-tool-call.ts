@@ -7,7 +7,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import type { CommonToolCall } from "@/types";
-import agentsTable from "./agent";
+import profilesTable from "./profile";
 
 // Note: Additional pg_trgm GIN indexes for search are created in migration 0116_pg_trgm_indexes.sql:
 // - mcp_tool_calls_method_trgm_idx: GIN index on method column
@@ -17,9 +17,9 @@ const mcpToolCallsTable = pgTable(
   "mcp_tool_calls",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    agentId: uuid("agent_id")
+    profileId: uuid("profile_id")
       .notNull()
-      .references(() => agentsTable.id, { onDelete: "cascade" }),
+      .references(() => profilesTable.id, { onDelete: "cascade" }),
     mcpServerName: varchar("mcp_server_name", { length: 255 }).notNull(),
     method: varchar("method", { length: 255 }).notNull(),
     toolCall: jsonb("tool_call").$type<CommonToolCall | null>(),
@@ -31,7 +31,7 @@ const mcpToolCallsTable = pgTable(
     createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   },
   (table) => ({
-    agentIdIdx: index("mcp_tool_calls_agent_id_idx").on(table.agentId),
+    profileIdIdx: index("mcp_tool_calls_profile_id_idx").on(table.profileId),
     createdAtIdx: index("mcp_tool_calls_created_at_idx").on(table.createdAt),
   }),
 );

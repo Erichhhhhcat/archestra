@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useAllProfileTools } from "@/lib/agent-tools.query";
+import { useAllProfileTools } from "@/lib/profile-tools.query";
 
 interface EditPolicyDialogProps {
   open: boolean;
@@ -27,7 +27,7 @@ export function EditPolicyDialog({
   const { data } = useAllProfileTools({
     filters: {
       search: toolName,
-      agentId: profileId,
+      profileId: profileId,
     },
     pagination: {
       limit: 1,

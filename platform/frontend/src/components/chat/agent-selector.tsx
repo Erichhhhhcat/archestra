@@ -139,7 +139,11 @@ export function AgentSelector({
                     key={prompt.id}
                     value={prompt.name}
                     onSelect={() =>
-                      handlePromptSelect(prompt.id, prompt.name, prompt.agentId)
+                      handlePromptSelect(
+                        prompt.id,
+                        prompt.name,
+                        prompt.profileId,
+                      )
                     }
                   >
                     {prompt.name}

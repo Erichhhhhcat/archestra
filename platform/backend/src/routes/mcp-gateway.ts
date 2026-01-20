@@ -13,7 +13,7 @@ import { UuidIdSchema } from "@/types";
 import {
   activeSessions,
   cleanupExpiredSessions,
-  createAgentServer,
+  createProfileServer,
   createTransport,
   extractProfileIdAndTokenFromRequest,
   validateMCPGatewayToken,
@@ -100,10 +100,10 @@ async function handleMcpPostRequest(
         );
       }
 
-      const { server: newServer, agent } = await createAgentServer(
+      const { server: newServer, profile } = await createProfileServer(
         profileId,
         fastify.log,
-        undefined, // No cached agent
+        undefined, // No cached profile
         tokenAuthContext,
       );
       server = newServer;
@@ -139,8 +139,8 @@ async function handleMcpPostRequest(
         server,
         transport,
         lastAccess: Date.now(),
-        agentId: profileId,
-        agent,
+        profileId: profileId,
+        profile,
         ...(tokenAuthContext && { tokenAuth: tokenAuthContext }),
       });
 
@@ -177,7 +177,7 @@ async function handleMcpPostRequest(
     if (isInitialize) {
       try {
         await McpToolCallModel.create({
-          agentId: profileId,
+          profileId: profileId,
           mcpServerName: "mcp-gateway",
           method: "initialize",
           toolCall: null,
@@ -186,7 +186,7 @@ async function handleMcpPostRequest(
               tools: { listChanged: false },
             },
             serverInfo: {
-              name: `archestra-agent-${profileId}`,
+              name: `archestra-profile-${profileId}`,
               version: config.api.version,
             },
             // biome-ignore lint/suspicious/noExplicitAny: toolResult structure varies by method type
@@ -247,12 +247,12 @@ async function handleDeleteSessions(
   );
 
   const sessionsToClear: string[] = [];
-  const allAgentIds: string[] = [];
+  const allProfileIds: string[] = [];
 
-  // Find all sessions for this agent
+  // Find all sessions for this profile
   for (const [sessionId, sessionData] of activeSessions.entries()) {
-    allAgentIds.push(sessionData.agentId);
-    if (sessionData.agentId === profileId) {
+    allProfileIds.push(sessionData.profileId);
+    if (sessionData.profileId === profileId) {
       sessionsToClear.push(sessionId);
     }
   }
@@ -260,7 +260,7 @@ async function handleDeleteSessions(
   fastify.log.info(
     {
       profileId,
-      allAgentIds,
+      allProfileIds,
       sessionsToClear,
       totalSessions: activeSessions.size,
       matchingSessionsCount: sessionsToClear.length,

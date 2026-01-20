@@ -19,17 +19,17 @@ const anthropicProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
   /**
    * Register HTTP proxy for Anthropic routes
    * Handles both patterns:
-   * - /v1/anthropic/:agentId/* -> https://api.anthropic.com/v1/* (agentId stripped if UUID)
+   * - /v1/anthropic/:profileId/* -> https://api.anthropic.com/v1/* (profileId stripped if UUID)
    * - /v1/anthropic/* -> https://api.anthropic.com/v1/* (direct proxy)
    *
-   * Messages are excluded and handled separately below with full agent support
+   * Messages are excluded and handled separately below with full profile support
    */
   await fastify.register(fastifyHttpProxy, {
     upstream: config.llm.anthropic.baseUrl,
     prefix: ANTHROPIC_PREFIX,
     rewritePrefix: "/v1",
     preHandler: (request, _reply, next) => {
-      // Skip messages route (we handle it specially below with full agent support)
+      // Skip messages route (we handle it specially below with full profile support)
       if (request.method === "POST" && request.url.includes(MESSAGES_SUFFIX)) {
         logger.info(
           {
@@ -84,15 +84,15 @@ const anthropicProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
 
   /**
    * Anthropic SDK standard format (with /v1 prefix)
-   * No agentId is provided -- agent is created/fetched based on the user-agent header
+   * No profileId is provided -- profile is created/fetched based on the user-agent header
    */
   fastify.post(
     `${ANTHROPIC_PREFIX}/v1${MESSAGES_SUFFIX}`,
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.AnthropicMessagesWithDefaultAgent,
-        description: "Send a message to Anthropic using the default agent",
+        operationId: RouteId.AnthropicMessagesWithDefaultProfile,
+        description: "Send a message to Anthropic using the default profile",
         tags: ["llm-proxy"],
         body: Anthropic.API.MessagesRequestSchema,
         headers: Anthropic.API.MessagesHeadersSchema,
@@ -106,7 +106,7 @@ const anthropicProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
           headers: request.headers,
           bodyKeys: Object.keys(request.body || {}),
         },
-        "[UnifiedProxy] Handling Anthropic request (default agent) - FULL REQUEST DEBUG",
+        "[UnifiedProxy] Handling Anthropic request (default profile) - FULL REQUEST DEBUG",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
         request.headers,
@@ -119,7 +119,7 @@ const anthropicProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         anthropicAdapterFactory,
         {
           organizationId: request.organizationId,
-          agentId: undefined,
+          profileId: undefined,
           externalAgentId,
           userId,
         },
@@ -129,21 +129,21 @@ const anthropicProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
 
   /**
    * Anthropic SDK standard format (with /v1 prefix)
-   * An agentId is provided -- agent is fetched based on the agentId
+   * A profileId is provided -- profile is fetched based on the profileId
    *
    * NOTE: this is really only needed for n8n compatibility...
    */
   fastify.post(
-    `${ANTHROPIC_PREFIX}/:agentId/v1${MESSAGES_SUFFIX}`,
+    `${ANTHROPIC_PREFIX}/:profileId/v1${MESSAGES_SUFFIX}`,
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.AnthropicMessagesWithAgent,
+        operationId: RouteId.AnthropicMessagesWithProfile,
         description:
-          "Send a message to Anthropic using a specific agent (n8n URL format)",
+          "Send a message to Anthropic using a specific profile (n8n URL format)",
         tags: ["llm-proxy"],
         params: z.object({
-          agentId: UuidIdSchema,
+          profileId: UuidIdSchema,
         }),
         body: Anthropic.API.MessagesRequestSchema,
         headers: Anthropic.API.MessagesHeadersSchema,
@@ -154,11 +154,11 @@ const anthropicProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
       logger.info(
         {
           url: request.url,
-          agentId: request.params.agentId,
+          profileId: request.params.profileId,
           headers: request.headers,
           bodyKeys: Object.keys(request.body || {}),
         },
-        "[UnifiedProxy] Handling Anthropic request (with agent) - FULL REQUEST DEBUG",
+        "[UnifiedProxy] Handling Anthropic request (with profile) - FULL REQUEST DEBUG",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
         request.headers,
@@ -171,7 +171,7 @@ const anthropicProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         anthropicAdapterFactory,
         {
           organizationId: request.organizationId,
-          agentId: request.params.agentId,
+          profileId: request.params.profileId,
           externalAgentId,
           userId,
         },

@@ -11,7 +11,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import type { InteractionRequest, InteractionResponse } from "@/types";
-import agentsTable from "./agent";
+import profilesTable from "./profile";
 import usersTable from "./user";
 
 const interactionsTable = pgTable(
@@ -20,7 +20,7 @@ const interactionsTable = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     profileId: uuid("profile_id")
       .notNull()
-      .references(() => agentsTable.id, { onDelete: "cascade" }),
+      .references(() => profilesTable.id, { onDelete: "cascade" }),
     /**
      * Optional external agent ID passed via X-Archestra-Agent-Id header.
      * This allows clients to associate interactions with their own agent identifiers.

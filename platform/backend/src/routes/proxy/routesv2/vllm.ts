@@ -93,8 +93,9 @@ const vllmProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.VllmChatCompletionsWithDefaultAgent,
-        description: "Create a chat completion with vLLM (uses default agent)",
+        operationId: RouteId.VllmChatCompletionsWithDefaultProfile,
+        description:
+          "Create a chat completion with vLLM (uses default profile)",
         tags: ["llm-proxy"],
         body: Vllm.API.ChatCompletionRequestSchema,
         headers: Vllm.API.ChatCompletionsHeadersSchema,
@@ -115,7 +116,7 @@ const vllmProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
       }
       logger.debug(
         { url: request.url },
-        "[UnifiedProxy] Handling vLLM request (default agent)",
+        "[UnifiedProxy] Handling vLLM request (default profile)",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
         request.headers,
@@ -128,7 +129,7 @@ const vllmProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         vllmAdapterFactory,
         {
           organizationId: request.organizationId,
-          agentId: undefined,
+          profileId: undefined,
           externalAgentId,
           userId,
         },
@@ -137,15 +138,16 @@ const vllmProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
   );
 
   fastify.post(
-    `${API_PREFIX}/:agentId${CHAT_COMPLETIONS_SUFFIX}`,
+    `${API_PREFIX}/:profileId${CHAT_COMPLETIONS_SUFFIX}`,
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.VllmChatCompletionsWithAgent,
-        description: "Create a chat completion with vLLM for a specific agent",
+        operationId: RouteId.VllmChatCompletionsWithProfile,
+        description:
+          "Create a chat completion with vLLM for a specific profile",
         tags: ["llm-proxy"],
         params: z.object({
-          agentId: UuidIdSchema,
+          profileId: UuidIdSchema,
         }),
         body: Vllm.API.ChatCompletionRequestSchema,
         headers: Vllm.API.ChatCompletionsHeadersSchema,
@@ -165,8 +167,8 @@ const vllmProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         });
       }
       logger.debug(
-        { url: request.url, agentId: request.params.agentId },
-        "[UnifiedProxy] Handling vLLM request (with agent)",
+        { url: request.url, profileId: request.params.profileId },
+        "[UnifiedProxy] Handling vLLM request (with profile)",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
         request.headers,
@@ -179,7 +181,7 @@ const vllmProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         vllmAdapterFactory,
         {
           organizationId: request.organizationId,
-          agentId: request.params.agentId,
+          profileId: request.params.profileId,
           externalAgentId,
           userId,
         },

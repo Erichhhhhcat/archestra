@@ -326,7 +326,7 @@ export async function assignArchestraToolsToProfile(
     await makeApiRequest({
       request,
       method: "post",
-      urlSuffix: `/api/agents/${profileId}/tools/${tool.id}`,
+      urlSuffix: `/api/profiles/${profileId}/tools/${tool.id}`,
       data: {},
     });
     assignedToolIds.push(tool.id);

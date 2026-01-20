@@ -34,7 +34,7 @@ class PromptModel {
       .values({
         organizationId,
         name: input.name,
-        agentId: input.agentId,
+        profileId: input.profileId,
         userPrompt: input.userPrompt || null,
         systemPrompt: input.systemPrompt || null,
         allowedChatops: input.allowedChatops || [],
@@ -60,14 +60,14 @@ class PromptModel {
   }
 
   /**
-   * Find all prompts for an organization filtered by accessible agent IDs
-   * Returns only prompts assigned to agents the user has access to
+   * Find all prompts for an organization filtered by accessible profile IDs
+   * Returns only prompts assigned to profiles the user has access to
    */
-  static async findByOrganizationIdAndAccessibleAgents(
+  static async findByOrganizationIdAndAccessibleProfiles(
     organizationId: string,
-    accessibleAgentIds: string[],
+    accessibleProfileIds: string[],
   ): Promise<Prompt[]> {
-    if (accessibleAgentIds.length === 0) {
+    if (accessibleProfileIds.length === 0) {
       return [];
     }
 
@@ -77,7 +77,7 @@ class PromptModel {
       .where(
         and(
           eq(schema.promptsTable.organizationId, organizationId),
-          inArray(schema.promptsTable.agentId, accessibleAgentIds),
+          inArray(schema.promptsTable.profileId, accessibleProfileIds),
         ),
       )
       .orderBy(desc(schema.promptsTable.createdAt));
@@ -86,13 +86,13 @@ class PromptModel {
   }
 
   /**
-   * Find all prompts for a specific agent
+   * Find all prompts for a specific profile
    */
-  static async findByAgentId(agentId: string): Promise<Prompt[]> {
+  static async findByProfileId(profileId: string): Promise<Prompt[]> {
     const prompts = await db
       .select()
       .from(schema.promptsTable)
-      .where(eq(schema.promptsTable.agentId, agentId))
+      .where(eq(schema.promptsTable.profileId, profileId))
       .orderBy(desc(schema.promptsTable.createdAt));
 
     return prompts;
@@ -188,7 +188,7 @@ class PromptModel {
     const nameChanged = input.name !== undefined && input.name !== prompt.name;
 
     if (nameChanged) {
-      await ToolModel.syncAgentDelegationToolNames([id], newName);
+      await ToolModel.syncProfileDelegationToolNames([id], newName);
     }
 
     // Create history entry from current state
@@ -204,7 +204,7 @@ class PromptModel {
       .update(schema.promptsTable)
       .set({
         name: newName,
-        agentId: input.agentId ?? prompt.agentId,
+        profileId: input.profileId ?? prompt.profileId,
         userPrompt: input.userPrompt ?? prompt.userPrompt,
         systemPrompt: input.systemPrompt ?? prompt.systemPrompt,
         allowedChatops: input.allowedChatops ?? prompt.allowedChatops,

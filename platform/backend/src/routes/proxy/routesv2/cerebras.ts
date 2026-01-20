@@ -26,7 +26,7 @@ const cerebrasProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
 
   /**
    * Register HTTP proxy for Cerebras routes
-   * Chat completions are handled separately with full agent support
+   * Chat completions are handled separately with full profile support
    */
   await fastify.register(fastifyHttpProxy, {
     upstream: config.llm.cerebras.baseUrl,
@@ -90,16 +90,16 @@ const cerebrasProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
   });
 
   /**
-   * Chat completions with default agent
+   * Chat completions with default profile
    */
   fastify.post(
     `${API_PREFIX}${CHAT_COMPLETIONS_SUFFIX}`,
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.CerebrasChatCompletionsWithDefaultAgent,
+        operationId: RouteId.CerebrasChatCompletionsWithDefaultProfile,
         description:
-          "Create a chat completion with Cerebras (uses default agent)",
+          "Create a chat completion with Cerebras (uses default profile)",
         tags: ["llm-proxy"],
         body: Cerebras.API.ChatCompletionRequestSchema,
         headers: Cerebras.API.ChatCompletionsHeadersSchema,
@@ -111,7 +111,7 @@ const cerebrasProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
     async (request, reply) => {
       logger.debug(
         { url: request.url },
-        "[UnifiedProxy] Handling Cerebras request (default agent)",
+        "[UnifiedProxy] Handling Cerebras request (default profile)",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
         request.headers,
@@ -124,7 +124,7 @@ const cerebrasProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         cerebrasAdapterFactory,
         {
           organizationId: request.organizationId,
-          agentId: undefined,
+          profileId: undefined,
           externalAgentId,
           userId,
         },
@@ -133,19 +133,19 @@ const cerebrasProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
   );
 
   /**
-   * Chat completions with specific agent
+   * Chat completions with specific profile
    */
   fastify.post(
-    `${API_PREFIX}/:agentId${CHAT_COMPLETIONS_SUFFIX}`,
+    `${API_PREFIX}/:profileId${CHAT_COMPLETIONS_SUFFIX}`,
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.CerebrasChatCompletionsWithAgent,
+        operationId: RouteId.CerebrasChatCompletionsWithProfile,
         description:
-          "Create a chat completion with Cerebras for a specific agent",
+          "Create a chat completion with Cerebras for a specific profile",
         tags: ["llm-proxy"],
         params: z.object({
-          agentId: UuidIdSchema,
+          profileId: UuidIdSchema,
         }),
         body: Cerebras.API.ChatCompletionRequestSchema,
         headers: Cerebras.API.ChatCompletionsHeadersSchema,
@@ -156,8 +156,8 @@ const cerebrasProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
     },
     async (request, reply) => {
       logger.debug(
-        { url: request.url, agentId: request.params.agentId },
-        "[UnifiedProxy] Handling Cerebras request (with agent)",
+        { url: request.url, profileId: request.params.profileId },
+        "[UnifiedProxy] Handling Cerebras request (with profile)",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
         request.headers,
@@ -170,7 +170,7 @@ const cerebrasProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         cerebrasAdapterFactory,
         {
           organizationId: request.organizationId,
-          agentId: request.params.agentId,
+          profileId: request.params.profileId,
           externalAgentId,
           userId,
         },

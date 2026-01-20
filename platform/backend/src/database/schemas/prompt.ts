@@ -7,7 +7,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { ChatOpsProviderType } from "@/types/chatops";
-import agentsTable from "./agent";
+import profilesTable from "./profile";
 
 /**
  * Represents a historical version of a prompt stored in the history JSONB array
@@ -23,9 +23,9 @@ const promptsTable = pgTable("prompts", {
   id: uuid("id").primaryKey().defaultRandom(),
   organizationId: text("organization_id").notNull(),
   name: text("name").notNull(),
-  agentId: uuid("agent_id")
+  profileId: uuid("profile_id")
     .notNull()
-    .references(() => agentsTable.id, { onDelete: "cascade" }),
+    .references(() => profilesTable.id, { onDelete: "cascade" }),
   userPrompt: text("user_prompt"),
   systemPrompt: text("system_prompt"),
   version: integer("version").notNull().default(1),

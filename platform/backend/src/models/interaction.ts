@@ -28,8 +28,8 @@ import type {
   SortingQuery,
   UserInfo,
 } from "@/types";
-import AgentTeamModel from "./agent-team";
 import LimitModel from "./limit";
+import ProfileTeamModel from "./profile-team";
 
 /**
  * Escapes special LIKE pattern characters (%, _, \) to treat them as literals.
@@ -241,17 +241,18 @@ class InteractionModel {
 
     // Access control filter
     if (requestingUserId && !isAgentAdmin) {
-      const accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
-        requestingUserId,
-        false,
-      );
+      const accessibleProfileIds =
+        await ProfileTeamModel.getUserAccessibleProfileIds(
+          requestingUserId,
+          false,
+        );
 
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return createPaginatedResult([], 0, pagination);
       }
 
       conditions.push(
-        inArray(schema.interactionsTable.profileId, accessibleAgentIds),
+        inArray(schema.interactionsTable.profileId, accessibleProfileIds),
       );
     }
 
@@ -380,7 +381,7 @@ class InteractionModel {
 
     // Check access control for non-agent admins
     if (userId && !isAgentAdmin) {
-      const hasAccess = await AgentTeamModel.userHasAgentAccess(
+      const hasAccess = await ProfileTeamModel.userHasProfileAccess(
         userId,
         interaction.profileId,
         false,
@@ -467,17 +468,18 @@ class InteractionModel {
     ];
 
     if (requestingUserId && !isAgentAdmin) {
-      const accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
-        requestingUserId,
-        false,
-      );
+      const accessibleProfileIds =
+        await ProfileTeamModel.getUserAccessibleProfileIds(
+          requestingUserId,
+          false,
+        );
 
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return [];
       }
 
       conditions.push(
-        inArray(schema.interactionsTable.profileId, accessibleAgentIds),
+        inArray(schema.interactionsTable.profileId, accessibleProfileIds),
       );
     }
 
@@ -507,17 +509,18 @@ class InteractionModel {
     const conditions: SQL[] = [isNotNull(schema.interactionsTable.userId)];
 
     if (requestingUserId && !isAgentAdmin) {
-      const accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
-        requestingUserId,
-        false,
-      );
+      const accessibleProfileIds =
+        await ProfileTeamModel.getUserAccessibleProfileIds(
+          requestingUserId,
+          false,
+        );
 
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return [];
       }
 
       conditions.push(
-        inArray(schema.interactionsTable.profileId, accessibleAgentIds),
+        inArray(schema.interactionsTable.profileId, accessibleProfileIds),
       );
     }
 
@@ -569,19 +572,19 @@ class InteractionModel {
         return;
       }
 
-      // Get agent's teams to update team and organization limits
-      const agentTeamIds = await AgentTeamModel.getTeamsForAgent(
+      // Get profile's teams to update team and organization limits
+      const profileTeamIds = await ProfileTeamModel.getTeamsForProfile(
         interaction.profileId,
       );
 
       const updatePromises: Promise<void>[] = [];
 
-      if (agentTeamIds.length === 0) {
+      if (profileTeamIds.length === 0) {
         logger.warn(
           `Profile ${interaction.profileId} has no team assignments for interaction ${interaction.id}`,
         );
 
-        // Even if agent has no teams, we should still try to update organization limits
+        // Even if profile has no teams, we should still try to update organization limits
         // We'll use a default organization approach - get the first organization from existing limits
         try {
           const existingOrgLimits = await db
@@ -604,7 +607,7 @@ class InteractionModel {
         } catch (error) {
           logger.error(
             { error },
-            "Failed to find organization for agent with no teams",
+            "Failed to find organization for profile with no teams",
           );
         }
       } else {
@@ -612,7 +615,7 @@ class InteractionModel {
         const teams = await db
           .select()
           .from(schema.teamsTable)
-          .where(inArray(schema.teamsTable.id, agentTeamIds));
+          .where(inArray(schema.teamsTable.id, profileTeamIds));
 
         // Update organization-level token cost limits (from first team's organization)
         if (teams.length > 0 && teams[0].organizationId) {
@@ -704,17 +707,18 @@ class InteractionModel {
     const conditions: SQL[] = [];
 
     if (requestingUserId && !isAgentAdmin) {
-      const accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
-        requestingUserId,
-        false,
-      );
+      const accessibleProfileIds =
+        await ProfileTeamModel.getUserAccessibleProfileIds(
+          requestingUserId,
+          false,
+        );
 
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return createPaginatedResult([], 0, pagination);
       }
 
       conditions.push(
-        inArray(schema.interactionsTable.profileId, accessibleAgentIds),
+        inArray(schema.interactionsTable.profileId, accessibleProfileIds),
       );
     }
 
@@ -798,7 +802,7 @@ class InteractionModel {
           lastRequestTime: max(schema.interactionsTable.createdAt),
           models: sql<string>`STRING_AGG(DISTINCT ${schema.interactionsTable.model}, ',')`,
           profileId: schema.interactionsTable.profileId,
-          profileName: schema.agentsTable.name,
+          profileName: schema.profilesTable.name,
           externalAgentIds: sql<string>`STRING_AGG(DISTINCT ${schema.interactionsTable.externalAgentId}, ',')`,
           userNames: sql<string>`STRING_AGG(DISTINCT ${schema.usersTable.name}, ',')`,
           // Get the request from the most recent "main" interaction in this session
@@ -830,8 +834,8 @@ class InteractionModel {
         })
         .from(schema.interactionsTable)
         .leftJoin(
-          schema.agentsTable,
-          eq(schema.interactionsTable.profileId, schema.agentsTable.id),
+          schema.profilesTable,
+          eq(schema.interactionsTable.profileId, schema.profilesTable.id),
         )
         .leftJoin(
           schema.usersTable,
@@ -848,7 +852,7 @@ class InteractionModel {
         .groupBy(
           sessionGroupExpr,
           schema.interactionsTable.profileId,
-          schema.agentsTable.name,
+          schema.profilesTable.name,
         )
         .orderBy(desc(max(schema.interactionsTable.createdAt)))
         .limit(pagination.limit)

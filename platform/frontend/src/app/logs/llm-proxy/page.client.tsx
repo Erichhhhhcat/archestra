@@ -20,12 +20,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useProfiles } from "@/lib/agent.query";
 import {
   useInteractionSessions,
   useUniqueUserIds,
 } from "@/lib/interaction.query";
 import { DynamicInteraction } from "@/lib/interaction.utils";
+import { useProfiles } from "@/lib/profile.query";
 import { useDateTimeRangePicker } from "@/lib/use-date-time-range-picker";
 import { DEFAULT_TABLE_LIMIT, formatDate } from "@/lib/utils";
 import { ErrorBoundary } from "../../_parts/error-boundary";
@@ -123,7 +123,7 @@ function SessionRow({
   agents,
 }: {
   session: SessionData;
-  agents: archestraApiTypes.GetAllAgentsResponses["200"] | undefined;
+  agents: archestraApiTypes.GetAllProfilesResponses["200"] | undefined;
 }) {
   const router = useRouter();
 
@@ -299,7 +299,7 @@ export default function LlmProxyLogsPage({
 }: {
   initialData?: {
     interactions: archestraApiTypes.GetInteractionsResponses["200"];
-    agents: archestraApiTypes.GetAllAgentsResponses["200"];
+    agents: archestraApiTypes.GetAllProfilesResponses["200"];
   };
 }) {
   return (
@@ -316,7 +316,7 @@ function SessionsTable({
 }: {
   initialData?: {
     interactions: archestraApiTypes.GetInteractionsResponses["200"];
-    agents: archestraApiTypes.GetAllAgentsResponses["200"];
+    agents: archestraApiTypes.GetAllProfilesResponses["200"];
   };
 }) {
   const router = useRouter();

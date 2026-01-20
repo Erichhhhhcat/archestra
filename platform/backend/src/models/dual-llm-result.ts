@@ -23,11 +23,11 @@ class DualLlmResultModel {
     return result || null;
   }
 
-  static async findByAgentId(agentId: string): Promise<DualLlmResult[]> {
+  static async findByProfileId(profileId: string): Promise<DualLlmResult[]> {
     return db
       .select()
       .from(schema.dualLlmResultsTable)
-      .where(eq(schema.dualLlmResultsTable.agentId, agentId))
+      .where(eq(schema.dualLlmResultsTable.profileId, profileId))
       .orderBy(desc(schema.dualLlmResultsTable.createdAt));
   }
 

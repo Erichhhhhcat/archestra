@@ -19,11 +19,11 @@ import config from "@/config";
 import { extractAndIngestDocuments } from "@/knowledge-graph/chat-document-extractor";
 import logger from "@/logging";
 import {
-  AgentModel,
   ChatApiKeyModel,
   ConversationEnabledToolModel,
   ConversationModel,
   MessageModel,
+  ProfileModel,
   PromptModel,
   TeamModel,
 } from "@/models";
@@ -185,7 +185,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       // Pass the actual array (even if empty) if there is custom selection
       const mcpTools = await getChatMcpTools({
         agentName: conversation.agent.name,
-        agentId: conversation.agentId,
+        agentId: conversation.profileId,
         userId: user.id,
         userIsProfileAdmin,
         enabledToolIds: hasCustomSelection ? enabledToolIds : undefined,
@@ -227,7 +227,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       logger.info(
         {
           conversationId,
-          agentId: conversation.agentId,
+          agentId: conversation.profileId,
           userId: user.id,
           orgId: organizationId,
           toolCount: Object.keys(mcpTools).length,
@@ -250,7 +250,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       const { model } = await createLLMModelForAgent({
         organizationId,
         userId: user.id,
-        agentId: conversation.agentId,
+        agentId: conversation.profileId,
         model: conversation.selectedModel,
         provider,
         conversationId,
@@ -304,7 +304,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         originalMessages: messages as UIMessage[],
         onError: (error) => {
           logger.error(
-            { error, conversationId, agentId: conversation.agentId },
+            { error, conversationId, agentId: conversation.profileId },
             "Chat stream error occurred",
           );
 
@@ -486,7 +486,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
     "/api/chat/agents/:agentId/mcp-tools",
     {
       schema: {
-        operationId: RouteId.GetChatAgentMcpTools,
+        operationId: RouteId.GetChatProfileMcpTools,
         description: "Get MCP tools available for an agent via MCP Gateway",
         tags: ["Chat"],
         params: z.object({ agentId: UuidIdSchema }),
@@ -503,13 +503,17 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
     },
     async ({ params: { agentId }, user, headers }, reply) => {
       // Check if user is an agent admin
-      const { success: isAgentAdmin } = await hasPermission(
+      const { success: isProfileAdmin } = await hasPermission(
         { profile: ["admin"] },
         headers,
       );
 
       // Verify agent exists and user has access
-      const agent = await AgentModel.findById(agentId, user.id, isAgentAdmin);
+      const agent = await ProfileModel.findById(
+        agentId,
+        user.id,
+        isProfileAdmin,
+      );
 
       if (!agent) {
         return [];
@@ -520,7 +524,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         agentName: agent.name,
         agentId,
         userId: user.id,
-        userIsProfileAdmin: isAgentAdmin,
+        userIsProfileAdmin: isProfileAdmin,
         // No conversation context here as this is just fetching available tools
       });
 
@@ -545,14 +549,14 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         description: "Create a new conversation with an agent",
         tags: ["Chat"],
         body: InsertConversationSchema.pick({
-          agentId: true,
+          profileId: true,
           promptId: true,
           title: true,
           selectedModel: true,
           selectedProvider: true,
           chatApiKeyId: true,
         })
-          .required({ agentId: true })
+          .required({ profileId: true })
           .partial({
             promptId: true,
             title: true,
@@ -566,7 +570,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
     async (
       {
         body: {
-          agentId,
+          profileId,
           promptId,
           title,
           selectedModel,
@@ -579,17 +583,21 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       },
       reply,
     ) => {
-      // Check if user is an agent admin
-      const { success: isAgentAdmin } = await hasPermission(
+      // Check if user is a profile admin
+      const { success: isProfileAdmin } = await hasPermission(
         { profile: ["admin"] },
         headers,
       );
 
-      // Validate that the agent exists and user has access to it
-      const agent = await AgentModel.findById(agentId, user.id, isAgentAdmin);
+      // Validate that the profile exists and user has access to it
+      const profile = await ProfileModel.findById(
+        profileId,
+        user.id,
+        isProfileAdmin,
+      );
 
-      if (!agent) {
-        throw new ApiError(404, "Agent not found");
+      if (!profile) {
+        throw new ApiError(404, "Profile not found");
       }
 
       // Validate chatApiKeyId if provided
@@ -620,7 +628,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       logger.info(
         {
-          agentId,
+          profileId,
           organizationId,
           selectedModel,
           selectedProvider,
@@ -632,12 +640,12 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         "Creating conversation with model",
       );
 
-      // Create conversation with agent and optional prompt
+      // Create conversation with profile and optional prompt
       return reply.send(
         await ConversationModel.create({
           userId: user.id,
           organizationId,
-          agentId,
+          profileId,
           promptId,
           title,
           selectedModel: modelToUse,
@@ -670,20 +678,20 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         );
       }
 
-      // Validate agentId if provided
-      if (body.agentId) {
-        const { success: isAgentAdmin } = await hasPermission(
+      // Validate profileId if provided
+      if (body.profileId) {
+        const { success: isProfileAdmin } = await hasPermission(
           { profile: ["admin"] },
           headers,
         );
 
-        const agent = await AgentModel.findById(
-          body.agentId,
+        const profile = await ProfileModel.findById(
+          body.profileId,
           user.id,
-          isAgentAdmin,
+          isProfileAdmin,
         );
-        if (!agent) {
-          throw new ApiError(404, "Agent not found");
+        if (!profile) {
+          throw new ApiError(404, "Profile not found");
         }
       }
 
@@ -724,7 +732,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       if (conversation && browserStreamFeature.isEnabled()) {
         // Close browser tab for this conversation (best effort, don't fail if it errors)
         try {
-          await browserStreamFeature.closeTab(conversation.agentId, id, {
+          await browserStreamFeature.closeTab(conversation.profileId, id, {
             userId: user.id,
             userIsProfileAdmin: false,
           });

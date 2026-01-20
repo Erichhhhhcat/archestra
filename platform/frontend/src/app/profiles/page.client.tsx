@@ -62,14 +62,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useHasPermissions } from "@/lib/auth.query";
 import {
   useCreateProfile,
   useDeleteProfile,
   useLabelKeys,
   useProfilesPaginated,
   useUpdateProfile,
-} from "@/lib/agent.query";
-import { useHasPermissions } from "@/lib/auth.query";
+} from "@/lib/profile.query";
 import {
   DEFAULT_AGENTS_PAGE_SIZE,
   DEFAULT_SORT_BY,
@@ -84,7 +84,7 @@ import type { archestraApiTypes } from "@shared";
 import { PermissivePolicyBar } from "@/components/permissive-policy-bar";
 
 type ProfilesInitialData = {
-  agents: archestraApiTypes.GetAgentsResponses["200"] | null;
+  agents: archestraApiTypes.GetProfilesResponses["200"] | null;
   teams: archestraApiTypes.GetTeamsResponses["200"];
 };
 
@@ -236,7 +236,7 @@ function Profiles({ initialData }: { initialData?: ProfilesInitialData }) {
     name: string;
   } | null>(null);
   const [assigningToolsProfile, setAssigningToolsProfile] = useState<
-    archestraApiTypes.GetAgentsResponses["200"]["data"][number] | null
+    archestraApiTypes.GetProfilesResponses["200"]["data"][number] | null
   >(null);
   const [editingProfile, setEditingProfile] = useState<{
     id: string;
@@ -250,7 +250,7 @@ function Profiles({ initialData }: { initialData?: ProfilesInitialData }) {
   );
 
   type ProfileData =
-    archestraApiTypes.GetAgentsResponses["200"]["data"][number];
+    archestraApiTypes.GetProfilesResponses["200"]["data"][number];
 
   // Update URL when search query changes
   const handleSearchChange = useCallback(
@@ -486,7 +486,7 @@ function Profiles({ initialData }: { initialData?: ProfilesInitialData }) {
         <PermissionButton
           permissions={{ profile: ["create"] }}
           onClick={() => setIsCreateDialogOpen(true)}
-          data-testid={E2eTestId.CreateAgentButton}
+          data-testid={E2eTestId.CreateProfileButton}
         >
           <Plus className="mr-2 h-4 w-4" />
           Create Profile
@@ -514,7 +514,7 @@ function Profiles({ initialData }: { initialData?: ProfilesInitialData }) {
                 : "No profiles found"}
             </div>
           ) : (
-            <div data-testid={E2eTestId.AgentsTable}>
+            <div data-testid={E2eTestId.ProfilesTable}>
               <DataTable
                 columns={columns}
                 data={agents}

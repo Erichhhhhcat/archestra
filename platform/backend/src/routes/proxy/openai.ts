@@ -26,17 +26,17 @@ import {
 } from "@/llm-metrics";
 import logger from "@/logging";
 import {
-  AgentModel,
-  AgentTeamModel,
   InteractionModel,
   LimitValidationService,
+  ProfileModel,
+  ProfileTeamModel,
   TokenPriceModel,
 } from "@/models";
 import {
-  type Agent,
   ApiError,
   constructResponseSchema,
   OpenAi,
+  type Profile,
   UuidIdSchema,
 } from "@/types";
 import { PROXY_API_PREFIX, PROXY_BODY_LIMIT } from "./common";
@@ -50,7 +50,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
   /**
    * Register HTTP proxy for OpenAI routes
    * Handles both patterns:
-   * - /v1/openai/:agentId/* -> config.llm.openai.baseUrl/* (agentId stripped if UUID)
+   * - /v1/openai/:profileId/* -> config.llm.openai.baseUrl/* (profileId stripped if UUID)
    *  - /v1/openai/* -> config.llm.openai.baseUrl/* (direct proxy)
    *
    * Chat completions are excluded and handled separately below with full agent support
@@ -121,7 +121,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
     headers: OpenAi.Types.ChatCompletionsHeaders,
     reply: FastifyReply,
     _organizationId: string,
-    agentId?: string,
+    profileId?: string,
     externalAgentId?: string,
     userId?: string,
     sessionId?: string | null,
@@ -131,7 +131,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
     logger.debug(
       {
-        agentId,
+        profileId,
         model: body.model,
         stream,
         messagesCount: messages.length,
@@ -142,42 +142,46 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
       "[OpenAIProxy] handleChatCompletion: request received",
     );
 
-    let resolvedAgent: Agent;
-    if (agentId) {
-      // If agentId provided via URL, validate it exists
-      logger.debug({ agentId }, "[OpenAIProxy] Resolving explicit agent by ID");
-      const agent = await AgentModel.findById(agentId);
-      if (!agent) {
-        logger.debug({ agentId }, "[OpenAIProxy] Agent not found");
+    let resolvedProfile: Profile;
+    if (profileId) {
+      // If profileId provided via URL, validate it exists
+      logger.debug(
+        { profileId },
+        "[OpenAIProxy] Resolving explicit profile by ID",
+      );
+      const profile = await ProfileModel.findById(profileId);
+      if (!profile) {
+        logger.debug({ profileId }, "[OpenAIProxy] Profile not found");
         return reply.status(404).send({
           error: {
-            message: `Agent with ID ${agentId} not found`,
+            message: `Profile with ID ${profileId} not found`,
             type: "not_found",
           },
         });
       }
-      resolvedAgent = agent;
+      resolvedProfile = profile;
     } else {
-      // Otherwise get or create default agent
+      // Otherwise get or create default profile
       logger.debug(
         { userAgent: headers["user-agent"] },
-        "[OpenAIProxy] Resolving default agent by user-agent",
+        "[OpenAIProxy] Resolving default profile by user-agent",
       );
-      resolvedAgent = await AgentModel.getAgentOrCreateDefault(
+      resolvedProfile = await ProfileModel.getProfileOrCreateDefault(
         headers["user-agent"],
       );
     }
 
-    const resolvedAgentId = resolvedAgent.id;
-    const teamIds = await AgentTeamModel.getTeamsForAgent(resolvedAgentId);
+    const resolvedProfileId = resolvedProfile.id;
+    const teamIds =
+      await ProfileTeamModel.getTeamsForProfile(resolvedProfileId);
 
     fastify.log.info(
       {
-        resolvedAgentId,
-        agentName: resolvedAgent.name,
-        wasExplicit: !!agentId,
+        resolvedProfileId,
+        profileName: resolvedProfile.name,
+        wasExplicit: !!profileId,
       },
-      "Agent resolved",
+      "Profile resolved",
     );
 
     const { authorization: openAiApiKey } = headers;
@@ -186,21 +190,26 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
       : new OpenAIProvider({
           apiKey: openAiApiKey,
           baseURL: config.llm.openai.baseUrl,
-          fetch: getObservableFetch("openai", resolvedAgent, externalAgentId),
+          fetch: getObservableFetch("openai", resolvedProfile, externalAgentId),
         });
 
     try {
       // Check if current usage limits are already exceeded
-      logger.debug({ resolvedAgentId }, "[OpenAIProxy] Checking usage limits");
+      logger.debug(
+        { resolvedProfileId },
+        "[OpenAIProxy] Checking usage limits",
+      );
       const limitViolation =
-        await LimitValidationService.checkLimitsBeforeRequest(resolvedAgentId);
+        await LimitValidationService.checkLimitsBeforeRequest(
+          resolvedProfileId,
+        );
 
       if (limitViolation) {
         const [_refusalMessage, contentMessage] = limitViolation;
 
         fastify.log.info(
           {
-            resolvedAgentId,
+            resolvedProfileId,
             reason: "token_cost_limit_exceeded",
             contentMessage,
           },
@@ -216,11 +225,11 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
           },
         });
       }
-      logger.debug({ resolvedAgentId }, "[OpenAIProxy] Limit check passed");
+      logger.debug({ resolvedProfileId }, "[OpenAIProxy] Limit check passed");
 
       // Get global tool policy from organization (with fallback)
       const globalToolPolicy =
-        await utils.toolInvocation.getGlobalToolPolicy(resolvedAgentId);
+        await utils.toolInvocation.getGlobalToolPolicy(resolvedProfileId);
 
       // Persist non-MCP tools declared by client for tracking
       logger.debug(
@@ -243,7 +252,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
             };
           }
         }),
-        resolvedAgentId,
+        resolvedProfileId,
       );
 
       // Client declares tools they want to use - no injection needed
@@ -262,7 +271,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
       // Optimize model selection for cost using dynamic rules
       const hasTools = (tools?.length ?? 0) > 0;
       const optimizedModel = await utils.costOptimization.getOptimizedModel(
-        resolvedAgent,
+        resolvedProfile,
         messages,
         "openai",
         hasTools,
@@ -271,12 +280,12 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
       if (optimizedModel) {
         model = optimizedModel;
         fastify.log.info(
-          { resolvedAgentId, optimizedModel },
+          { resolvedProfileId, optimizedModel },
           "Optimized model selected",
         );
       } else {
         fastify.log.info(
-          { resolvedAgentId, baselineModel },
+          { resolvedProfileId, baselineModel },
           "No matching optimized model found, proceeding with baseline model",
         );
       }
@@ -309,8 +318,8 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       logger.debug(
         {
-          resolvedAgentId,
-          considerContextUntrusted: resolvedAgent.considerContextUntrusted,
+          resolvedProfileId,
+          considerContextUntrusted: resolvedProfile.considerContextUntrusted,
           globalToolPolicy,
         },
         "[OpenAIProxy] Evaluating trusted data policies",
@@ -318,10 +327,10 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
       const { toolResultUpdates, contextIsTrusted } =
         await utils.trustedData.evaluateIfContextIsTrusted(
           commonMessages,
-          resolvedAgentId,
+          resolvedProfileId,
           openAiApiKey,
           "openai",
-          resolvedAgent.considerContextUntrusted,
+          resolvedProfile.considerContextUntrusted,
           globalToolPolicy,
           { teamIds, externalAgentId },
           stream
@@ -396,7 +405,9 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
       let toonTokensAfter: number | null = null;
       let toonCostSavings: number | null = null;
       const shouldApplyToonCompression =
-        await utils.toonConversion.shouldApplyToonCompression(resolvedAgentId);
+        await utils.toonConversion.shouldApplyToonCompression(
+          resolvedProfileId,
+        );
 
       if (shouldApplyToonCompression) {
         const { messages: convertedMessages, stats } =
@@ -425,7 +436,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       fastify.log.info(
         {
-          resolvedAgentId,
+          resolvedProfileId,
           originalMessagesCount: messages.length,
           filteredMessagesCount: filteredMessages.length,
           toolResultUpdatesCount: Object.keys(toolResultUpdates).length,
@@ -449,7 +460,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
           "openai",
           model,
           true,
-          resolvedAgent,
+          resolvedProfile,
           async (llmSpan) => {
             const response = await openAiClient.chat.completions.create({
               ...body,
@@ -492,7 +503,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               const ttftSeconds = (firstChunkTime - streamStartTime) / 1000;
               reportTimeToFirstToken(
                 "openai",
-                resolvedAgent,
+                resolvedProfile,
                 model,
                 ttftSeconds,
                 externalAgentId,
@@ -596,7 +607,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
                   };
                 }
               }),
-              resolvedAgentId,
+              resolvedProfileId,
               { teamIds, externalAgentId },
               contextIsTrusted,
               enabledToolNames,
@@ -649,7 +660,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               reply.raw.write(`data: ${JSON.stringify(refusalChunk)}\n\n`);
               reportBlockedTools(
                 "openai",
-                resolvedAgent,
+                resolvedProfile,
                 accumulatedToolCalls.length,
                 model,
                 externalAgentId,
@@ -758,7 +769,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
           if (tokenUsage) {
             reportLLMTokens(
               "openai",
-              resolvedAgent,
+              resolvedProfile,
               tokenUsage,
               model,
               externalAgentId,
@@ -770,7 +781,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
                 (Date.now() - streamStartTime) / 1000;
               reportTokensPerSecond(
                 "openai",
-                resolvedAgent,
+                resolvedProfile,
                 model,
                 tokenUsage.output,
                 totalDurationSeconds,
@@ -813,7 +824,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
           }
           reportLLMCost(
             "openai",
-            resolvedAgent,
+            resolvedProfile,
             model,
             costAfterOptimization,
             externalAgentId,
@@ -821,7 +832,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
           // Always record the interaction
           await InteractionModel.create({
-            profileId: resolvedAgentId,
+            profileId: resolvedProfileId,
             externalAgentId,
             userId,
             sessionId,
@@ -867,7 +878,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
           "openai",
           model,
           false,
-          resolvedAgent,
+          resolvedProfile,
           async (llmSpan) => {
             const response = await openAiClient.chat.completions.create({
               ...body,
@@ -907,7 +918,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
                 };
               }
             }),
-            resolvedAgentId,
+            resolvedProfileId,
             { teamIds, externalAgentId },
             contextIsTrusted,
             enabledToolNames,
@@ -940,7 +951,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
           reportBlockedTools(
             "openai",
-            resolvedAgent,
+            resolvedProfile,
             blockedCount,
             model,
             externalAgentId,
@@ -970,7 +981,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
           );
         reportLLMCost(
           "openai",
-          resolvedAgent,
+          resolvedProfile,
           model,
           costAfterOptimization,
           externalAgentId,
@@ -978,7 +989,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
         // Store the complete interaction
         await InteractionModel.create({
-          profileId: resolvedAgentId,
+          profileId: resolvedProfileId,
           externalAgentId,
           userId,
           sessionId,
@@ -1020,17 +1031,17 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
   };
 
   /**
-   * No agentId is provided -- agent is created/fetched based on the user-agent header
-   * or if the user-agent header is not present, a default agent is used
+   * No profileId is provided -- profile is created/fetched based on the user-agent header
+   * or if the user-agent header is not present, a default profile is used
    */
   fastify.post(
     `${API_PREFIX}/${CHAT_COMPLETIONS_SUFFIX}`,
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.OpenAiChatCompletionsWithDefaultAgent,
+        operationId: RouteId.OpenAiChatCompletionsWithDefaultProfile,
         description:
-          "Create a chat completion with OpenAI (uses default agent)",
+          "Create a chat completion with OpenAI (uses default profile)",
         tags: ["llm-proxy"],
         body: OpenAi.API.ChatCompletionRequestSchema,
         headers: OpenAi.API.ChatCompletionsHeadersSchema,
@@ -1064,19 +1075,19 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
   );
 
   /**
-   * An agentId is provided -- agent is fetched based on the agentId
+   * A profileId is provided -- profile is fetched based on the profileId
    */
   fastify.post(
-    `${API_PREFIX}/:agentId/${CHAT_COMPLETIONS_SUFFIX}`,
+    `${API_PREFIX}/:profileId/${CHAT_COMPLETIONS_SUFFIX}`,
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.OpenAiChatCompletionsWithAgent,
+        operationId: RouteId.OpenAiChatCompletionsWithProfile,
         description:
-          "Create a chat completion with OpenAI for a specific agent",
+          "Create a chat completion with OpenAI for a specific profile",
         tags: ["llm-proxy"],
         params: z.object({
-          agentId: UuidIdSchema,
+          profileId: UuidIdSchema,
         }),
         body: OpenAi.API.ChatCompletionRequestSchema,
         headers: OpenAi.API.ChatCompletionsHeadersSchema,
@@ -1100,7 +1111,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
         request.headers,
         reply,
         request.organizationId,
-        request.params.agentId,
+        request.params.profileId,
         externalAgentId,
         userId,
         sessionId,

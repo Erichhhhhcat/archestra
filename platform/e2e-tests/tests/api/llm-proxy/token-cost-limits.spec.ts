@@ -243,7 +243,7 @@ for (const config of testConfigs) {
 
     test("blocks request when profile token cost limit is exceeded", async ({
       request,
-      createAgent,
+      createProfile,
       createLimit,
       createTokenPrice,
       makeApiRequest,
@@ -273,7 +273,7 @@ for (const config of testConfigs) {
       tokenPriceId = tokenPrice.id;
 
       // 1. Create a test profile
-      const createResponse = await createAgent(
+      const createResponse = await createProfile(
         request,
         `${config.providerName} Token Limit Test Profile`,
       );
@@ -380,7 +380,7 @@ for (const config of testConfigs) {
 
     test("allows request when under limit", async ({
       request,
-      createAgent,
+      createProfile,
       createLimit,
       createTokenPrice,
       makeApiRequest,
@@ -396,7 +396,7 @@ for (const config of testConfigs) {
       }
 
       // 1. Create a test profile
-      const createResponse = await createAgent(
+      const createResponse = await createProfile(
         request,
         `${config.providerName} Token Limit OK Test Profile`,
       );
@@ -436,13 +436,13 @@ for (const config of testConfigs) {
     });
 
     test.afterEach(
-      async ({ request, deleteLimit, deleteAgent, deleteTokenPrice }) => {
+      async ({ request, deleteLimit, deleteProfile, deleteTokenPrice }) => {
         if (limitId) {
           await deleteLimit(request, limitId).catch(() => {});
           limitId = "";
         }
         if (profileId) {
-          await deleteAgent(request, profileId).catch(() => {});
+          await deleteProfile(request, profileId).catch(() => {});
           profileId = "";
         }
         if (tokenPriceId) {

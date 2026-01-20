@@ -36,8 +36,8 @@ interface McpToolsDialogProps {
     id: string;
     name: string;
     description: string | null;
-    assignedAgentCount: number;
-    assignedAgents: Array<{ id: string; name: string }>;
+    assignedProfileCount: number;
+    assignedProfiles: Array<{ id: string; name: string }>;
     parameters: Record<string, unknown>;
     createdAt: string;
   }>;
@@ -286,7 +286,7 @@ export function McpToolsDialog({
                       </span>
                     </TableCell>
                     <TableCell className="text-center">
-                      {tool.assignedAgents.length === 0 ? (
+                      {tool.assignedProfiles.length === 0 ? (
                         <span className="text-sm text-muted-foreground">
                           None
                         </span>
@@ -295,15 +295,15 @@ export function McpToolsDialog({
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className="text-sm text-muted-foreground cursor-help truncate max-w-[150px] inline-block">
-                                {tool.assignedAgents
+                                {tool.assignedProfiles
                                   .map((a) => a.name)
                                   .join(", ")}
                               </span>
                             </TooltipTrigger>
                             <TooltipContent>
                               <div className="space-y-1">
-                                {tool.assignedAgents.map((agent) => (
-                                  <div key={agent.id}>{agent.name}</div>
+                                {tool.assignedProfiles.map((profile) => (
+                                  <div key={profile.id}>{profile.name}</div>
                                 ))}
                               </div>
                             </TooltipContent>

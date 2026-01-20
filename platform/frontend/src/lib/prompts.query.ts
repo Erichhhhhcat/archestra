@@ -58,7 +58,7 @@ export function useCreatePrompt() {
   return useMutation({
     mutationFn: async (data: {
       name: string;
-      agentId: string;
+      profileId: string;
       userPrompt?: string;
       systemPrompt?: string;
       allowedChatops?: string[];
@@ -82,7 +82,7 @@ export function useUpdatePrompt() {
       id: string;
       data: {
         name?: string;
-        agentId?: string;
+        profileId?: string;
         userPrompt?: string;
         systemPrompt?: string;
         allowedChatops?: string[];

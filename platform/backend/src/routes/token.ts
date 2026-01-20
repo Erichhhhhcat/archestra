@@ -3,7 +3,7 @@ import { RouteId } from "@shared";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { hasPermission } from "@/auth";
-import { AgentTeamModel, TeamModel, TeamTokenModel } from "@/models";
+import { ProfileTeamModel, TeamModel, TeamTokenModel } from "@/models";
 import {
   ApiError,
   constructResponseSchema,
@@ -146,7 +146,8 @@ const tokenRoutes: FastifyPluginAsyncZod = async (fastify) => {
       // If profileId is provided, further filter team tokens to only show
       // tokens for teams that the profile is also assigned to
       if (profileId) {
-        const profileTeamIds = await AgentTeamModel.getTeamsForAgent(profileId);
+        const profileTeamIds =
+          await ProfileTeamModel.getTeamsForProfile(profileId);
         visibleTokens = visibleTokens.filter(
           (token) =>
             token.isOrganizationToken ||

@@ -1,20 +1,20 @@
-import { AgentToolModel, ToolModel, TrustedDataPolicyModel } from "@/models";
+import { ProfileToolModel, ToolModel, TrustedDataPolicyModel } from "@/models";
 import { beforeEach, describe, expect, test } from "@/test";
 import type { CommonMessage, Tool } from "@/types";
 import { evaluateIfContextIsTrusted } from "./trusted-data";
 
 describe("trusted-data evaluation (provider-agnostic)", () => {
-  let agentId: string;
+  let profileId: string;
   let toolId: string;
 
-  beforeEach(async ({ makeAgent }) => {
+  beforeEach(async ({ makeProfile }) => {
     // Create test agent
-    const agent = await makeAgent();
-    agentId = agent.id;
+    const agent = await makeProfile();
+    profileId = agent.id;
 
     // Create test tool
     await ToolModel.createToolIfNotExists({
-      agentId,
+      profileId: profileId,
       name: "get_emails",
       parameters: {},
       description: "Get emails",
@@ -24,7 +24,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
     toolId = (tool as Tool).id;
 
     // Create agent-tool relationship (untrusted by default when no policies)
-    await AgentToolModel.create(agentId, toolId, {});
+    await ProfileToolModel.create(profileId, toolId, {});
   });
 
   describe("evaluateIfContextIsTrusted", () => {
@@ -36,7 +36,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -83,7 +83,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -136,7 +136,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -182,7 +182,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -240,7 +240,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -273,7 +273,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -303,7 +303,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -325,7 +325,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -340,7 +340,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
     test("marks context as trusted when tool has trusted default policy", async () => {
       // Create a tool with trusted default policy
       await ToolModel.createToolIfNotExists({
-        agentId,
+        profileId,
         name: "trusted_tool",
         parameters: {},
         description: "Tool that trusts data by default",
@@ -350,7 +350,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
       const trustedToolId = (trustedTool as Tool).id;
 
       // Create agent-tool relationship
-      await AgentToolModel.create(agentId, trustedToolId, {});
+      await ProfileToolModel.create(profileId, trustedToolId, {});
 
       // Delete auto-created default policy and create trusted policy
       await TrustedDataPolicyModel.deleteByToolId(trustedToolId);
@@ -377,7 +377,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -392,7 +392,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
     test("block policies override trusted default policy", async () => {
       // Create a tool with trusted default policy
       await ToolModel.createToolIfNotExists({
-        agentId,
+        profileId,
         name: "default_trusted_tool",
         parameters: {},
         description: "Tool that trusts data by default",
@@ -402,7 +402,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
       const trustedToolId = (tool as Tool).id;
 
       // Create agent-tool relationship
-      await AgentToolModel.create(agentId, trustedToolId, {});
+      await ProfileToolModel.create(profileId, trustedToolId, {});
 
       // Create default trusted policy
       await TrustedDataPolicyModel.create({
@@ -436,7 +436,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -474,7 +474,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -505,7 +505,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -544,7 +544,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -575,7 +575,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -621,7 +621,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
       const commonMessages = toCommonFormat(openAiMessages);
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "openai",
         false,
@@ -669,7 +669,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
       const commonMessages = toCommonFormat(anthropicMessages);
       const result = await evaluateIfContextIsTrusted(
         commonMessages,
-        agentId,
+        profileId,
         "test-api-key",
         "anthropic",
         false,

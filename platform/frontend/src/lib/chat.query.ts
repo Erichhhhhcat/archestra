@@ -9,7 +9,7 @@ import { toast } from "sonner";
 const {
   getChatConversations,
   getChatConversation,
-  getChatAgentMcpTools,
+  getChatProfileMcpTools,
   createChatConversation,
   updateChatConversation,
   deleteChatConversation,
@@ -17,7 +17,7 @@ const {
   getConversationEnabledTools,
   updateConversationEnabledTools,
   deleteConversationEnabledTools,
-  getAgentTools,
+  getProfileTools,
   getPromptTools,
 } = archestraApiSdk;
 
@@ -92,7 +92,7 @@ export function useCreateConversation() {
     }) => {
       const { data, error } = await createChatConversation({
         body: {
-          agentId,
+          profileId: agentId,
           promptId,
           selectedModel,
           selectedProvider,
@@ -136,7 +136,13 @@ export function useUpdateConversation() {
     }) => {
       const { data, error } = await updateChatConversation({
         path: { id },
-        body: { title, selectedModel, selectedProvider, chatApiKeyId, agentId },
+        body: {
+          title,
+          selectedModel,
+          selectedProvider,
+          chatApiKeyId,
+          profileId: agentId,
+        },
       });
       if (error) throw new Error("Failed to update conversation");
       return data;
@@ -209,7 +215,7 @@ export function useChatProfileMcpTools(agentId: string | undefined) {
     queryKey: ["chat", "agents", agentId, "mcp-tools"],
     queryFn: async () => {
       if (!agentId) return [];
-      const { data, error } = await getChatAgentMcpTools({
+      const { data, error } = await getChatProfileMcpTools({
         path: { agentId },
       });
       if (error) throw new Error("Failed to fetch MCP tools");
@@ -306,8 +312,8 @@ export function useProfileToolsWithIds(agentId: string | undefined) {
     queryKey: ["agents", agentId, "tools", "mcp-only"],
     queryFn: async () => {
       if (!agentId) return [];
-      const { data, error } = await getAgentTools({
-        path: { agentId },
+      const { data, error } = await getProfileTools({
+        path: { profileId: agentId },
         query: { excludeLlmProxyOrigin: true },
       });
       if (error) throw new Error("Failed to fetch profile tools");
@@ -344,7 +350,7 @@ export function useHasPlaywrightMcpTools(agentId: string | undefined) {
   const toolsQuery = useChatProfileMcpTools(agentId);
 
   return (
-    toolsQuery.data?.some((tool) => {
+    toolsQuery.data?.some((tool: { name: string }) => {
       const toolName = tool.name;
       return typeof toolName === "string" && isBrowserMcpTool(toolName);
     }) ?? false

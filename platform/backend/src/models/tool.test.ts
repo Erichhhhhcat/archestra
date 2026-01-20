@@ -7,7 +7,7 @@ import {
 import { vi } from "vitest";
 import * as knowledgeGraph from "@/knowledge-graph";
 import { describe, expect, test } from "@/test";
-import AgentToolModel from "./agent-tool";
+import ProfileToolModel from "./profile-tool";
 import TeamModel from "./team";
 import ToolModel from "./tool";
 
@@ -126,21 +126,21 @@ describe("ToolModel", () => {
   describe("Access Control", () => {
     test("admin can see all tools", async ({
       makeAdmin,
-      makeAgent,
+      makeProfile,
       makeTool,
     }) => {
       const admin = await makeAdmin();
-      const agent1 = await makeAgent({ name: "Agent1" });
-      const agent2 = await makeAgent({ name: "Agent2" });
+      const agent1 = await makeProfile({ name: "Agent1" });
+      const agent2 = await makeProfile({ name: "Agent2" });
 
       await makeTool({
-        agentId: agent1.id,
+        profileId: agent1.id,
         name: "tool1",
         description: "Tool 1",
       });
 
       await makeTool({
-        agentId: agent2.id,
+        profileId: agent2.id,
         name: "tool2",
         description: "Tool 2",
         parameters: {},
@@ -156,7 +156,7 @@ describe("ToolModel", () => {
       makeAdmin,
       makeOrganization,
       makeTeam,
-      makeAgent,
+      makeProfile,
       makeTool,
     }) => {
       const user1 = await makeUser();
@@ -172,18 +172,18 @@ describe("ToolModel", () => {
       await TeamModel.addMember(team2.id, user2.id);
 
       // Create agents with team assignments
-      const agent1 = await makeAgent({ name: "Agent1", teams: [team1.id] });
-      const agent2 = await makeAgent({ name: "Agent2", teams: [team2.id] });
+      const agent1 = await makeProfile({ name: "Agent1", teams: [team1.id] });
+      const agent2 = await makeProfile({ name: "Agent2", teams: [team2.id] });
 
       const tool1 = await makeTool({
-        agentId: agent1.id,
+        profileId: agent1.id,
         name: "tool1",
         description: "Tool 1",
         parameters: {},
       });
 
       await makeTool({
-        agentId: agent2.id,
+        profileId: agent2.id,
         name: "tool2",
         description: "Tool 2",
         parameters: {},
@@ -196,14 +196,14 @@ describe("ToolModel", () => {
 
     test("member with no access sees no tools", async ({
       makeUser,
-      makeAgent,
+      makeProfile,
       makeTool,
     }) => {
       const user = await makeUser();
-      const agent1 = await makeAgent({ name: "Agent1" });
+      const agent1 = await makeProfile({ name: "Agent1" });
 
       await makeTool({
-        agentId: agent1.id,
+        profileId: agent1.id,
         name: "tool1",
         description: "Tool 1",
       });
@@ -214,14 +214,14 @@ describe("ToolModel", () => {
 
     test("findById returns tool for admin", async ({
       makeAdmin,
-      makeAgent,
+      makeProfile,
       makeTool,
     }) => {
       const admin = await makeAdmin();
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       const tool = await makeTool({
-        agentId: agent.id,
+        profileId: agent.id,
         name: "test-tool",
         description: "Test Tool",
         parameters: {},
@@ -237,7 +237,7 @@ describe("ToolModel", () => {
       makeAdmin,
       makeOrganization,
       makeTeam,
-      makeAgent,
+      makeProfile,
       makeTool,
     }) => {
       const user = await makeUser();
@@ -248,10 +248,10 @@ describe("ToolModel", () => {
       const team = await makeTeam(org.id, admin.id);
       await TeamModel.addMember(team.id, user.id);
 
-      const agent = await makeAgent({ teams: [team.id] });
+      const agent = await makeProfile({ teams: [team.id] });
 
       const tool = await makeTool({
-        agentId: agent.id,
+        profileId: agent.id,
         name: "test-tool",
         description: "Test Tool",
         parameters: {},
@@ -264,14 +264,14 @@ describe("ToolModel", () => {
 
     test("findById returns null for user without agent access", async ({
       makeUser,
-      makeAgent,
+      makeProfile,
       makeTool,
     }) => {
       const user = await makeUser();
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       const tool = await makeTool({
-        agentId: agent.id,
+        profileId: agent.id,
         name: "test-tool",
         description: "Test Tool",
         parameters: {},
@@ -283,14 +283,14 @@ describe("ToolModel", () => {
 
     test("findByName returns tool for admin", async ({
       makeAdmin,
-      makeAgent,
+      makeProfile,
       makeTool,
     }) => {
       const admin = await makeAdmin();
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       await makeTool({
-        agentId: agent.id,
+        profileId: agent.id,
         name: "unique-tool",
         description: "Unique Tool",
         parameters: {},
@@ -306,7 +306,7 @@ describe("ToolModel", () => {
       makeAdmin,
       makeOrganization,
       makeTeam,
-      makeAgent,
+      makeProfile,
       makeTool,
     }) => {
       const user = await makeUser();
@@ -317,10 +317,10 @@ describe("ToolModel", () => {
       const team = await makeTeam(org.id, admin.id);
       await TeamModel.addMember(team.id, user.id);
 
-      const agent = await makeAgent({ teams: [team.id] });
+      const agent = await makeProfile({ teams: [team.id] });
 
       await makeTool({
-        agentId: agent.id,
+        profileId: agent.id,
         name: "user-tool",
         description: "User Tool",
         parameters: {},
@@ -333,14 +333,14 @@ describe("ToolModel", () => {
 
     test("findByName returns null for user without agent access", async ({
       makeUser,
-      makeAgent,
+      makeProfile,
       makeTool,
     }) => {
       const user = await makeUser();
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       await makeTool({
-        agentId: agent.id,
+        profileId: agent.id,
         name: "restricted-tool",
         description: "Restricted Tool",
         parameters: {},
@@ -355,35 +355,35 @@ describe("ToolModel", () => {
     });
   });
 
-  describe("getMcpToolsAssignedToAgent", () => {
+  describe("getMcpToolsAssignedToProfile", () => {
     test("returns empty array when no tools provided", async ({
-      makeAgent,
+      makeProfile,
       makeUser,
     }) => {
       const _user = await makeUser();
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
-      const result = await ToolModel.getMcpToolsAssignedToAgent([], agent.id);
+      const result = await ToolModel.getMcpToolsAssignedToProfile([], agent.id);
       expect(result).toEqual([]);
     });
 
     test("returns empty array when no MCP tools assigned to agent", async ({
-      makeAgent,
+      makeProfile,
       makeUser,
       makeTool,
     }) => {
       const _user = await makeUser();
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       // Create a proxy-sniffed tool (no mcpServerId)
       await makeTool({
-        agentId: agent.id,
+        profileId: agent.id,
         name: "proxy_tool",
         description: "Proxy Tool",
         parameters: {},
       });
 
-      const result = await ToolModel.getMcpToolsAssignedToAgent(
+      const result = await ToolModel.getMcpToolsAssignedToProfile(
         ["proxy_tool", "non_existent"],
         agent.id,
       );
@@ -392,13 +392,13 @@ describe("ToolModel", () => {
 
     test("returns MCP tools with server metadata for assigned tools", async ({
       makeUser,
-      makeAgent,
+      makeProfile,
       makeInternalMcpCatalog,
       makeMcpServer,
       makeTool,
     }) => {
       const user = await makeUser();
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       const catalogItem = await makeInternalMcpCatalog({
         name: "github-mcp-server",
@@ -428,9 +428,9 @@ describe("ToolModel", () => {
       });
 
       // Assign tool to agent
-      await AgentToolModel.create(agent.id, mcpTool.id);
+      await ProfileToolModel.create(agent.id, mcpTool.id);
 
-      const result = await ToolModel.getMcpToolsAssignedToAgent(
+      const result = await ToolModel.getMcpToolsAssignedToProfile(
         ["github_mcp_server__list_issues"],
         agent.id,
       );
@@ -453,13 +453,13 @@ describe("ToolModel", () => {
 
     test("filters to only requested tool names", async ({
       makeUser,
-      makeAgent,
+      makeProfile,
       makeInternalMcpCatalog,
       makeMcpServer,
       makeTool,
     }) => {
       const user = await makeUser();
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       const catalogItem = await makeInternalMcpCatalog({
         name: "github-mcp-server",
@@ -491,11 +491,11 @@ describe("ToolModel", () => {
       });
 
       // Assign both tools to agent
-      await AgentToolModel.create(agent.id, tool1.id);
-      await AgentToolModel.create(agent.id, tool2.id);
+      await ProfileToolModel.create(agent.id, tool1.id);
+      await ProfileToolModel.create(agent.id, tool2.id);
 
       // Request only one tool
-      const result = await ToolModel.getMcpToolsAssignedToAgent(
+      const result = await ToolModel.getMcpToolsAssignedToProfile(
         ["tool_one"],
         agent.id,
       );
@@ -506,14 +506,14 @@ describe("ToolModel", () => {
 
     test("returns empty array when tools exist but not assigned to agent", async ({
       makeUser,
-      makeAgent,
+      makeProfile,
       makeInternalMcpCatalog,
       makeMcpServer,
       makeTool,
     }) => {
       const user = await makeUser();
-      const agent1 = await makeAgent({ name: "Agent1" });
-      const agent2 = await makeAgent({ name: "Agent2" });
+      const agent1 = await makeProfile({ name: "Agent1" });
+      const agent2 = await makeProfile({ name: "Agent2" });
 
       // Create an MCP server and tool
       const catalogItem = await makeInternalMcpCatalog({
@@ -534,10 +534,10 @@ describe("ToolModel", () => {
       });
 
       // Assign tool to agent1 only
-      await AgentToolModel.create(agent1.id, mcpTool.id);
+      await ProfileToolModel.create(agent1.id, mcpTool.id);
 
       // Request tool for agent2 (should return empty)
-      const result = await ToolModel.getMcpToolsAssignedToAgent(
+      const result = await ToolModel.getMcpToolsAssignedToProfile(
         ["exclusive_tool"],
         agent2.id,
       );
@@ -545,15 +545,15 @@ describe("ToolModel", () => {
       expect(result).toEqual([]);
     });
 
-    test("excludes proxy-sniffed tools (tools with agentId set)", async ({
+    test("excludes proxy-sniffed tools (tools with profileId set)", async ({
       makeUser,
-      makeAgent,
+      makeProfile,
       makeInternalMcpCatalog,
       makeMcpServer,
       makeTool,
     }) => {
       const user = await makeUser();
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       // Create an MCP server
       const catalogItem = await makeInternalMcpCatalog({
@@ -566,15 +566,15 @@ describe("ToolModel", () => {
         ownerId: user.id,
       });
 
-      // Create a proxy-sniffed tool (with agentId)
+      // Create a proxy-sniffed tool (with profileId)
       await makeTool({
-        agentId: agent.id,
+        profileId: agent.id,
         name: "proxy_tool",
         description: "Proxy Tool",
         parameters: {},
       });
 
-      // Create an MCP tool (no agentId, linked via mcpServerId)
+      // Create an MCP tool (no profileId, linked via mcpServerId)
       const mcpTool = await makeTool({
         name: "mcp_tool",
         description: "MCP Tool",
@@ -584,9 +584,9 @@ describe("ToolModel", () => {
       });
 
       // Assign MCP tool to agent
-      await AgentToolModel.create(agent.id, mcpTool.id);
+      await ProfileToolModel.create(agent.id, mcpTool.id);
 
-      const result = await ToolModel.getMcpToolsAssignedToAgent(
+      const result = await ToolModel.getMcpToolsAssignedToProfile(
         ["proxy_tool", "mcp_tool"],
         agent.id,
       );
@@ -598,13 +598,13 @@ describe("ToolModel", () => {
 
     test("handles multiple MCP tools with different servers", async ({
       makeUser,
-      makeAgent,
+      makeProfile,
       makeInternalMcpCatalog,
       makeMcpServer,
       makeTool,
     }) => {
       const user = await makeUser();
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       // Create two MCP servers
       const catalogItem = await makeInternalMcpCatalog({
@@ -644,10 +644,10 @@ describe("ToolModel", () => {
       });
 
       // Assign both tools to agent
-      await AgentToolModel.create(agent.id, githubTool.id);
-      await AgentToolModel.create(agent.id, otherTool.id);
+      await ProfileToolModel.create(agent.id, githubTool.id);
+      await ProfileToolModel.create(agent.id, otherTool.id);
 
-      const result = await ToolModel.getMcpToolsAssignedToAgent(
+      const result = await ToolModel.getMcpToolsAssignedToProfile(
         ["github_list_issues", "other_tool"],
         agent.id,
       );
@@ -656,15 +656,15 @@ describe("ToolModel", () => {
     });
   });
 
-  describe("assignArchestraToolsToAgent", () => {
+  describe("assignArchestraToolsToProfile", () => {
     test("assigns Archestra built-in tools to agent in bulk", async ({
-      makeAgent,
+      makeProfile,
       seedAndAssignArchestraTools,
     }) => {
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       // Agents should NOT have Archestra tools auto-assigned (they must be explicitly assigned)
-      const toolIdsBeforeAssign = await AgentToolModel.findToolIdsByAgent(
+      const toolIdsBeforeAssign = await ProfileToolModel.findToolIdsByProfile(
         agent.id,
       );
       expect(toolIdsBeforeAssign.length).toBe(0);
@@ -673,7 +673,7 @@ describe("ToolModel", () => {
       await seedAndAssignArchestraTools(agent.id);
 
       // Verify Archestra tools are assigned after explicit assignment
-      const mcpTools = await ToolModel.getMcpToolsByAgent(agent.id);
+      const mcpTools = await ToolModel.getMcpToolsByProfile(agent.id);
       const archestraToolNames = mcpTools
         .map((tool) => tool.name)
         .filter((name) => name.startsWith("archestra__"));
@@ -683,18 +683,18 @@ describe("ToolModel", () => {
     });
 
     test("is idempotent - does not create duplicates", async ({
-      makeAgent,
+      makeProfile,
       seedAndAssignArchestraTools,
     }) => {
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       await seedAndAssignArchestraTools(agent.id);
-      const toolIdsAfterFirst = await AgentToolModel.findToolIdsByAgent(
+      const toolIdsAfterFirst = await ProfileToolModel.findToolIdsByProfile(
         agent.id,
       );
 
       await seedAndAssignArchestraTools(agent.id);
-      const toolIdsAfterSecond = await AgentToolModel.findToolIdsByAgent(
+      const toolIdsAfterSecond = await ProfileToolModel.findToolIdsByProfile(
         agent.id,
       );
 
@@ -705,14 +705,14 @@ describe("ToolModel", () => {
   describe("findByMcpServerId", () => {
     test("returns tools with assigned agents efficiently", async ({
       makeUser,
-      makeAgent,
+      makeProfile,
       makeInternalMcpCatalog,
       makeMcpServer,
       makeTool,
     }) => {
       const user = await makeUser();
-      const agent1 = await makeAgent({ name: "Agent 1" });
-      const agent2 = await makeAgent({ name: "Agent 2" });
+      const agent1 = await makeProfile({ name: "Agent 1" });
+      const agent2 = await makeProfile({ name: "Agent 2" });
 
       const catalogItem = await makeInternalMcpCatalog({
         name: "test-catalog",
@@ -742,22 +742,28 @@ describe("ToolModel", () => {
       });
 
       // Assign tools to agents
-      await AgentToolModel.create(agent1.id, tool1.id);
-      await AgentToolModel.create(agent1.id, tool2.id);
-      await AgentToolModel.create(agent2.id, tool1.id);
+      await ProfileToolModel.create(agent1.id, tool1.id);
+      await ProfileToolModel.create(agent1.id, tool2.id);
+      await ProfileToolModel.create(agent2.id, tool1.id);
 
       const result = await ToolModel.findByMcpServerId(mcpServer.id);
 
       expect(result).toHaveLength(2);
 
       const tool1Result = result.find((t) => t.name === "tool1");
-      expect(tool1Result?.assignedAgentCount).toBe(2);
-      expect(tool1Result?.assignedAgents.map((a) => a.id)).toContain(agent1.id);
-      expect(tool1Result?.assignedAgents.map((a) => a.id)).toContain(agent2.id);
+      expect(tool1Result?.assignedProfileCount).toBe(2);
+      expect(tool1Result?.assignedProfiles.map((a) => a.id)).toContain(
+        agent1.id,
+      );
+      expect(tool1Result?.assignedProfiles.map((a) => a.id)).toContain(
+        agent2.id,
+      );
 
       const tool2Result = result.find((t) => t.name === "tool2");
-      expect(tool2Result?.assignedAgentCount).toBe(1);
-      expect(tool2Result?.assignedAgents.map((a) => a.id)).toContain(agent1.id);
+      expect(tool2Result?.assignedProfileCount).toBe(1);
+      expect(tool2Result?.assignedProfiles.map((a) => a.id)).toContain(
+        agent1.id,
+      );
     });
 
     test("returns empty array when MCP server has no tools", async ({
@@ -785,14 +791,14 @@ describe("ToolModel", () => {
   describe("findByCatalogId", () => {
     test("returns tools with assigned agents for catalog efficiently", async ({
       makeUser,
-      makeAgent,
+      makeProfile,
       makeInternalMcpCatalog,
       makeMcpServer,
       makeTool,
     }) => {
       const user = await makeUser();
-      const agent1 = await makeAgent({ name: "Agent 1" });
-      const agent2 = await makeAgent({ name: "Agent 2" });
+      const agent1 = await makeProfile({ name: "Agent 1" });
+      const agent2 = await makeProfile({ name: "Agent 2" });
 
       const catalogItem = await makeInternalMcpCatalog({
         name: "shared-catalog",
@@ -830,26 +836,26 @@ describe("ToolModel", () => {
       });
 
       // Assign tools to agents
-      await AgentToolModel.create(agent1.id, tool1.id);
-      await AgentToolModel.create(agent2.id, tool1.id);
-      await AgentToolModel.create(agent1.id, tool2.id);
+      await ProfileToolModel.create(agent1.id, tool1.id);
+      await ProfileToolModel.create(agent2.id, tool1.id);
+      await ProfileToolModel.create(agent1.id, tool2.id);
 
       const result = await ToolModel.findByCatalogId(catalogItem.id);
 
       expect(result).toHaveLength(2);
 
       const sharedToolResult = result.find((t) => t.name === "shared_tool");
-      expect(sharedToolResult?.assignedAgentCount).toBe(2);
-      expect(sharedToolResult?.assignedAgents.map((a) => a.id)).toContain(
+      expect(sharedToolResult?.assignedProfileCount).toBe(2);
+      expect(sharedToolResult?.assignedProfiles.map((a) => a.id)).toContain(
         agent1.id,
       );
-      expect(sharedToolResult?.assignedAgents.map((a) => a.id)).toContain(
+      expect(sharedToolResult?.assignedProfiles.map((a) => a.id)).toContain(
         agent2.id,
       );
 
       const anotherToolResult = result.find((t) => t.name === "another_tool");
-      expect(anotherToolResult?.assignedAgentCount).toBe(1);
-      expect(anotherToolResult?.assignedAgents.map((a) => a.id)).toContain(
+      expect(anotherToolResult?.assignedProfileCount).toBe(1);
+      expect(anotherToolResult?.assignedProfiles.map((a) => a.id)).toContain(
         agent1.id,
       );
     });
@@ -913,7 +919,7 @@ describe("ToolModel", () => {
       createdTools.forEach((tool) => {
         expect(tool.catalogId).toBe(catalog.id);
         expect(tool.mcpServerId).toBe(mcpServer.id);
-        expect(tool.agentId).toBeNull();
+        expect(tool.profileId).toBeNull();
       });
     });
 
@@ -1052,9 +1058,9 @@ describe("ToolModel", () => {
 
   describe("bulkCreateProxyToolsIfNotExists", () => {
     test("creates multiple proxy-sniffed tools for an agent in bulk", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const toolsToCreate = [
         {
@@ -1084,24 +1090,24 @@ describe("ToolModel", () => {
       expect(createdTools.map((t) => t.name)).toContain("proxy-tool-2");
       expect(createdTools.map((t) => t.name)).toContain("proxy-tool-3");
 
-      // Verify all tools have correct agentId and null catalogId
+      // Verify all tools have correct profileId and null catalogId
       for (const tool of createdTools) {
-        expect(tool.agentId).toBe(agent.id);
+        expect(tool.profileId).toBe(agent.id);
         expect(tool.catalogId).toBeNull();
         expect(tool.mcpServerId).toBeNull();
       }
     });
 
     test("returns existing tools when some tools already exist", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       // Create one tool manually
       const existingTool = await makeTool({
         name: "proxy-tool-1",
-        agentId: agent.id,
+        profileId: agent.id,
         description: "Existing tool",
       });
 
@@ -1136,8 +1142,8 @@ describe("ToolModel", () => {
       expect(createdTools.map((t) => t.name)).toContain("proxy-tool-3");
     });
 
-    test("maintains input order in returned tools", async ({ makeAgent }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+    test("maintains input order in returned tools", async ({ makeProfile }) => {
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const toolsToCreate = [
         {
@@ -1169,8 +1175,8 @@ describe("ToolModel", () => {
       expect(createdTools[2].name).toBe("proxy-tool-b");
     });
 
-    test("handles empty tools array", async ({ makeAgent }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+    test("handles empty tools array", async ({ makeProfile }) => {
+      const agent = await makeProfile({ name: "Test Agent" });
       const createdTools = await ToolModel.bulkCreateProxyToolsIfNotExists(
         [],
         agent.id,
@@ -1179,9 +1185,9 @@ describe("ToolModel", () => {
     });
 
     test("handles conflict during insert and fetches existing tools", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const toolsToCreate = [
         {
@@ -1205,10 +1211,10 @@ describe("ToolModel", () => {
     });
 
     test("does not mix tools between different agents", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const agent1 = await makeAgent({ name: "Agent 1" });
-      const agent2 = await makeAgent({ name: "Agent 2" });
+      const agent1 = await makeProfile({ name: "Agent 1" });
+      const agent2 = await makeProfile({ name: "Agent 2" });
 
       // Create same-named tool for agent1
       await ToolModel.bulkCreateProxyToolsIfNotExists(
@@ -1224,12 +1230,12 @@ describe("ToolModel", () => {
 
       // Should create a new tool for agent2 (not return agent1's tool)
       expect(result).toHaveLength(1);
-      expect(result[0].agentId).toBe(agent2.id);
+      expect(result[0].profileId).toBe(agent2.id);
       expect(result[0].name).toBe("shared-name-tool");
     });
 
-    test("handles tools with optional parameters", async ({ makeAgent }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+    test("handles tools with optional parameters", async ({ makeProfile }) => {
+      const agent = await makeProfile({ name: "Test Agent" });
 
       const toolsToCreate = [
         {
@@ -1275,23 +1281,23 @@ describe("ToolModel", () => {
     });
   });
 
-  describe("assignDefaultArchestraToolsToAgent", () => {
+  describe("assignDefaultArchestraToolsToProfile", () => {
     test("assigns artifact_write and todo_write tools by default", async ({
-      makeAgent,
+      makeProfile,
       seedAndAssignArchestraTools,
     }) => {
       // First seed Archestra tools (but don't assign to agent)
-      const tempAgent = await makeAgent({ name: "Temp Agent for Seeding" });
+      const tempAgent = await makeProfile({ name: "Temp Agent for Seeding" });
       await seedAndAssignArchestraTools(tempAgent.id);
 
       // Create a new agent
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       // Assign default tools (not all Archestra tools)
-      await ToolModel.assignDefaultArchestraToolsToAgent(agent.id);
+      await ToolModel.assignDefaultArchestraToolsToProfile(agent.id);
 
       // Get the tools assigned to the agent
-      const mcpTools = await ToolModel.getMcpToolsByAgent(agent.id);
+      const mcpTools = await ToolModel.getMcpToolsByProfile(agent.id);
       const toolNames = mcpTools.map((t) => t.name);
 
       // Should have artifact_write and todo_write
@@ -1303,11 +1309,11 @@ describe("ToolModel", () => {
     });
 
     test("includes query_knowledge_graph when knowledge graph is configured", async ({
-      makeAgent,
+      makeProfile,
       seedAndAssignArchestraTools,
     }) => {
       // First seed Archestra tools
-      const tempAgent = await makeAgent({ name: "Temp Agent for Seeding" });
+      const tempAgent = await makeProfile({ name: "Temp Agent for Seeding" });
       await seedAndAssignArchestraTools(tempAgent.id);
 
       // Mock getKnowledgeGraphProviderType to return "lightrag"
@@ -1317,13 +1323,13 @@ describe("ToolModel", () => {
 
       try {
         // Create a new agent
-        const agent = await makeAgent({ name: "KG Enabled Agent" });
+        const agent = await makeProfile({ name: "KG Enabled Agent" });
 
         // Assign default tools
-        await ToolModel.assignDefaultArchestraToolsToAgent(agent.id);
+        await ToolModel.assignDefaultArchestraToolsToProfile(agent.id);
 
         // Get the tools assigned to the agent
-        const mcpTools = await ToolModel.getMcpToolsByAgent(agent.id);
+        const mcpTools = await ToolModel.getMcpToolsByProfile(agent.id);
         const toolNames = mcpTools.map((t) => t.name);
 
         // Should have all three default tools including query_knowledge_graph
@@ -1336,35 +1342,35 @@ describe("ToolModel", () => {
     });
 
     test("is idempotent - does not create duplicates", async ({
-      makeAgent,
+      makeProfile,
       seedAndAssignArchestraTools,
     }) => {
-      const tempAgent = await makeAgent({ name: "Temp Agent for Seeding" });
+      const tempAgent = await makeProfile({ name: "Temp Agent for Seeding" });
       await seedAndAssignArchestraTools(tempAgent.id);
 
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
-      await ToolModel.assignDefaultArchestraToolsToAgent(agent.id);
-      const toolIdsAfterFirst = await AgentToolModel.findToolIdsByAgent(
+      await ToolModel.assignDefaultArchestraToolsToProfile(agent.id);
+      const toolIdsAfterFirst = await ProfileToolModel.findToolIdsByProfile(
         agent.id,
       );
 
-      await ToolModel.assignDefaultArchestraToolsToAgent(agent.id);
-      const toolIdsAfterSecond = await AgentToolModel.findToolIdsByAgent(
+      await ToolModel.assignDefaultArchestraToolsToProfile(agent.id);
+      const toolIdsAfterSecond = await ProfileToolModel.findToolIdsByProfile(
         agent.id,
       );
 
       expect(toolIdsAfterSecond.length).toBe(toolIdsAfterFirst.length);
     });
 
-    test("does nothing when tools are not seeded", async ({ makeAgent }) => {
+    test("does nothing when tools are not seeded", async ({ makeProfile }) => {
       // Create agent without seeding Archestra tools first
-      const agent = await makeAgent({ name: "Agent Without Seeded Tools" });
+      const agent = await makeProfile({ name: "Agent Without Seeded Tools" });
 
       // This should not throw, just skip assignment
-      await ToolModel.assignDefaultArchestraToolsToAgent(agent.id);
+      await ToolModel.assignDefaultArchestraToolsToProfile(agent.id);
 
-      const toolIds = await AgentToolModel.findToolIdsByAgent(agent.id);
+      const toolIds = await ProfileToolModel.findToolIdsByProfile(agent.id);
       expect(toolIds).toHaveLength(0);
     });
   });

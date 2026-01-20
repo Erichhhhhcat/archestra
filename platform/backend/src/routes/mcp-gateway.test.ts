@@ -46,10 +46,10 @@ describe("MCP Gateway session auto-recreation", () => {
   });
 
   test("creates session on initialize, then auto-recreates after session is cleared (simulating expiration)", async ({
-    makeAgent,
+    makeProfile,
     makeOrganization,
   }) => {
-    const agent = await makeAgent();
+    const agent = await makeProfile();
     const org = await makeOrganization();
 
     // Create an org token for legacy auth
@@ -116,10 +116,10 @@ describe("MCP Gateway session auto-recreation", () => {
   });
 
   test("reuses existing valid session without re-creating", async ({
-    makeAgent,
+    makeProfile,
     makeOrganization,
   }) => {
-    const agent = await makeAgent();
+    const agent = await makeProfile();
     const org = await makeOrganization();
 
     await TeamTokenModel.create({
@@ -177,10 +177,10 @@ describe("MCP Gateway session auto-recreation", () => {
   });
 
   test("creates new session when no session ID provided", async ({
-    makeAgent,
+    makeProfile,
     makeOrganization,
   }) => {
-    const agent = await makeAgent();
+    const agent = await makeProfile();
     const org = await makeOrganization();
 
     await TeamTokenModel.create({
@@ -219,10 +219,10 @@ describe("MCP Gateway session auto-recreation", () => {
   });
 
   test("non-initialize request with expired session creates new session (not 400)", async ({
-    makeAgent,
+    makeProfile,
     makeOrganization,
   }) => {
-    const agent = await makeAgent();
+    const agent = await makeProfile();
     const org = await makeOrganization();
 
     await TeamTokenModel.create({

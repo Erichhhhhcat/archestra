@@ -21,10 +21,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useProfileToolPatchMutation } from "@/lib/agent-tools.query";
+import { useProfileToolPatchMutation } from "@/lib/profile-tools.query";
 
 interface ResponseModifierEditorProps {
-  agentTool: archestraApiTypes.GetAllAgentToolsResponses["200"]["data"][number];
+  agentTool: archestraApiTypes.GetAllProfileToolsResponses["200"]["data"][number];
 }
 
 export function ResponseModifierEditor({

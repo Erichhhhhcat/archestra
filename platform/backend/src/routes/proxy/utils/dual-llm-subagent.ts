@@ -19,7 +19,7 @@ import { createDualLlmClient, type DualLlmClient } from "./dual-llm-client";
  */
 export class DualLlmSubagent {
   config: DualLlmConfig; // Configuration loaded from database
-  agentId: string; // The agent ID for tracking
+  profileId: string; // The agent ID for tracking
   toolCallId: string; // The tool call ID for tracking
   llmClient: DualLlmClient; // LLM client instance
   originalUserRequest: string; // Extracted user request
@@ -27,14 +27,14 @@ export class DualLlmSubagent {
 
   private constructor(
     config: DualLlmConfig,
-    agentId: string,
+    profileId: string,
     toolCallId: string,
     llmClient: DualLlmClient,
     originalUserRequest: string,
     toolResult: unknown,
   ) {
     this.config = config;
-    this.agentId = agentId;
+    this.profileId = profileId;
     this.toolCallId = toolCallId;
     this.llmClient = llmClient;
     this.originalUserRequest = originalUserRequest;
@@ -43,22 +43,22 @@ export class DualLlmSubagent {
 
   static async create(
     params: CommonDualLlmParams,
-    agentId: string,
+    profileId: string,
     apiKey: string | undefined,
     provider: SupportedProvider,
   ): Promise<DualLlmSubagent> {
     logger.debug(
-      { agentId, toolCallId: params.toolCallId, provider },
+      { profileId, toolCallId: params.toolCallId, provider },
       "[dualLlmSubagent] create: creating dual LLM subagent",
     );
     const config = await DualLlmConfigModel.getDefault();
     logger.debug(
-      { agentId, maxRounds: config.maxRounds },
+      { profileId, maxRounds: config.maxRounds },
       "[dualLlmSubagent] create: loaded config",
     );
     return new DualLlmSubagent(
       config,
-      agentId,
+      profileId,
       params.toolCallId,
       createDualLlmClient(provider, apiKey),
       params.userRequest,
@@ -82,7 +82,7 @@ export class DualLlmSubagent {
   ): Promise<string> {
     logger.debug(
       {
-        agentId: this.agentId,
+        profileId: this.profileId,
         toolCallId: this.toolCallId,
         maxRounds: this.config.maxRounds,
       },
@@ -110,7 +110,7 @@ export class DualLlmSubagent {
     for (let round = 0; round < this.config.maxRounds; round++) {
       logger.debug(
         {
-          agentId: this.agentId,
+          profileId: this.profileId,
           round: round + 1,
           maxRounds: this.config.maxRounds,
         },
@@ -120,7 +120,7 @@ export class DualLlmSubagent {
 
       // Step 1: Main agent formulates a multiple choice question
       logger.debug(
-        { agentId: this.agentId, conversationLength: conversation.length },
+        { profileId: this.profileId, conversationLength: conversation.length },
         "[dualLlmSubagent] processWithMainAgent: requesting question from main agent",
       );
       const response = await this.llmClient.chat(conversation, 0);
@@ -129,7 +129,7 @@ export class DualLlmSubagent {
       // Check if main agent is done questioning
       if (response === "DONE" || response.includes("DONE")) {
         logger.debug(
-          { agentId: this.agentId, round: round + 1 },
+          { profileId: this.profileId, round: round + 1 },
           "[dualLlmSubagent] processWithMainAgent: main agent signaled DONE",
         );
         logger.info("✓ Main agent signaled DONE. Ending Q&A loop.");
@@ -142,7 +142,7 @@ export class DualLlmSubagent {
 
       if (!questionMatch || !optionsMatch) {
         logger.debug(
-          { agentId: this.agentId, responseLength: response.length },
+          { profileId: this.profileId, responseLength: response.length },
           "[dualLlmSubagent] processWithMainAgent: failed to parse question format",
         );
         logger.info("✗ Main agent did not format question correctly. Ending.");
@@ -157,7 +157,7 @@ export class DualLlmSubagent {
         .filter((opt) => opt.length > 0);
 
       logger.debug(
-        { agentId: this.agentId, question, optionCount: options.length },
+        { profileId: this.profileId, question, optionCount: options.length },
         "[dualLlmSubagent] processWithMainAgent: parsed question and options",
       );
       logger.info(`\nQuestion: ${question}`);
@@ -168,14 +168,14 @@ export class DualLlmSubagent {
 
       // Step 3: Quarantined agent answers the question (can see untrusted data)
       logger.debug(
-        { agentId: this.agentId, question, optionCount: options.length },
+        { profileId: this.profileId, question, optionCount: options.length },
         "[dualLlmSubagent] processWithMainAgent: requesting answer from quarantined agent",
       );
       const answerIndex = await this.answerQuestion(question, options);
       const selectedOption = options[answerIndex];
 
       logger.debug(
-        { agentId: this.agentId, answerIndex, selectedOption },
+        { profileId: this.profileId, answerIndex, selectedOption },
         "[dualLlmSubagent] processWithMainAgent: quarantined agent answered",
       );
       logger.info(`\nAnswer: ${answerIndex} - "${selectedOption}"`);
@@ -197,7 +197,7 @@ export class DualLlmSubagent {
     }
 
     logger.debug(
-      { agentId: this.agentId, conversationLength: conversation.length },
+      { profileId: this.profileId, conversationLength: conversation.length },
       "[dualLlmSubagent] processWithMainAgent: Q&A loop complete",
     );
     logger.info("\n=== Q&A Loop Complete ===\n");
@@ -209,7 +209,7 @@ export class DualLlmSubagent {
 
     // Generate a safe summary from the Q&A conversation
     logger.debug(
-      { agentId: this.agentId },
+      { profileId: this.profileId },
       "[dualLlmSubagent] processWithMainAgent: generating summary",
     );
     const summary = await this.generateSummary(conversation);
@@ -217,21 +217,21 @@ export class DualLlmSubagent {
     // Store the result in the database
     logger.debug(
       {
-        agentId: this.agentId,
+        profileId: this.profileId,
         toolCallId: this.toolCallId,
         summaryLength: summary.length,
       },
       "[dualLlmSubagent] processWithMainAgent: storing result in database",
     );
     await DualLlmResultModel.create({
-      agentId: this.agentId,
+      profileId: this.profileId,
       toolCallId: this.toolCallId,
       conversations: conversation,
       result: summary,
     });
 
     logger.debug(
-      { agentId: this.agentId, toolCallId: this.toolCallId },
+      { profileId: this.profileId, toolCallId: this.toolCallId },
       "[dualLlmSubagent] processWithMainAgent: complete",
     );
     return summary;
@@ -250,7 +250,7 @@ export class DualLlmSubagent {
     options: string[],
   ): Promise<number> {
     logger.debug(
-      { agentId: this.agentId, question, optionCount: options.length },
+      { profileId: this.profileId, question, optionCount: options.length },
       "[dualLlmSubagent] answerQuestion: starting",
     );
     const optionsText = options.map((opt, idx) => `${idx}: ${opt}`).join("\n");
@@ -263,7 +263,7 @@ export class DualLlmSubagent {
       .replace("{{maxIndex}}", String(options.length - 1));
 
     logger.debug(
-      { agentId: this.agentId, promptLength: quarantinedPrompt.length },
+      { profileId: this.profileId, promptLength: quarantinedPrompt.length },
       "[dualLlmSubagent] answerQuestion: requesting answer with schema",
     );
     const parsed = await this.llmClient.chatWithSchema<{ answer: number }>(
@@ -288,7 +288,7 @@ export class DualLlmSubagent {
     // Code-level validation: Check if response has correct structure
     if (!parsed || typeof parsed.answer !== "number") {
       logger.debug(
-        { agentId: this.agentId, parsed },
+        { profileId: this.profileId, parsed },
         "[dualLlmSubagent] answerQuestion: invalid response structure",
       );
       logger.warn("Invalid response structure, defaulting to last option");
@@ -299,14 +299,14 @@ export class DualLlmSubagent {
     const answerIndex = Math.floor(parsed.answer);
     if (answerIndex < 0 || answerIndex >= options.length) {
       logger.debug(
-        { agentId: this.agentId, answerIndex, optionCount: options.length },
+        { profileId: this.profileId, answerIndex, optionCount: options.length },
         "[dualLlmSubagent] answerQuestion: answer out of bounds, defaulting to last option",
       );
       return options.length - 1;
     }
 
     logger.debug(
-      { agentId: this.agentId, answerIndex },
+      { profileId: this.profileId, answerIndex },
       "[dualLlmSubagent] answerQuestion: valid answer received",
     );
     return answerIndex;
@@ -323,7 +323,7 @@ export class DualLlmSubagent {
     conversation: DualLlmMessage[],
   ): Promise<string> {
     logger.debug(
-      { agentId: this.agentId, conversationLength: conversation.length },
+      { profileId: this.profileId, conversationLength: conversation.length },
       "[dualLlmSubagent] generateSummary: starting",
     );
     // Extract just the Q&A pairs and summarize
@@ -339,7 +339,7 @@ export class DualLlmSubagent {
     );
 
     logger.debug(
-      { agentId: this.agentId, qaTextLength: qaText.length },
+      { profileId: this.profileId, qaTextLength: qaText.length },
       "[dualLlmSubagent] generateSummary: requesting summary from LLM",
     );
     const summary = await this.llmClient.chat(
@@ -348,7 +348,7 @@ export class DualLlmSubagent {
     );
 
     logger.debug(
-      { agentId: this.agentId, summaryLength: summary.length },
+      { profileId: this.profileId, summaryLength: summary.length },
       "[dualLlmSubagent] generateSummary: complete",
     );
     return summary;

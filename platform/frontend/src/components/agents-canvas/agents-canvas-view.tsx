@@ -49,7 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useProfiles } from "@/lib/agent.query";
+import { useProfiles } from "@/lib/profile.query";
 import {
   promptAgentsQueryKeys,
   useAllPromptAgentConnections,
@@ -181,7 +181,7 @@ function AgentsCanvasViewInner() {
           const matchesSearch =
             !hasSearch || prompt.name.toLowerCase().includes(query);
           const matchesProfile =
-            !hasProfileFilter || prompt.agentId === selectedProfileId;
+            !hasProfileFilter || prompt.profileId === selectedProfileId;
           return matchesSearch && matchesProfile;
         })
         .map((p) => p.id),

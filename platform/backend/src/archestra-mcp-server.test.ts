@@ -5,9 +5,9 @@ import {
   MCP_SERVER_TOOL_NAME_SEPARATOR,
 } from "@shared";
 import * as knowledgeGraph from "@/knowledge-graph";
-import { AgentModel, InternalMcpCatalogModel } from "@/models";
+import { InternalMcpCatalogModel, ProfileModel } from "@/models";
 import { beforeEach, describe, expect, test, vi } from "@/test";
-import type { Agent } from "@/types";
+import type { Profile } from "@/types";
 import {
   type ArchestraContext,
   executeArchestraTool,
@@ -133,11 +133,11 @@ describe("getArchestraMcpTools", () => {
 });
 
 describe("executeArchestraTool", () => {
-  let testProfile: Agent;
+  let testProfile: Profile;
   let mockContext: ArchestraContext;
 
-  beforeEach(async ({ makeAgent }) => {
-    testProfile = await makeAgent({ name: "Test Profile" });
+  beforeEach(async ({ makeProfile }) => {
+    testProfile = await makeProfile({ name: "Test Profile" });
     mockContext = {
       profile: {
         id: testProfile.id,
@@ -201,12 +201,12 @@ describe("executeArchestraTool", () => {
     });
 
     test("should include Archestra catalog when seeded", async ({
-      makeAgent,
+      makeProfile,
       seedAndAssignArchestraTools,
     }) => {
       // Seed Archestra catalog
-      const agent = await makeAgent();
-      await seedAndAssignArchestraTools(agent.id);
+      const profile = await makeProfile();
+      await seedAndAssignArchestraTools(profile.id);
 
       const result = await executeArchestraTool(
         `${ARCHESTRA_MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}search_private_mcp_registry`,
@@ -346,9 +346,9 @@ describe("executeArchestraTool", () => {
     });
 
     test("should handle errors gracefully", async () => {
-      // Mock the AgentModel.create method to throw an error
-      const originalCreate = AgentModel.create;
-      AgentModel.create = vi
+      // Mock the ProfileModel.create method to throw an error
+      const originalCreate = ProfileModel.create;
+      ProfileModel.create = vi
         .fn()
         .mockRejectedValue(new Error("Database error"));
 
@@ -365,7 +365,7 @@ describe("executeArchestraTool", () => {
       expect((result.content[0] as any).text).toContain("Database error");
 
       // Restore the original method
-      AgentModel.create = originalCreate;
+      ProfileModel.create = originalCreate;
     });
   });
 
@@ -641,9 +641,9 @@ describe("executeArchestraTool", () => {
     });
 
     test("should return token usage for specified profile", async ({
-      makeAgent,
+      makeProfile,
     }) => {
-      const otherProfile = await makeAgent({ name: "Other Profile" });
+      const otherProfile = await makeProfile({ name: "Other Profile" });
 
       const result = await executeArchestraTool(
         `${ARCHESTRA_MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}get_profile_token_usage`,

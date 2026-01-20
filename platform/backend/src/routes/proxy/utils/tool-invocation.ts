@@ -1,8 +1,8 @@
 import { isArchestraMcpServerTool } from "@shared";
 import logger from "@/logging";
 import {
-  AgentTeamModel,
   OrganizationModel,
+  ProfileTeamModel,
   TeamModel,
   ToolInvocationPolicyModel,
 } from "@/models";
@@ -167,62 +167,66 @@ ${contentMessage}`;
 };
 
 /**
- * Resolve the global tool policy for an agent.
- * 1. Try to get organizationId from agent's teams
- * 2. Fallback to first organization in database if agent has no teams
+ * Resolve the global tool policy for a profile.
+ * 1. Try to get organizationId from profile's teams
+ * 2. Fallback to first organization in database if profile has no teams
  *
- * @param agentId - The agent ID to resolve policy for
+ * @param profileId - The profile ID to resolve policy for
  * @returns The global tool policy ("permissive" or "restrictive"), defaults to "permissive"
  */
 export async function getGlobalToolPolicy(
-  agentId: string,
+  profileId: string,
 ): Promise<GlobalToolPolicy> {
   const fallbackPolicy: GlobalToolPolicy = "permissive";
-  const agentTeamIds = await AgentTeamModel.getTeamsForAgent(agentId);
+  const profileTeamIds = await ProfileTeamModel.getTeamsForProfile(profileId);
 
-  // Agent has teams - get organization from first team
-  if (agentTeamIds.length > 0) {
-    const teams = await TeamModel.findByIds(agentTeamIds);
+  // Profile has teams - get organization from first team
+  if (profileTeamIds.length > 0) {
+    const teams = await TeamModel.findByIds(profileTeamIds);
     if (teams.length > 0 && teams[0].organizationId) {
       const organizationId = teams[0].organizationId;
       logger.debug(
-        { agentId, organizationId },
+        { profileId, organizationId },
         "GlobalToolPolicy: resolved organizationId from team",
       );
 
       const organization = await OrganizationModel.getById(organizationId);
       if (!organization) {
         logger.warn(
-          { agentId, organizationId },
+          { profileId, organizationId },
           `GlobalToolPolicy: organization not found, defaulting to ${fallbackPolicy}`,
         );
         return fallbackPolicy;
       }
 
       logger.debug(
-        { agentId, organizationId, policy: organization.globalToolPolicy },
+        { profileId, organizationId, policy: organization.globalToolPolicy },
         "GlobalToolPolicy: resolved policy from organization",
       );
       return organization.globalToolPolicy;
     }
   }
 
-  // Agent has no teams - fallback to first organization (avoid double fetch)
+  // Profile has no teams - fallback to first organization (avoid double fetch)
   const firstOrg = await OrganizationModel.getFirst();
   if (!firstOrg) {
     logger.warn(
-      { agentId },
+      { profileId },
       `GlobalToolPolicy: could not resolve organization, defaulting to ${fallbackPolicy}`,
     );
     return fallbackPolicy;
   }
 
   logger.debug(
-    { agentId, organizationId: firstOrg.id },
-    "GlobalToolPolicy: agent has no teams - using fallback organization",
+    { profileId, organizationId: firstOrg.id },
+    "GlobalToolPolicy: profile has no teams - using fallback organization",
   );
   logger.debug(
-    { agentId, organizationId: firstOrg.id, policy: firstOrg.globalToolPolicy },
+    {
+      profileId,
+      organizationId: firstOrg.id,
+      policy: firstOrg.globalToolPolicy,
+    },
     "GlobalToolPolicy: resolved policy from organization",
   );
 

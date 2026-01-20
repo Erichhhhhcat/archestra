@@ -1,16 +1,16 @@
-import { AgentToolModel, ToolModel } from "@/models";
+import { ProfileToolModel, ToolModel } from "@/models";
 import { beforeEach, describe, expect, test } from "@/test";
 import TrustedDataPolicyModel from "./trusted-data-policy";
 
 describe("TrustedDataPolicyModel", () => {
   describe("evaluateBulk", () => {
     test("evaluates multiple tools in one query to avoid N+1", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
       makeTrustedDataPolicy,
     }) => {
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       // Create multiple tools
       const tool1 = await makeTool({ name: "tool-1" });
@@ -18,9 +18,9 @@ describe("TrustedDataPolicyModel", () => {
       const tool3 = await makeTool({ name: "tool-3" });
 
       // Assign tools to agent
-      await makeAgentTool(agent.id, tool1.id);
-      await makeAgentTool(agent.id, tool2.id);
-      await makeAgentTool(agent.id, tool3.id);
+      await makeProfileTool(agent.id, tool1.id);
+      await makeProfileTool(agent.id, tool2.id);
+      await makeProfileTool(agent.id, tool3.id);
 
       // Delete auto-created default policies to set up our own
       await TrustedDataPolicyModel.deleteByToolId(tool1.id);
@@ -89,18 +89,18 @@ describe("TrustedDataPolicyModel", () => {
     });
 
     test("handles blocking policies in bulk evaluation", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
       makeTrustedDataPolicy,
     }) => {
-      const agent = await makeAgent();
+      const agent = await makeProfile();
 
       const tool1 = await makeTool({ name: "email-tool" });
       const tool2 = await makeTool({ name: "file-tool" });
 
-      await makeAgentTool(agent.id, tool1.id);
-      await makeAgentTool(agent.id, tool2.id);
+      await makeProfileTool(agent.id, tool1.id);
+      await makeProfileTool(agent.id, tool2.id);
 
       // Create blocking policies
       await makeTrustedDataPolicy(tool1.id, {
@@ -151,8 +151,8 @@ describe("TrustedDataPolicyModel", () => {
       expect(safeEmailResult?.isTrusted).toBe(false); // Still untrusted but not blocked
     });
 
-    test("handles Archestra tools in bulk", async ({ makeAgent }) => {
-      const agent = await makeAgent();
+    test("handles Archestra tools in bulk", async ({ makeProfile }) => {
+      const agent = await makeProfile();
 
       const results = await TrustedDataPolicyModel.evaluateBulk(
         agent.id,
@@ -181,14 +181,14 @@ describe("TrustedDataPolicyModel", () => {
     });
 
     test("single evaluate method uses bulk internally", async ({
-      makeAgent,
+      makeProfile,
       makeTool,
-      makeAgentTool,
+      makeProfileTool,
       makeTrustedDataPolicy,
     }) => {
-      const agent = await makeAgent();
+      const agent = await makeProfile();
       const tool = await makeTool({ name: "test-tool" });
-      await makeAgentTool(agent.id, tool.id);
+      await makeProfileTool(agent.id, tool.id);
       // Delete auto-created default policies to set up our own
       await TrustedDataPolicyModel.deleteByToolId(tool.id);
       await makeTrustedDataPolicy(tool.id, {
@@ -212,27 +212,27 @@ describe("TrustedDataPolicyModel", () => {
 
   const toolName = "test-tool";
 
-  let agentId: string;
+  let profileId: string;
   let toolId: string;
 
-  beforeEach(async ({ makeAgent, makeTool }) => {
+  beforeEach(async ({ makeProfile, makeTool }) => {
     // Create test agent
-    const agent = await makeAgent({ name: "Test Agent" });
-    agentId = agent.id;
+    const agent = await makeProfile({ name: "Test Agent" });
+    profileId = agent.id;
 
     // Create test tool
-    const tool = await makeTool({ agentId: agent.id, name: toolName });
+    const tool = await makeTool({ profileId: agent.id, name: toolName });
     toolId = tool.id;
 
     // Create agent-tool relationship (untrusted by default when no policies)
-    await AgentToolModel.create(agentId, toolId, {});
+    await ProfileToolModel.create(profileId, toolId, {});
   });
 
   describe("evaluate", () => {
     describe("basic trust evaluation", () => {
       test("marks data as untrusted when no policies exist", async () => {
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: "some data",
@@ -258,7 +258,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: { source: "trusted-api", data: "some data" },
@@ -284,7 +284,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: { source: "untrusted-api", data: "some data" },
@@ -305,7 +305,7 @@ describe("TrustedDataPolicyModel", () => {
       }) => {
         // Create a tool with trusted default policy
         await makeTool({
-          agentId,
+          profileId,
           name: "trusted-by-default-tool",
           parameters: {},
           description: "Tool that trusts data by default",
@@ -315,7 +315,7 @@ describe("TrustedDataPolicyModel", () => {
           "trusted-by-default-tool",
         );
         if (!trustedTool) throw new Error("Tool not found");
-        await AgentToolModel.create(agentId, trustedTool.id, {});
+        await ProfileToolModel.create(profileId, trustedTool.id, {});
         // Delete auto-created default policies to set up our own
         await TrustedDataPolicyModel.deleteByToolId(trustedTool.id);
         await makeTrustedDataPolicy(trustedTool.id, {
@@ -324,7 +324,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           "trusted-by-default-tool",
           { value: "any data" },
           "restrictive",
@@ -340,7 +340,7 @@ describe("TrustedDataPolicyModel", () => {
       }) => {
         // Create a tool with trusted default policy
         await ToolModel.createToolIfNotExists({
-          agentId,
+          profileId,
           name: "trusted-by-default-with-policies",
           parameters: {},
           description: "Tool that trusts data by default",
@@ -350,7 +350,7 @@ describe("TrustedDataPolicyModel", () => {
           "trusted-by-default-with-policies",
         );
         if (!trustedTool) throw new Error("Tool not found");
-        await AgentToolModel.create(agentId, trustedTool.id, {});
+        await ProfileToolModel.create(profileId, trustedTool.id, {});
         // Delete auto-created default policies to set up our own
         await TrustedDataPolicyModel.deleteByToolId(trustedTool.id);
 
@@ -368,7 +368,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           "trusted-by-default-with-policies",
           { value: { normal: "data" } },
           "restrictive",
@@ -385,7 +385,7 @@ describe("TrustedDataPolicyModel", () => {
       }) => {
         // Create a tool with trusted default policy
         await makeTool({
-          agentId,
+          profileId,
           name: "trusted-default-with-matching-policy",
           parameters: { description: "Tool that trusts data by default" },
         });
@@ -394,7 +394,7 @@ describe("TrustedDataPolicyModel", () => {
           "trusted-default-with-matching-policy",
         );
         if (!trustedTool) throw new Error("Tool not found");
-        await AgentToolModel.create(agentId, trustedTool.id, {});
+        await ProfileToolModel.create(profileId, trustedTool.id, {});
 
         // Create a default trusted policy
         await makeTrustedDataPolicy(trustedTool.id, {
@@ -410,7 +410,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           "trusted-default-with-matching-policy",
           { value: { verified: "true" } },
           "restrictive",
@@ -433,7 +433,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const trustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { status: "verified" } },
           "restrictive",
@@ -442,7 +442,7 @@ describe("TrustedDataPolicyModel", () => {
         expect(trustedResult.isTrusted).toBe(true);
 
         const untrustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { status: "unverified" } },
           "restrictive",
@@ -463,7 +463,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const trustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { source: "trusted" } },
           "restrictive",
@@ -472,7 +472,7 @@ describe("TrustedDataPolicyModel", () => {
         expect(trustedResult.isTrusted).toBe(true);
 
         const untrustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { source: "untrusted" } },
           "restrictive",
@@ -493,7 +493,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const trustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { url: "https://api.trusted-domain.com/data" } },
           "restrictive",
@@ -502,7 +502,7 @@ describe("TrustedDataPolicyModel", () => {
         expect(trustedResult.isTrusted).toBe(true);
 
         const untrustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { url: "https://untrusted.com/data" } },
           "restrictive",
@@ -523,7 +523,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const trustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { content: "This is safe content" } },
           "restrictive",
@@ -532,7 +532,7 @@ describe("TrustedDataPolicyModel", () => {
         expect(trustedResult.isTrusted).toBe(true);
 
         const untrustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { content: "This contains malicious code" } },
           "restrictive",
@@ -553,7 +553,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const trustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { path: "/trusted/data/file.json" } },
           "restrictive",
@@ -562,7 +562,7 @@ describe("TrustedDataPolicyModel", () => {
         expect(trustedResult.isTrusted).toBe(true);
 
         const untrustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { path: "/untrusted/data/file.json" } },
           "restrictive",
@@ -583,7 +583,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const trustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { email: "user@company.com" } },
           "restrictive",
@@ -592,7 +592,7 @@ describe("TrustedDataPolicyModel", () => {
         expect(trustedResult.isTrusted).toBe(true);
 
         const untrustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { email: "user@external.com" } },
           "restrictive",
@@ -613,7 +613,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const trustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { id: "ABC-12345" } },
           "restrictive",
@@ -622,7 +622,7 @@ describe("TrustedDataPolicyModel", () => {
         expect(trustedResult.isTrusted).toBe(true);
 
         const untrustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { id: "invalid-id" } },
           "restrictive",
@@ -650,7 +650,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // All emails from trusted domain - should be trusted
         const trustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: {
@@ -667,7 +667,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Mixed emails - should be untrusted (ALL must match)
         const untrustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: {
@@ -696,7 +696,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Empty array - should be untrusted (no values to verify)
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: { items: [] },
@@ -720,7 +720,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Non-array value - should be untrusted
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: { items: "not an array" },
@@ -749,7 +749,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const trustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: {
@@ -769,7 +769,7 @@ describe("TrustedDataPolicyModel", () => {
         expect(trustedResult.isTrusted).toBe(true);
 
         const untrustedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: {
@@ -806,7 +806,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Missing path - should be untrusted
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: {
@@ -837,7 +837,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: { source: "malicious", data: "some data" },
@@ -869,7 +869,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: { type: "email", from: "hacker@evil.com" },
@@ -896,7 +896,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Block policy matches when ALL values at wildcard path match the condition
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: {
@@ -932,7 +932,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: { source: "trusted" },
@@ -958,7 +958,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const blockedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { domain: "evil.blocked.com" } },
           "restrictive",
@@ -967,7 +967,7 @@ describe("TrustedDataPolicyModel", () => {
         expect(blockedResult.isBlocked).toBe(true);
 
         const allowedResult = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { domain: "safe.com" } },
           "restrictive",
@@ -982,14 +982,14 @@ describe("TrustedDataPolicyModel", () => {
       }) => {
         // Create a tool with trusted default policy
         await makeTool({
-          agentId,
+          profileId,
           name: "default-trusted-tool",
           parameters: { description: "Tool that trusts data by default" },
         });
 
         const trustedTool = await ToolModel.findByName("default-trusted-tool");
         if (!trustedTool) throw new Error("Tool not found");
-        await AgentToolModel.create(agentId, trustedTool.id, {});
+        await ProfileToolModel.create(profileId, trustedTool.id, {});
 
         // Create default trusted policy
         await makeTrustedDataPolicy(trustedTool.id, {
@@ -1005,7 +1005,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           "default-trusted-tool",
           { value: { dangerous: "true", other: "data" } },
           "restrictive",
@@ -1032,7 +1032,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: { source: "internal", verified: "true", data: "content" },
@@ -1059,7 +1059,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Only first condition matches
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: { source: "internal", verified: "false", data: "content" },
@@ -1084,7 +1084,7 @@ describe("TrustedDataPolicyModel", () => {
         });
 
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: { type: "email", from: "hacker@malicious.com" },
@@ -1117,7 +1117,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Test first policy match
         const result1 = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { source: "api-v1" } },
           "restrictive",
@@ -1128,7 +1128,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Test second policy match
         const result2 = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { source: "api-v2" } },
           "restrictive",
@@ -1139,7 +1139,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Test no match
         const result3 = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { source: "unknown" } },
           "restrictive",
@@ -1166,7 +1166,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Only first attribute matches - should be trusted
         const result1 = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { source: "trusted", verified: "false" } },
           "restrictive",
@@ -1176,7 +1176,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Only second attribute matches - should be trusted
         const result2 = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           { value: { source: "untrusted", verified: "true" } },
           "restrictive",
@@ -1198,7 +1198,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Direct object (no value wrapper)
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             status: "success",
@@ -1221,7 +1221,7 @@ describe("TrustedDataPolicyModel", () => {
 
         // Wrapped in value property
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: { status: "success", data: "some data" },
@@ -1237,17 +1237,17 @@ describe("TrustedDataPolicyModel", () => {
   describe("context-based conditions", () => {
     describe("context.externalAgentId", () => {
       test("trusts data when context.externalAgentId matches with equal operator", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeTrustedDataPolicy,
       }) => {
-        const agent = await makeAgent();
+        const agent = await makeProfile();
         const tool = await makeTool({
-          agentId: agent.id,
+          profileId: agent.id,
           name: "context-tool",
         });
-        await makeAgentTool(agent.id, tool.id);
+        await makeProfileTool(agent.id, tool.id);
         await TrustedDataPolicyModel.deleteByToolId(tool.id);
 
         await makeTrustedDataPolicy(tool.id, {
@@ -1275,17 +1275,17 @@ describe("TrustedDataPolicyModel", () => {
       });
 
       test("does not trust data when context.externalAgentId does not match with equal operator", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeTrustedDataPolicy,
       }) => {
-        const agent = await makeAgent();
+        const agent = await makeProfile();
         const tool = await makeTool({
-          agentId: agent.id,
+          profileId: agent.id,
           name: "context-tool-2",
         });
-        await makeAgentTool(agent.id, tool.id);
+        await makeProfileTool(agent.id, tool.id);
         await TrustedDataPolicyModel.deleteByToolId(tool.id);
 
         await makeTrustedDataPolicy(tool.id, {
@@ -1312,17 +1312,17 @@ describe("TrustedDataPolicyModel", () => {
       });
 
       test("trusts data when context.externalAgentId matches with notEqual operator", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeTrustedDataPolicy,
       }) => {
-        const agent = await makeAgent();
+        const agent = await makeProfile();
         const tool = await makeTool({
-          agentId: agent.id,
+          profileId: agent.id,
           name: "context-tool-3",
         });
-        await makeAgentTool(agent.id, tool.id);
+        await makeProfileTool(agent.id, tool.id);
         await TrustedDataPolicyModel.deleteByToolId(tool.id);
 
         await makeTrustedDataPolicy(tool.id, {
@@ -1350,17 +1350,17 @@ describe("TrustedDataPolicyModel", () => {
       });
 
       test("blocks data when context.externalAgentId matches block_always policy", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeTrustedDataPolicy,
       }) => {
-        const agent = await makeAgent();
+        const agent = await makeProfile();
         const tool = await makeTool({
-          agentId: agent.id,
+          profileId: agent.id,
           name: "context-tool-4",
         });
-        await makeAgentTool(agent.id, tool.id);
+        await makeProfileTool(agent.id, tool.id);
         await TrustedDataPolicyModel.deleteByToolId(tool.id);
 
         await makeTrustedDataPolicy(tool.id, {
@@ -1390,14 +1390,14 @@ describe("TrustedDataPolicyModel", () => {
 
     describe("context.teamIds", () => {
       test("trusts data when context.teamIds contains the specified team with contains operator", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeTrustedDataPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "team-tool" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({ profileId: agent.id, name: "team-tool" });
+        await makeProfileTool(agent.id, tool.id);
         await TrustedDataPolicyModel.deleteByToolId(tool.id);
 
         await makeTrustedDataPolicy(tool.id, {
@@ -1428,14 +1428,17 @@ describe("TrustedDataPolicyModel", () => {
       });
 
       test("does not trust data when context.teamIds does not contain the specified team", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeTrustedDataPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "team-tool-2" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({
+          profileId: agent.id,
+          name: "team-tool-2",
+        });
+        await makeProfileTool(agent.id, tool.id);
         await TrustedDataPolicyModel.deleteByToolId(tool.id);
 
         await makeTrustedDataPolicy(tool.id, {
@@ -1465,14 +1468,17 @@ describe("TrustedDataPolicyModel", () => {
       });
 
       test("trusts data when context.teamIds does not contain blocked team with notContains operator", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeTrustedDataPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "team-tool-3" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({
+          profileId: agent.id,
+          name: "team-tool-3",
+        });
+        await makeProfileTool(agent.id, tool.id);
         await TrustedDataPolicyModel.deleteByToolId(tool.id);
 
         await makeTrustedDataPolicy(tool.id, {
@@ -1503,14 +1509,17 @@ describe("TrustedDataPolicyModel", () => {
       });
 
       test("does not trust data when context.teamIds contains blocked team with notContains operator", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeTrustedDataPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "team-tool-4" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({
+          profileId: agent.id,
+          name: "team-tool-4",
+        });
+        await makeProfileTool(agent.id, tool.id);
         await TrustedDataPolicyModel.deleteByToolId(tool.id);
 
         await makeTrustedDataPolicy(tool.id, {
@@ -1540,14 +1549,17 @@ describe("TrustedDataPolicyModel", () => {
       });
 
       test("blocks data when context.teamIds matches block_always policy", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeTrustedDataPolicy,
       }) => {
-        const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "team-tool-5" });
-        await makeAgentTool(agent.id, tool.id);
+        const agent = await makeProfile();
+        const tool = await makeTool({
+          profileId: agent.id,
+          name: "team-tool-5",
+        });
+        await makeProfileTool(agent.id, tool.id);
         await TrustedDataPolicyModel.deleteByToolId(tool.id);
 
         await makeTrustedDataPolicy(tool.id, {
@@ -1580,17 +1592,17 @@ describe("TrustedDataPolicyModel", () => {
 
     describe("context condition without context provided", () => {
       test("does not match context condition when no context is provided", async ({
-        makeAgent,
+        makeProfile,
         makeTool,
-        makeAgentTool,
+        makeProfileTool,
         makeTrustedDataPolicy,
       }) => {
-        const agent = await makeAgent();
+        const agent = await makeProfile();
         const tool = await makeTool({
-          agentId: agent.id,
+          profileId: agent.id,
           name: "no-context-tool",
         });
-        await makeAgentTool(agent.id, tool.id);
+        await makeProfileTool(agent.id, tool.id);
         await TrustedDataPolicyModel.deleteByToolId(tool.id);
 
         await makeTrustedDataPolicy(tool.id, {
@@ -1625,7 +1637,7 @@ describe("TrustedDataPolicyModel", () => {
       const archestraToolName = "archestra__whoami";
 
       const result = await TrustedDataPolicyModel.evaluate(
-        agentId,
+        profileId,
         archestraToolName,
         {
           value: { any: "data", dangerous: "content" },
@@ -1650,7 +1662,7 @@ describe("TrustedDataPolicyModel", () => {
 
       for (const toolName of archestraTools) {
         const result = await TrustedDataPolicyModel.evaluate(
-          agentId,
+          profileId,
           toolName,
           {
             value: { untrusted: "data", source: "malicious" },
@@ -1677,7 +1689,7 @@ describe("TrustedDataPolicyModel", () => {
       });
 
       const result = await TrustedDataPolicyModel.evaluate(
-        agentId,
+        profileId,
         "archestra__create_agent",
         {
           value: { source: "malicious", data: "would normally be blocked" },
@@ -1704,7 +1716,7 @@ describe("TrustedDataPolicyModel", () => {
 
       // Test regular tool with trusted data
       const trustedResult = await TrustedDataPolicyModel.evaluate(
-        agentId,
+        profileId,
         toolName,
         {
           value: { source: "trusted" },
@@ -1718,7 +1730,7 @@ describe("TrustedDataPolicyModel", () => {
 
       // Test regular tool with untrusted data
       const untrustedResult = await TrustedDataPolicyModel.evaluate(
-        agentId,
+        profileId,
         toolName,
         {
           value: { source: "untrusted" },

@@ -214,10 +214,10 @@ describe("InternalMcpCatalogModel", () => {
   describe("Archestra Catalog", () => {
     test("Archestra catalog validates against SelectInternalMcpCatalogSchema", async ({
       seedAndAssignArchestraTools,
-      makeAgent,
+      makeProfile,
     }) => {
       // Seed Archestra catalog and tools
-      const agent = await makeAgent();
+      const agent = await makeProfile();
       await seedAndAssignArchestraTools(agent.id);
 
       // Find the Archestra catalog via findById
@@ -234,10 +234,10 @@ describe("InternalMcpCatalogModel", () => {
 
     test("findAll includes Archestra catalog", async ({
       seedAndAssignArchestraTools,
-      makeAgent,
+      makeProfile,
     }) => {
       // Seed Archestra catalog and tools
-      const agent = await makeAgent();
+      const agent = await makeProfile();
       await seedAndAssignArchestraTools(agent.id);
 
       const catalogItems = await InternalMcpCatalogModel.findAll({

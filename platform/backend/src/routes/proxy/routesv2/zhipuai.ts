@@ -79,9 +79,9 @@ const zhipuaiProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.ZhipuaiChatCompletionsWithDefaultAgent,
+        operationId: RouteId.ZhipuaiChatCompletionsWithDefaultProfile,
         description:
-          "Create a chat completion with Zhipu AI (uses default agent)",
+          "Create a chat completion with Zhipu AI (uses default profile)",
         tags: ["llm-proxy"],
         body: Zhipuai.API.ChatCompletionRequestSchema,
         headers: Zhipuai.API.ChatCompletionsHeadersSchema,
@@ -93,7 +93,7 @@ const zhipuaiProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
     async (request, reply) => {
       logger.debug(
         { url: request.url },
-        "[UnifiedProxy] Handling Zhipu AI request (default agent)",
+        "[UnifiedProxy] Handling Zhipu AI request (default profile)",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
         request.headers,
@@ -106,7 +106,7 @@ const zhipuaiProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         zhipuaiAdapterFactory,
         {
           organizationId: request.organizationId,
-          agentId: undefined,
+          profileId: undefined,
           externalAgentId,
           userId,
         },
@@ -115,16 +115,16 @@ const zhipuaiProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
   );
 
   fastify.post(
-    `${API_PREFIX}/:agentId${CHAT_COMPLETIONS_SUFFIX}`,
+    `${API_PREFIX}/:profileId${CHAT_COMPLETIONS_SUFFIX}`,
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.ZhipuaiChatCompletionsWithAgent,
+        operationId: RouteId.ZhipuaiChatCompletionsWithProfile,
         description:
-          "Create a chat completion with Zhipu AI for a specific agent",
+          "Create a chat completion with Zhipu AI for a specific profile",
         tags: ["llm-proxy"],
         params: z.object({
-          agentId: UuidIdSchema,
+          profileId: UuidIdSchema,
         }),
         body: Zhipuai.API.ChatCompletionRequestSchema,
         headers: Zhipuai.API.ChatCompletionsHeadersSchema,
@@ -135,8 +135,8 @@ const zhipuaiProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
     },
     async (request, reply) => {
       logger.debug(
-        { url: request.url, agentId: request.params.agentId },
-        "[UnifiedProxy] Handling Zhipu AI request (with agent)",
+        { url: request.url, profileId: request.params.profileId },
+        "[UnifiedProxy] Handling Zhipu AI request (with profile)",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
         request.headers,
@@ -149,7 +149,7 @@ const zhipuaiProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         zhipuaiAdapterFactory,
         {
           organizationId: request.organizationId,
-          agentId: request.params.agentId,
+          profileId: request.params.profileId,
           externalAgentId,
           userId,
         },

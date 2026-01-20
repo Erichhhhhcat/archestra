@@ -1,26 +1,26 @@
 import { expect, test } from "./fixtures";
 
 test.describe("Prompts API", () => {
-  test("should maintain agent-prompt relationships when updating a prompt", async ({
+  test("should maintain profile-prompt relationships when updating a prompt", async ({
     request,
-    createAgent,
+    createProfile,
     makeApiRequest,
   }) => {
-    // Step 1: Create an agent
-    const createAgentResponse = await createAgent(
+    // Step 1: Create a profile
+    const createProfileResponse = await createProfile(
       request,
-      "Agent for Prompt Update Test",
+      "Profile for Prompt Update Test",
     );
-    const agent = await createAgentResponse.json();
+    const profile = await createProfileResponse.json();
 
-    // Step 2: Create a system prompt with agentId
+    // Step 2: Create a system prompt with profileId
     const createPromptResponse = await makeApiRequest({
       request,
       method: "post",
       urlSuffix: "/api/prompts",
       data: {
         name: "Test System Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
         systemPrompt: "You are a helpful assistant.",
       },
     });
@@ -28,7 +28,7 @@ test.describe("Prompts API", () => {
 
     // Verify prompt was created correctly
     expect(originalPrompt.id).toBeDefined();
-    expect(originalPrompt.agentId).toBe(agent.id);
+    expect(originalPrompt.profileId).toBe(profile.id);
     expect(originalPrompt.systemPrompt).toBe("You are a helpful assistant.");
     expect(originalPrompt.version).toBe(1);
 
@@ -43,7 +43,7 @@ test.describe("Prompts API", () => {
       (p: { id: string }) => p.id === originalPrompt.id,
     );
     expect(foundPrompt).toBeDefined();
-    expect(foundPrompt.agentId).toBe(agent.id);
+    expect(foundPrompt.profileId).toBe(profile.id);
 
     // Step 4: Update the prompt (with JSONB versioning, ID stays the same)
     const updatePromptResponse = await makeApiRequest({
@@ -62,7 +62,7 @@ test.describe("Prompts API", () => {
     expect(updatedPrompt.systemPrompt).toBe(
       "You are an updated helpful assistant.",
     );
-    expect(updatedPrompt.agentId).toBe(agent.id);
+    expect(updatedPrompt.profileId).toBe(profile.id);
 
     // Step 5: Verify the prompt is returned when fetching all prompts
     const allPromptsAfterUpdateResponse = await makeApiRequest({
@@ -76,7 +76,7 @@ test.describe("Prompts API", () => {
     );
     expect(foundUpdatedPrompt).toBeDefined();
     expect(foundUpdatedPrompt.version).toBe(2);
-    expect(foundUpdatedPrompt.agentId).toBe(agent.id);
+    expect(foundUpdatedPrompt.profileId).toBe(profile.id);
 
     // Cleanup
     await makeApiRequest({
@@ -87,47 +87,56 @@ test.describe("Prompts API", () => {
     await makeApiRequest({
       request,
       method: "delete",
-      urlSuffix: `/api/agents/${agent.id}`,
+      urlSuffix: `/api/profiles/${profile.id}`,
     });
   });
 
-  test("should preserve multiple agent relationships when updating a prompt", async ({
+  test("should preserve multiple profile relationships when updating a prompt", async ({
     request,
-    createAgent,
+    createProfile,
     makeApiRequest,
   }) => {
-    // Step 1: Create multiple agents
-    const agent1Response = await createAgent(request, "Agent 1 for Multi Test");
-    const agent1 = await agent1Response.json();
+    // Step 1: Create multiple profiles
+    const profile1Response = await createProfile(
+      request,
+      "Profile 1 for Multi Test",
+    );
+    const profile1 = await profile1Response.json();
 
-    const agent2Response = await createAgent(request, "Agent 2 for Multi Test");
-    const agent2 = await agent2Response.json();
+    const profile2Response = await createProfile(
+      request,
+      "Profile 2 for Multi Test",
+    );
+    const profile2 = await profile2Response.json();
 
-    const agent3Response = await createAgent(request, "Agent 3 for Multi Test");
-    const agent3 = await agent3Response.json();
+    const profile3Response = await createProfile(
+      request,
+      "Profile 3 for Multi Test",
+    );
+    const profile3 = await profile3Response.json();
 
-    // Step 2: Create a prompt for agent1 with the same name that will be shared conceptually
+    // Step 2: Create a prompt for profile1 with the same name that will be shared conceptually
     const createPromptResponse = await makeApiRequest({
       request,
       method: "post",
       urlSuffix: "/api/prompts",
       data: {
         name: "Shared System Prompt",
-        agentId: agent1.id,
+        profileId: profile1.id,
         systemPrompt: "Original shared prompt content.",
       },
     });
     const originalPrompt = await createPromptResponse.json();
 
-    // Step 3: Create separate prompts with the same name for agent2 and agent3
-    // (In the new structure, each agent needs its own prompt instance)
+    // Step 3: Create separate prompts with the same name for profile2 and profile3
+    // (In the new structure, each profile needs its own prompt instance)
     const prompt2Response = await makeApiRequest({
       request,
       method: "post",
       urlSuffix: "/api/prompts",
       data: {
         name: "Shared System Prompt",
-        agentId: agent2.id,
+        profileId: profile2.id,
         systemPrompt: "Original shared prompt content.",
       },
     });
@@ -139,21 +148,21 @@ test.describe("Prompts API", () => {
       urlSuffix: "/api/prompts",
       data: {
         name: "Shared System Prompt",
-        agentId: agent3.id,
+        profileId: profile3.id,
         systemPrompt: "Original shared prompt content.",
       },
     });
     const prompt3 = await prompt3Response.json();
 
     // Step 4: Verify all prompts exist
-    expect(originalPrompt.agentId).toBe(agent1.id);
-    expect(prompt2.agentId).toBe(agent2.id);
-    expect(prompt3.agentId).toBe(agent3.id);
+    expect(originalPrompt.profileId).toBe(profile1.id);
+    expect(prompt2.profileId).toBe(profile2.id);
+    expect(prompt3.profileId).toBe(profile3.id);
     expect(originalPrompt.name).toBe("Shared System Prompt");
     expect(prompt2.name).toBe("Shared System Prompt");
     expect(prompt3.name).toBe("Shared System Prompt");
 
-    // Step 5: Update the prompt for agent1 (this should create a new version)
+    // Step 5: Update the prompt for profile1 (this should create a new version)
     const updatePromptResponse = await makeApiRequest({
       request,
       method: "patch",
@@ -164,12 +173,12 @@ test.describe("Prompts API", () => {
     });
     const updatedPrompt = await updatePromptResponse.json();
 
-    // Step 6: Verify the new version belongs to agent1
-    expect(updatedPrompt.agentId).toBe(agent1.id);
+    // Step 6: Verify the new version belongs to profile1
+    expect(updatedPrompt.profileId).toBe(profile1.id);
     expect(updatedPrompt.version).toBe(2);
     expect(updatedPrompt.systemPrompt).toBe("Updated shared prompt content.");
 
-    // Step 7: Verify prompts for agent2 and agent3 are unchanged
+    // Step 7: Verify prompts for profile2 and profile3 are unchanged
     const prompt2AfterUpdateResponse = await makeApiRequest({
       request,
       method: "get",
@@ -211,31 +220,31 @@ test.describe("Prompts API", () => {
     await makeApiRequest({
       request,
       method: "delete",
-      urlSuffix: `/api/agents/${agent1.id}`,
+      urlSuffix: `/api/profiles/${profile1.id}`,
     });
     await makeApiRequest({
       request,
       method: "delete",
-      urlSuffix: `/api/agents/${agent2.id}`,
+      urlSuffix: `/api/profiles/${profile2.id}`,
     });
     await makeApiRequest({
       request,
       method: "delete",
-      urlSuffix: `/api/agents/${agent3.id}`,
+      urlSuffix: `/api/profiles/${profile3.id}`,
     });
   });
 
   test("should create and retrieve a prompt", async ({
     request,
-    createAgent,
+    createProfile,
     makeApiRequest,
   }) => {
-    // Create an agent first since prompts now require agentId
-    const createAgentResponse = await createAgent(
+    // Create a profile first since prompts now require profileId
+    const createProfileResponse = await createProfile(
       request,
-      "Test Agent for Prompt",
+      "Test Profile for Prompt",
     );
-    const agent = await createAgentResponse.json();
+    const profile = await createProfileResponse.json();
 
     const createResponse = await makeApiRequest({
       request,
@@ -243,7 +252,7 @@ test.describe("Prompts API", () => {
       urlSuffix: "/api/prompts",
       data: {
         name: "Test Prompt",
-        agentId: agent.id,
+        profileId: profile.id,
         systemPrompt: "Test system content",
         userPrompt: "Test user content",
       },
@@ -252,7 +261,7 @@ test.describe("Prompts API", () => {
 
     expect(prompt).toHaveProperty("id");
     expect(prompt.name).toBe("Test Prompt");
-    expect(prompt.agentId).toBe(agent.id);
+    expect(prompt.profileId).toBe(profile.id);
     expect(prompt.systemPrompt).toBe("Test system content");
     expect(prompt.userPrompt).toBe("Test user content");
     expect(prompt.version).toBe(1);
@@ -277,7 +286,7 @@ test.describe("Prompts API", () => {
     await makeApiRequest({
       request,
       method: "delete",
-      urlSuffix: `/api/agents/${agent.id}`,
+      urlSuffix: `/api/profiles/${profile.id}`,
     });
   });
 });

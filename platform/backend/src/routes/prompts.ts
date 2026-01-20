@@ -2,7 +2,7 @@ import { RouteId } from "@shared";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { hasPermission } from "@/auth";
-import { AgentTeamModel, PromptModel, ToolModel } from "@/models";
+import { ProfileTeamModel, PromptModel, ToolModel } from "@/models";
 import {
   ApiError,
   constructResponseSchema,
@@ -22,29 +22,31 @@ const promptRoutes: FastifyPluginAsyncZod = async (fastify) => {
       schema: {
         operationId: RouteId.GetPrompts,
         description:
-          "Get all prompts for the organization filtered by user's accessible agents",
+          "Get all prompts for the organization filtered by user's accessible profiles",
         tags: ["Prompts"],
         response: constructResponseSchema(z.array(SelectPromptSchema)),
       },
     },
     async ({ organizationId, user, headers }, reply) => {
-      // Check if user is an agent admin
-      const { success: isAgentAdmin } = await hasPermission(
+      // Check if user is a profile admin
+      const { success: isProfileAdmin } = await hasPermission(
         { profile: ["admin"] },
         headers,
       );
 
-      // Get accessible agent IDs for this user
-      const accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
-        user.id,
-        isAgentAdmin,
-      );
+      // Get accessible profile IDs for this user
+      const accessibleProfileIds =
+        await ProfileTeamModel.getUserAccessibleProfileIds(
+          user.id,
+          isProfileAdmin,
+        );
 
-      // Filter prompts to only those assigned to accessible agents
-      const prompts = await PromptModel.findByOrganizationIdAndAccessibleAgents(
-        organizationId,
-        accessibleAgentIds,
-      );
+      // Filter prompts to only those assigned to accessible profiles
+      const prompts =
+        await PromptModel.findByOrganizationIdAndAccessibleProfiles(
+          organizationId,
+          accessibleProfileIds,
+        );
 
       return reply.send(prompts);
     },
@@ -157,9 +159,9 @@ const promptRoutes: FastifyPluginAsyncZod = async (fastify) => {
     },
   );
 
-  // Schema for prompt tools with agentPromptId mapping
-  const PromptToolWithAgentSchema = SelectToolSchema.extend({
-    agentPromptId: z.string().uuid(),
+  // Schema for prompt tools with delegatePromptId mapping
+  const PromptToolWithDelegateSchema = SelectToolSchema.extend({
+    delegatePromptId: z.string().uuid(),
   });
 
   fastify.get(
@@ -168,12 +170,14 @@ const promptRoutes: FastifyPluginAsyncZod = async (fastify) => {
       schema: {
         operationId: RouteId.GetPromptTools,
         description:
-          "Get agent delegation tools for a prompt (tools created from prompt agents)",
+          "Get profile delegation tools for a prompt (tools created from prompt profiles)",
         tags: ["Prompts"],
         params: z.object({
           id: UuidIdSchema,
         }),
-        response: constructResponseSchema(z.array(PromptToolWithAgentSchema)),
+        response: constructResponseSchema(
+          z.array(PromptToolWithDelegateSchema),
+        ),
       },
     },
     async ({ params: { id }, organizationId, user, headers }, reply) => {
@@ -187,26 +191,29 @@ const promptRoutes: FastifyPluginAsyncZod = async (fastify) => {
         throw new ApiError(404, "Prompt not found");
       }
 
-      // Check if user is an agent admin
-      const { success: isAgentAdmin } = await hasPermission(
+      // Check if user is a profile admin
+      const { success: isProfileAdmin } = await hasPermission(
         { profile: ["admin"] },
         headers,
       );
 
-      // Get all agent delegation tools for this prompt
+      // Get all profile delegation tools for this prompt
       const allToolsWithDetails =
-        await ToolModel.getAgentDelegationToolsWithDetails(id);
+        await ToolModel.getProfileDelegationToolsWithDetails(id);
 
       // Filter by user access
-      const userAccessibleAgentIds =
-        await AgentTeamModel.getUserAccessibleAgentIds(user.id, isAgentAdmin);
+      const userAccessibleProfileIds =
+        await ProfileTeamModel.getUserAccessibleProfileIds(
+          user.id,
+          isProfileAdmin,
+        );
 
-      // Return tools with agentPromptId for mapping
+      // Return tools with delegatePromptId for mapping
       const accessibleTools = allToolsWithDetails
-        .filter((t) => userAccessibleAgentIds.includes(t.profileId))
+        .filter((t) => userAccessibleProfileIds.includes(t.profileId))
         .map((t) => ({
           ...t.tool,
-          agentPromptId: t.agentPromptId,
+          delegatePromptId: t.delegatePromptId,
         }));
 
       return reply.send(accessibleTools);

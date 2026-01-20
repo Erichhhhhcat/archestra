@@ -23,7 +23,7 @@ interface ModelOptimizationTestConfig {
   provider: SupportedProvider;
 
   // Request building
-  endpoint: (agentId: string) => string;
+  endpoint: (profileId: string) => string;
   headers: (wiremockStub: string) => Record<string, string>;
   buildRequest: (content: string, tools?: ToolDefinition[]) => object;
 
@@ -62,7 +62,7 @@ const openaiConfig: ModelOptimizationTestConfig = {
   providerName: "OpenAI",
   provider: "openai",
 
-  endpoint: (agentId) => `/v1/openai/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/openai/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -97,7 +97,7 @@ const anthropicConfig: ModelOptimizationTestConfig = {
   providerName: "Anthropic",
   provider: "anthropic",
 
-  endpoint: (agentId) => `/v1/anthropic/${agentId}/v1/messages`,
+  endpoint: (profileId) => `/v1/anthropic/${profileId}/v1/messages`,
 
   headers: (wiremockStub) => ({
     "x-api-key": wiremockStub,
@@ -131,8 +131,8 @@ const geminiConfig: ModelOptimizationTestConfig = {
   providerName: "Gemini",
   provider: "gemini",
 
-  endpoint: (agentId) =>
-    `/v1/gemini/${agentId}/v1beta/models/e2e-test-gemini-baseline:generateContent`,
+  endpoint: (profileId) =>
+    `/v1/gemini/${profileId}/v1beta/models/e2e-test-gemini-baseline:generateContent`,
 
   headers: (wiremockStub) => ({
     "x-goog-api-key": wiremockStub,
@@ -172,7 +172,7 @@ const cerebrasConfig: ModelOptimizationTestConfig = {
   providerName: "Cerebras",
   provider: "cerebras",
 
-  endpoint: (agentId) => `/v1/cerebras/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/cerebras/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -207,7 +207,7 @@ const vllmConfig: ModelOptimizationTestConfig = {
   providerName: "vLLM",
   provider: "vllm",
 
-  endpoint: (agentId) => `/v1/vllm/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/vllm/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -242,7 +242,7 @@ const ollamaConfig: ModelOptimizationTestConfig = {
   providerName: "Ollama",
   provider: "ollama",
 
-  endpoint: (agentId) => `/v1/ollama/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/ollama/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -277,7 +277,7 @@ const zhipuaiConfig: ModelOptimizationTestConfig = {
   providerName: "Zhipuai",
   provider: "zhipuai",
 
-  endpoint: (agentId) => `/v1/zhipuai/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/zhipuai/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -348,38 +348,38 @@ test.describe("LLMProxy-ModelOptimization", () => {
     test.describe(config.providerName, () => {
       test.describe.configure({ mode: "serial" });
 
-      let agentId: string;
+      let profileId: string;
       let optimizationRuleId: string;
 
       test.afterEach(
-        async ({ request, deleteOptimizationRule, deleteAgent }) => {
+        async ({ request, deleteOptimizationRule, deleteProfile }) => {
           if (optimizationRuleId) {
             await deleteOptimizationRule(request, optimizationRuleId);
             optimizationRuleId = "";
           }
-          if (agentId) {
-            await deleteAgent(request, agentId);
-            agentId = "";
+          if (profileId) {
+            await deleteProfile(request, profileId);
+            profileId = "";
           }
         },
       );
 
       test("swaps model when length is between 1000 and 1500", async ({
         request,
-        createAgent,
+        createProfile,
         createOptimizationRule,
         getActiveOrganizationId,
         makeApiRequest,
       }) => {
         const wiremockStub = `${config.providerName.toLowerCase()}-model-optimization-short`;
 
-        // 1. Create a test agent
-        const createResponse = await createAgent(
+        // 1. Create a test profile
+        const createResponse = await createProfile(
           request,
           `${config.providerName} Model Optimization Short Test`,
         );
-        const agent = await createResponse.json();
-        agentId = agent.id;
+        const profile = await createResponse.json();
+        profileId = profile.id;
 
         // 2. Create optimization rule: swap model when < 1500 tokens
         const organizationId = await getActiveOrganizationId(request);
@@ -399,7 +399,7 @@ test.describe("LLMProxy-ModelOptimization", () => {
         const response = await makeApiRequest({
           request,
           method: "post",
-          urlSuffix: config.endpoint(agentId),
+          urlSuffix: config.endpoint(profileId),
           headers: config.headers(wiremockStub),
           data: config.buildRequest(generateShortMessage()),
         });
@@ -410,20 +410,20 @@ test.describe("LLMProxy-ModelOptimization", () => {
 
       test("does NOT swap model when length > 1500", async ({
         request,
-        createAgent,
+        createProfile,
         createOptimizationRule,
         getActiveOrganizationId,
         makeApiRequest,
       }) => {
         const wiremockStub = `${config.providerName.toLowerCase()}-model-optimization-long`;
 
-        // 1. Create a test agent
-        const createResponse = await createAgent(
+        // 1. Create a test profile
+        const createResponse = await createProfile(
           request,
           `${config.providerName} Model Optimization Long Test`,
         );
-        const agent = await createResponse.json();
-        agentId = agent.id;
+        const profile = await createResponse.json();
+        profileId = profile.id;
 
         // 2. Create optimization rule: swap model when < 1500 tokens
         const organizationId = await getActiveOrganizationId(request);
@@ -443,7 +443,7 @@ test.describe("LLMProxy-ModelOptimization", () => {
         const response = await makeApiRequest({
           request,
           method: "post",
-          urlSuffix: config.endpoint(agentId),
+          urlSuffix: config.endpoint(profileId),
           headers: config.headers(wiremockStub),
           data: config.buildRequest(generateLongMessage()),
         });
@@ -454,20 +454,20 @@ test.describe("LLMProxy-ModelOptimization", () => {
 
       test("swaps model when tools are present", async ({
         request,
-        createAgent,
+        createProfile,
         createOptimizationRule,
         getActiveOrganizationId,
         makeApiRequest,
       }) => {
         const wiremockStub = `${config.providerName.toLowerCase()}-model-optimization-with-tools`;
 
-        // 1. Create a test agent
-        const createResponse = await createAgent(
+        // 1. Create a test profile
+        const createResponse = await createProfile(
           request,
           `${config.providerName} Model Optimization WithTools Test`,
         );
-        const agent = await createResponse.json();
-        agentId = agent.id;
+        const profile = await createResponse.json();
+        profileId = profile.id;
 
         // 2. Create optimization rule: swap model when request HAS tools
         const organizationId = await getActiveOrganizationId(request);
@@ -487,7 +487,7 @@ test.describe("LLMProxy-ModelOptimization", () => {
         const response = await makeApiRequest({
           request,
           method: "post",
-          urlSuffix: config.endpoint(agentId),
+          urlSuffix: config.endpoint(profileId),
           headers: config.headers(wiremockStub),
           data: config.buildRequest(generateShortMessage(), [READ_FILE_TOOL]),
         });
@@ -498,20 +498,20 @@ test.describe("LLMProxy-ModelOptimization", () => {
 
       test("does NOT swap model when tools are absent", async ({
         request,
-        createAgent,
+        createProfile,
         createOptimizationRule,
         getActiveOrganizationId,
         makeApiRequest,
       }) => {
         const wiremockStub = `${config.providerName.toLowerCase()}-model-optimization-no-tools`;
 
-        // 1. Create a test agent
-        const createResponse = await createAgent(
+        // 1. Create a test profile
+        const createResponse = await createProfile(
           request,
           `${config.providerName} Model Optimization NoTools Test`,
         );
-        const agent = await createResponse.json();
-        agentId = agent.id;
+        const profile = await createResponse.json();
+        profileId = profile.id;
 
         // 2. Create optimization rule: swap model when request HAS tools
         const organizationId = await getActiveOrganizationId(request);
@@ -531,7 +531,7 @@ test.describe("LLMProxy-ModelOptimization", () => {
         const response = await makeApiRequest({
           request,
           method: "post",
-          urlSuffix: config.endpoint(agentId),
+          urlSuffix: config.endpoint(profileId),
           headers: config.headers(wiremockStub),
           data: config.buildRequest(generateShortMessage()),
         });

@@ -1,11 +1,11 @@
 import { isAgentTool } from "@shared";
 import { getArchestraMcpTools } from "@/archestra-mcp-server";
 import logger from "@/logging";
-import { AgentToolModel, ToolModel } from "@/models";
+import { ProfileToolModel, ToolModel } from "@/models";
 
 /**
  * Persist tools if present in the request
- * Skips tools that are already connected to the agent via MCP servers
+ * Skips tools that are already connected to the profile via MCP servers
  * Also skips Archestra built-in tools and agent delegation tools
  *
  * Uses bulk operations to avoid N+1 queries
@@ -16,24 +16,24 @@ export const persistTools = async (
     toolParameters?: Record<string, unknown>;
     toolDescription?: string;
   }>,
-  agentId: string,
+  profileId: string,
 ) => {
   logger.debug(
-    { agentId, toolCount: tools.length },
+    { profileId, toolCount: tools.length },
     "[tools] persistTools: starting tool persistence",
   );
 
   if (tools.length === 0) {
-    logger.debug({ agentId }, "[tools] persistTools: no tools to persist");
+    logger.debug({ profileId }, "[tools] persistTools: no tools to persist");
     return;
   }
 
-  // Get names of all MCP tools already assigned to this agent
-  const mcpToolNames = await ToolModel.getMcpToolNamesByAgent(agentId);
+  // Get names of all MCP tools already assigned to this profile
+  const mcpToolNames = await ToolModel.getMcpToolNamesByProfile(profileId);
   const mcpToolNamesSet = new Set(mcpToolNames);
   logger.debug(
-    { agentId, mcpToolCount: mcpToolNames.length },
-    "[tools] persistTools: fetched existing MCP tools for agent",
+    { profileId, mcpToolCount: mcpToolNames.length },
+    "[tools] persistTools: fetched existing MCP tools for profile",
   );
 
   // Get Archestra built-in tool names
@@ -64,7 +64,7 @@ export const persistTools = async (
 
   logger.debug(
     {
-      agentId,
+      profileId,
       originalCount: tools.length,
       filteredCount: toolsToAutoDiscover.length,
       skippedMcpTools: tools.filter((t) => mcpToolNamesSet.has(t.toolName))
@@ -79,7 +79,7 @@ export const persistTools = async (
 
   if (toolsToAutoDiscover.length === 0) {
     logger.debug(
-      { agentId },
+      { profileId },
       "[tools] persistTools: no new tools to auto-discover",
     );
     return;
@@ -87,7 +87,7 @@ export const persistTools = async (
 
   // Bulk create tools (single query to check existing + single insert for new)
   logger.debug(
-    { agentId, toolCount: toolsToAutoDiscover.length },
+    { profileId, toolCount: toolsToAutoDiscover.length },
     "[tools] persistTools: bulk creating tools",
   );
   const createdTools = await ToolModel.bulkCreateProxyToolsIfNotExists(
@@ -98,19 +98,19 @@ export const persistTools = async (
         description: toolDescription,
       }),
     ),
-    agentId,
+    profileId,
   );
 
-  // Bulk create agent-tool relationships (single query to check existing + single insert for new)
+  // Bulk create profile-tool relationships (single query to check existing + single insert for new)
   // Deduplicate tool IDs in case input contained duplicate tool names
   const toolIds = [...new Set(createdTools.map((tool) => tool.id))];
   logger.debug(
-    { agentId, toolIdCount: toolIds.length },
-    "[tools] persistTools: creating agent-tool relationships",
+    { profileId, toolIdCount: toolIds.length },
+    "[tools] persistTools: creating profile-tool relationships",
   );
-  await AgentToolModel.createManyIfNotExists(agentId, toolIds);
+  await ProfileToolModel.createManyIfNotExists(profileId, toolIds);
   logger.debug(
-    { agentId, createdToolCount: toolIds.length },
+    { profileId, createdToolCount: toolIds.length },
     "[tools] persistTools: tool persistence complete",
   );
 };

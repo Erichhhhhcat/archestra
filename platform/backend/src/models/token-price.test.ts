@@ -364,10 +364,10 @@ describe("TokenPriceModel", () => {
     });
 
     test("returns unique models from interactions", async ({
-      makeAgent,
+      makeProfile,
       makeInteraction,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       await makeInteraction(agent.id, {
         model: "gpt-4",
@@ -402,8 +402,11 @@ describe("TokenPriceModel", () => {
       ).toBe("anthropic");
     });
 
-    test("filters out null models", async ({ makeAgent, makeInteraction }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+    test("filters out null models", async ({
+      makeProfile,
+      makeInteraction,
+    }) => {
+      const agent = await makeProfile({ name: "Test Agent" });
 
       await makeInteraction(agent.id, {
         model: "gpt-4",
@@ -427,10 +430,10 @@ describe("TokenPriceModel", () => {
 
   describe("ensureAllModelsHavePricing", () => {
     test("creates default pricing for models without pricing", async ({
-      makeAgent,
+      makeProfile,
       makeInteraction,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       // Create interactions with models that don't have pricing
       await makeInteraction(agent.id, {
@@ -460,10 +463,10 @@ describe("TokenPriceModel", () => {
     });
 
     test("does not create pricing for models that already have pricing", async ({
-      makeAgent,
+      makeProfile,
       makeInteraction,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       // Create a model with existing pricing
       await TokenPriceModel.create({
@@ -496,10 +499,10 @@ describe("TokenPriceModel", () => {
     });
 
     test("handles mixed scenario with some models having pricing and some not", async ({
-      makeAgent,
+      makeProfile,
       makeInteraction,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       // Create pricing for one model
       await TokenPriceModel.create({
@@ -539,10 +542,10 @@ describe("TokenPriceModel", () => {
     });
 
     test("does nothing when all models have pricing", async ({
-      makeAgent,
+      makeProfile,
       makeInteraction,
     }) => {
-      const agent = await makeAgent({ name: "Test Agent" });
+      const agent = await makeProfile({ name: "Test Agent" });
 
       // Create pricing for a model
       await TokenPriceModel.create({
@@ -567,10 +570,10 @@ describe("TokenPriceModel", () => {
     });
 
     test("is idempotent even when called concurrently", async ({
-      makeAgent,
+      makeProfile,
       makeInteraction,
     }) => {
-      const agent = await makeAgent({ name: "Concurrency Agent" });
+      const agent = await makeProfile({ name: "Concurrency Agent" });
 
       await makeInteraction(agent.id, {
         model: "gpt-concurrent",

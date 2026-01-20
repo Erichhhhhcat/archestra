@@ -12,7 +12,7 @@ import { CacheKey, cacheManager } from "@/cache-manager";
 import mcpClient from "@/clients/mcp-client";
 import logger from "@/logging";
 import {
-  AgentTeamModel,
+  ProfileTeamModel,
   TeamModel,
   TeamTokenModel,
   ToolModel,
@@ -103,7 +103,7 @@ async function selectMCPGatewayToken(
 } | null> {
   // Get user's team IDs and profile's team IDs (needed for access check)
   const userTeamIds = await TeamModel.getUserTeamIds(userId);
-  const profileTeamIds = await AgentTeamModel.getTeamsForAgent(agentId);
+  const profileTeamIds = await ProfileTeamModel.getTeamsForProfile(agentId);
   const commonTeamIds = userTeamIds.filter((id) => profileTeamIds.includes(id));
 
   // 1. Try personal user token first (if user has access via team membership)

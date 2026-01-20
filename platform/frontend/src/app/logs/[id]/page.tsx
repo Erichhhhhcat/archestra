@@ -11,7 +11,7 @@ export default async function ChatPageServer({
   const id = (await params).id;
   let initialData: {
     interaction: archestraApiTypes.GetInteractionResponses["200"] | undefined;
-    agents: archestraApiTypes.GetAllAgentsResponses["200"];
+    agents: archestraApiTypes.GetAllProfilesResponses["200"];
   } = {
     interaction: undefined,
     agents: [],
@@ -25,7 +25,7 @@ export default async function ChatPageServer({
           path: { interactionId: id },
         })
       ).data,
-      agents: (await archestraApiSdk.getAllAgents({ headers })).data || [],
+      agents: (await archestraApiSdk.getAllProfiles({ headers })).data || [],
     };
   } catch (error) {
     console.error(error);

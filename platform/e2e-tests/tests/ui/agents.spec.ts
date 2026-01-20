@@ -14,10 +14,10 @@ test(
       await page.waitForTimeout(500);
     }
 
-    const AGENT_NAME = makeRandomString(10, "Test Profile");
+    const PROFILE_NAME = makeRandomString(10, "Test Profile");
     await goToPage(page, "/profiles");
-    await page.getByTestId(E2eTestId.CreateAgentButton).click();
-    await page.getByRole("textbox", { name: "Name" }).fill(AGENT_NAME);
+    await page.getByTestId(E2eTestId.CreateProfileButton).click();
+    await page.getByRole("textbox", { name: "Name" }).fill(PROFILE_NAME);
     await page.locator("[type=submit]").click();
 
     // After profile creation, wait for the success toast to appear
@@ -29,7 +29,7 @@ test(
     // Wait for the "Connect via" dialog to appear
     await expect(
       page.getByRole("heading", {
-        name: new RegExp(`Connect via.*${AGENT_NAME}`, "i"),
+        name: new RegExp(`Connect via.*${PROFILE_NAME}`, "i"),
       }),
     ).toBeVisible({ timeout: 15_000 });
 
@@ -42,8 +42,8 @@ test(
 
     // Poll for the profile to appear in the table (handles async creation)
     const profileLocator = page
-      .getByTestId(E2eTestId.AgentsTable)
-      .getByText(AGENT_NAME);
+      .getByTestId(E2eTestId.ProfilesTable)
+      .getByText(PROFILE_NAME);
 
     await expect(async () => {
       await page.reload();
@@ -53,7 +53,7 @@ test(
 
     // Delete created profile - click the delete button directly
     await page
-      .getByTestId(`${E2eTestId.DeleteAgentButton}-${AGENT_NAME}`)
+      .getByTestId(`${E2eTestId.DeleteProfileButton}-${PROFILE_NAME}`)
       .click();
     await clickButton({ page, options: { name: "Delete profile" } });
 

@@ -1,6 +1,6 @@
 import { AGENT_TOOL_PREFIX } from "@shared";
 import { describe, expect, test } from "@/test";
-import AgentModel from "./agent";
+import ProfileModel from "./profile";
 import PromptModel from "./prompt";
 import PromptAgentModel from "./prompt-agent";
 import ToolModel from "./tool";
@@ -10,23 +10,23 @@ describe("PromptAgentModel", () => {
     test("assigns an agent to a prompt", async ({ makeOrganization }) => {
       const org = await makeOrganization();
 
-      const agent1 = await AgentModel.create({
+      const agent1 = await ProfileModel.create({
         name: "Parent Agent",
         teams: [],
       });
-      const agent2 = await AgentModel.create({
+      const agent2 = await ProfileModel.create({
         name: "Child Agent",
         teams: [],
       });
 
       const prompt1 = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: agent1.id,
+        profileId: agent1.id,
       });
 
       const prompt2 = await PromptModel.create(org.id, {
         name: "Child Prompt",
-        agentId: agent2.id,
+        profileId: agent2.id,
       });
 
       const result = await PromptAgentModel.create({
@@ -44,23 +44,23 @@ describe("PromptAgentModel", () => {
     test("removes an agent from a prompt", async ({ makeOrganization }) => {
       const org = await makeOrganization();
 
-      const agent1 = await AgentModel.create({
+      const agent1 = await ProfileModel.create({
         name: "Parent Agent",
         teams: [],
       });
-      const agent2 = await AgentModel.create({
+      const agent2 = await ProfileModel.create({
         name: "Child Agent",
         teams: [],
       });
 
       const prompt1 = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: agent1.id,
+        profileId: agent1.id,
       });
 
       const prompt2 = await PromptModel.create(org.id, {
         name: "Child Prompt",
-        agentId: agent2.id,
+        profileId: agent2.id,
       });
 
       await PromptAgentModel.create({
@@ -87,14 +87,14 @@ describe("PromptAgentModel", () => {
     }) => {
       const org = await makeOrganization();
 
-      const agent1 = await AgentModel.create({
+      const agent1 = await ProfileModel.create({
         name: "Parent Agent",
         teams: [],
       });
 
       const prompt1 = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: agent1.id,
+        profileId: agent1.id,
       });
 
       const deleted = await PromptAgentModel.delete({
@@ -110,32 +110,32 @@ describe("PromptAgentModel", () => {
     test("returns all agents for a prompt", async ({ makeOrganization }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
+      const parentAgent = await ProfileModel.create({
         name: "Parent",
         teams: [],
       });
-      const childAgent1 = await AgentModel.create({
+      const childAgent1 = await ProfileModel.create({
         name: "Child 1",
         teams: [],
       });
-      const childAgent2 = await AgentModel.create({
+      const childAgent2 = await ProfileModel.create({
         name: "Child 2",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentAgent.id,
       });
 
       const childPrompt1 = await PromptModel.create(org.id, {
         name: "Child Prompt 1",
-        agentId: childAgent1.id,
+        profileId: childAgent1.id,
       });
 
       const childPrompt2 = await PromptModel.create(org.id, {
         name: "Child Prompt 2",
-        agentId: childAgent2.id,
+        profileId: childAgent2.id,
       });
 
       await PromptAgentModel.create({
@@ -162,23 +162,23 @@ describe("PromptAgentModel", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
+      const parentAgent = await ProfileModel.create({
         name: "Parent",
         teams: [],
       });
-      const childAgent = await AgentModel.create({
+      const childAgent = await ProfileModel.create({
         name: "Child Profile",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentAgent.id,
       });
 
       const childPrompt = await PromptModel.create(org.id, {
         name: "Child Prompt",
-        agentId: childAgent.id,
+        profileId: childAgent.id,
         systemPrompt: "You are a helpful assistant.",
       });
 
@@ -205,41 +205,41 @@ describe("PromptAgentModel", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
+      const parentAgent = await ProfileModel.create({
         name: "Parent",
         teams: [],
       });
-      const childAgent1 = await AgentModel.create({
+      const childAgent1 = await ProfileModel.create({
         name: "Child 1",
         teams: [],
       });
-      const childAgent2 = await AgentModel.create({
+      const childAgent2 = await ProfileModel.create({
         name: "Child 2",
         teams: [],
       });
-      const childAgent3 = await AgentModel.create({
+      const childAgent3 = await ProfileModel.create({
         name: "Child 3",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentAgent.id,
       });
 
       const childPrompt1 = await PromptModel.create(org.id, {
         name: "Child Prompt 1",
-        agentId: childAgent1.id,
+        profileId: childAgent1.id,
       });
 
       const childPrompt2 = await PromptModel.create(org.id, {
         name: "Child Prompt 2",
-        agentId: childAgent2.id,
+        profileId: childAgent2.id,
       });
 
       const childPrompt3 = await PromptModel.create(org.id, {
         name: "Child Prompt 3",
-        agentId: childAgent3.id,
+        profileId: childAgent3.id,
       });
 
       // Initially assign child1 and child2
@@ -275,32 +275,32 @@ describe("PromptAgentModel", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
+      const parentAgent = await ProfileModel.create({
         name: "Parent",
         teams: [],
       });
-      const childAgent1 = await AgentModel.create({
+      const childAgent1 = await ProfileModel.create({
         name: "Child 1",
         teams: [],
       });
-      const childAgent2 = await AgentModel.create({
+      const childAgent2 = await ProfileModel.create({
         name: "Child 2",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentAgent.id,
       });
 
       const childPrompt1 = await PromptModel.create(org.id, {
         name: "Child Prompt 1",
-        agentId: childAgent1.id,
+        profileId: childAgent1.id,
       });
 
       const childPrompt2 = await PromptModel.create(org.id, {
         name: "Child Prompt 2",
-        agentId: childAgent2.id,
+        profileId: childAgent2.id,
       });
 
       // Assign child1 first
@@ -327,20 +327,23 @@ describe("PromptAgentModel", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
+      const parentAgent = await ProfileModel.create({
         name: "Parent",
         teams: [],
       });
-      const childAgent = await AgentModel.create({ name: "Child", teams: [] });
+      const childAgent = await ProfileModel.create({
+        name: "Child",
+        teams: [],
+      });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentAgent.id,
       });
 
       const childPrompt = await PromptModel.create(org.id, {
         name: "Child Prompt",
-        agentId: childAgent.id,
+        profileId: childAgent.id,
       });
 
       await PromptAgentModel.create({
@@ -361,14 +364,14 @@ describe("PromptAgentModel", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
+      const parentAgent = await ProfileModel.create({
         name: "Parent",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentAgent.id,
       });
 
       const hasAgent = await PromptAgentModel.hasAgent({
@@ -386,23 +389,23 @@ describe("PromptAgentModel", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
+      const parentAgent = await ProfileModel.create({
         name: "Parent",
         teams: [],
       });
-      const childAgent = await AgentModel.create({
+      const childAgent = await ProfileModel.create({
         name: "Child Profile",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentAgent.id,
       });
 
       const childPrompt = await PromptModel.create(org.id, {
         name: "Research Bot",
-        agentId: childAgent.id,
+        profileId: childAgent.id,
         systemPrompt: "You are a research assistant.",
       });
 
@@ -412,7 +415,7 @@ describe("PromptAgentModel", () => {
       });
 
       // Verify tool was created
-      const tools = await ToolModel.getAgentDelegationToolsByPrompt(
+      const tools = await ToolModel.getProfileDelegationToolsByPrompt(
         parentPrompt.id,
       );
 
@@ -427,23 +430,23 @@ describe("PromptAgentModel", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
+      const parentAgent = await ProfileModel.create({
         name: "Parent",
         teams: [],
       });
-      const childAgent = await AgentModel.create({
+      const childAgent = await ProfileModel.create({
         name: "Child",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentAgent.id,
       });
 
       const childPrompt = await PromptModel.create(org.id, {
         name: "Helper Bot",
-        agentId: childAgent.id,
+        profileId: childAgent.id,
       });
 
       await PromptAgentModel.create({
@@ -452,7 +455,7 @@ describe("PromptAgentModel", () => {
       });
 
       // Verify tool exists
-      let tools = await ToolModel.getAgentDelegationToolsByPrompt(
+      let tools = await ToolModel.getProfileDelegationToolsByPrompt(
         parentPrompt.id,
       );
       expect(tools).toHaveLength(1);
@@ -464,7 +467,9 @@ describe("PromptAgentModel", () => {
       });
 
       // Verify tool was deleted via cascade
-      tools = await ToolModel.getAgentDelegationToolsByPrompt(parentPrompt.id);
+      tools = await ToolModel.getProfileDelegationToolsByPrompt(
+        parentPrompt.id,
+      );
       expect(tools).toHaveLength(0);
     });
 
@@ -473,32 +478,32 @@ describe("PromptAgentModel", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
+      const parentAgent = await ProfileModel.create({
         name: "Parent",
         teams: [],
       });
-      const childAgent1 = await AgentModel.create({
+      const childAgent1 = await ProfileModel.create({
         name: "Child 1",
         teams: [],
       });
-      const childAgent2 = await AgentModel.create({
+      const childAgent2 = await ProfileModel.create({
         name: "Child 2",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentAgent.id,
       });
 
       const childPrompt1 = await PromptModel.create(org.id, {
         name: "Bot One",
-        agentId: childAgent1.id,
+        profileId: childAgent1.id,
       });
 
       const childPrompt2 = await PromptModel.create(org.id, {
         name: "Bot Two",
-        agentId: childAgent2.id,
+        profileId: childAgent2.id,
       });
 
       // Sync to add both agents
@@ -508,7 +513,7 @@ describe("PromptAgentModel", () => {
       });
 
       // Verify tools were created
-      const tools = await ToolModel.getAgentDelegationToolsByPrompt(
+      const tools = await ToolModel.getProfileDelegationToolsByPrompt(
         parentPrompt.id,
       );
 
@@ -525,23 +530,23 @@ describe("PromptAgentModel", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
+      const parentAgent = await ProfileModel.create({
         name: "Parent",
         teams: [],
       });
-      const childAgent = await AgentModel.create({
+      const childAgent = await ProfileModel.create({
         name: "Child",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentAgent.id,
       });
 
       const childPrompt = await PromptModel.create(org.id, {
         name: "Original Name",
-        agentId: childAgent.id,
+        profileId: childAgent.id,
       });
 
       await PromptAgentModel.create({
@@ -550,7 +555,7 @@ describe("PromptAgentModel", () => {
       });
 
       // Verify original tool name
-      let tools = await ToolModel.getAgentDelegationToolsByPrompt(
+      let tools = await ToolModel.getProfileDelegationToolsByPrompt(
         parentPrompt.id,
       );
       expect(tools).toHaveLength(1);
@@ -560,7 +565,9 @@ describe("PromptAgentModel", () => {
       await PromptModel.update(childPrompt.id, { name: "New Name" });
 
       // Verify tool name was updated
-      tools = await ToolModel.getAgentDelegationToolsByPrompt(parentPrompt.id);
+      tools = await ToolModel.getProfileDelegationToolsByPrompt(
+        parentPrompt.id,
+      );
       expect(tools).toHaveLength(1);
       expect(tools[0].name).toBe(`${AGENT_TOOL_PREFIX}new_name`);
     });
@@ -570,23 +577,23 @@ describe("PromptAgentModel", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
+      const parentAgent = await ProfileModel.create({
         name: "Parent",
         teams: [],
       });
-      const childAgent = await AgentModel.create({
+      const childAgent = await ProfileModel.create({
         name: "Child",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentAgent.id,
       });
 
       const childPrompt = await PromptModel.create(org.id, {
         name: "Child Prompt",
-        agentId: childAgent.id,
+        profileId: childAgent.id,
       });
 
       await PromptAgentModel.create({
@@ -619,23 +626,23 @@ describe("PromptAgentModel", () => {
     }) => {
       const org = await makeOrganization();
 
-      const parentAgent = await AgentModel.create({
+      const parentAgent = await ProfileModel.create({
         name: "Parent",
         teams: [],
       });
-      const childAgent = await AgentModel.create({
+      const childAgent = await ProfileModel.create({
         name: "Child",
         teams: [],
       });
 
       const parentPrompt = await PromptModel.create(org.id, {
         name: "Parent Prompt",
-        agentId: parentAgent.id,
+        profileId: parentAgent.id,
       });
 
       const childPrompt = await PromptModel.create(org.id, {
         name: "Child Prompt",
-        agentId: childAgent.id,
+        profileId: childAgent.id,
       });
 
       await PromptAgentModel.create({

@@ -1086,9 +1086,9 @@ export const cerebrasAdapterFactory: LLMProvider<
       return new MockOpenAIClient() as unknown as OpenAIProvider;
     }
 
-    // Use observable fetch for request duration metrics if agent is provided
-    const customFetch = options?.agent
-      ? getObservableFetch("cerebras", options.agent, options.externalAgentId)
+    // Use observable fetch for request duration metrics if profile is provided
+    const customFetch = options?.profile
+      ? getObservableFetch("cerebras", options.profile, options.externalAgentId)
       : undefined;
 
     // Use OpenAI SDK with Cerebras base URL (OpenAI-compatible API)

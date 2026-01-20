@@ -7,8 +7,8 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { SupportedChatProvider } from "@/types";
-import agentsTable from "./agent";
 import chatApiKeysTable from "./chat-api-key";
+import profilesTable from "./profile";
 import promptsTable from "./prompt";
 
 // Note: Additional pg_trgm GIN index for search is created in migration 0116_pg_trgm_indexes.sql:
@@ -17,9 +17,9 @@ const conversationsTable = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
   organizationId: text("organization_id").notNull(),
-  agentId: uuid("agent_id")
+  profileId: uuid("profile_id")
     .notNull()
-    .references(() => agentsTable.id, { onDelete: "cascade" }),
+    .references(() => profilesTable.id, { onDelete: "cascade" }),
   promptId: uuid("prompt_id").references(() => promptsTable.id, {
     onDelete: "set null",
   }),

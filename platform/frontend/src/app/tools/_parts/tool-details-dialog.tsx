@@ -196,14 +196,14 @@ export function ToolDetailsDialog({
                       <div className="divide-y divide-border">
                         {tool.assignments.map((assignment) => (
                           <div
-                            key={assignment.agentToolId}
+                            key={assignment.profileToolId}
                             className="p-4 space-y-3"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 <Badge variant="secondary" className="gap-1">
                                   <Layers className="h-3 w-3" />
-                                  {assignment.agent.name}
+                                  {assignment.profile.name}
                                 </Badge>
                                 <span className="text-muted-foreground">→</span>
                                 <span className="text-sm text-muted-foreground">

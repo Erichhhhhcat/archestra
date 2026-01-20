@@ -13,15 +13,15 @@ export const InsertLabelValueSchema = createInsertSchema(
   schema.labelValuesTable,
 );
 
-export const SelectAgentLabelSchema = createSelectSchema(
-  schema.agentLabelsTable,
+export const SelectProfileLabelSchema = createSelectSchema(
+  schema.profileLabelsTable,
 );
-export const InsertAgentLabelSchema = createInsertSchema(
-  schema.agentLabelsTable,
+export const InsertProfileLabelSchema = createInsertSchema(
+  schema.profileLabelsTable,
 );
 
 // Combined label schema for easier frontend consumption
-export const AgentLabelWithDetailsSchema = z.object({
+export const ProfileLabelWithDetailsSchema = z.object({
   key: z.string(),
   value: z.string(),
   keyId: UuidIdSchema.optional(),
@@ -34,7 +34,9 @@ export type InsertLabelKey = z.infer<typeof InsertLabelKeySchema>;
 export type LabelValue = z.infer<typeof SelectLabelValueSchema>;
 export type InsertLabelValue = z.infer<typeof InsertLabelValueSchema>;
 
-export type AgentLabel = z.infer<typeof SelectAgentLabelSchema>;
-export type InsertAgentLabel = z.infer<typeof InsertAgentLabelSchema>;
+export type ProfileLabel = z.infer<typeof SelectProfileLabelSchema>;
+export type InsertProfileLabel = z.infer<typeof InsertProfileLabelSchema>;
 
-export type AgentLabelWithDetails = z.infer<typeof AgentLabelWithDetailsSchema>;
+export type ProfileLabelWithDetails = z.infer<
+  typeof ProfileLabelWithDetailsSchema
+>;

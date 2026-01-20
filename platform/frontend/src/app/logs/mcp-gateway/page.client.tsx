@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { useProfiles } from "@/lib/agent.query";
 import { useMcpToolCalls } from "@/lib/mcp-tool-call.query";
+import { useProfiles } from "@/lib/profile.query";
 import { useDateTimeRangePicker } from "@/lib/use-date-time-range-picker";
 import { DEFAULT_TABLE_LIMIT, formatDate } from "@/lib/utils";
 import { ErrorBoundary } from "../../_parts/error-boundary";
@@ -43,7 +43,7 @@ export default function McpGatewayLogsPage({
 }: {
   initialData?: {
     mcpToolCalls: archestraApiTypes.GetMcpToolCallsResponses["200"];
-    agents: archestraApiTypes.GetAllAgentsResponses["200"];
+    agents: archestraApiTypes.GetAllProfilesResponses["200"];
   };
 }) {
   return (
@@ -60,7 +60,7 @@ function McpToolCallsTable({
 }: {
   initialData?: {
     mcpToolCalls: archestraApiTypes.GetMcpToolCallsResponses["200"];
-    agents: archestraApiTypes.GetAllAgentsResponses["200"];
+    agents: archestraApiTypes.GetAllProfilesResponses["200"];
   };
 }) {
   const router = useRouter();
@@ -219,7 +219,7 @@ function McpToolCallsTable({
     {
       id: "agent",
       accessorFn: (row) => {
-        const agent = agents?.find((a) => a.id === row.agentId);
+        const agent = agents?.find((a) => a.id === row.profileId);
         return agent?.name ?? "Unknown";
       },
       header: ({ column }) => {
@@ -235,7 +235,7 @@ function McpToolCallsTable({
         );
       },
       cell: ({ row }) => {
-        const agent = agents?.find((a) => a.id === row.original.agentId);
+        const agent = agents?.find((a) => a.id === row.original.profileId);
         return (
           <TruncatedText message={agent?.name ?? "Unknown"} maxLength={30} />
         );

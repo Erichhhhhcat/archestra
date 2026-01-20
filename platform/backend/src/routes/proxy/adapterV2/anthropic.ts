@@ -1101,9 +1101,13 @@ export const anthropicAdapterFactory: LLMProvider<
       return new MockAnthropicClient() as unknown as AnthropicProvider;
     }
 
-    // Use observable fetch for request duration metrics if agent is provided
-    const customFetch = options?.agent
-      ? getObservableFetch("anthropic", options.agent, options.externalAgentId)
+    // Use observable fetch for request duration metrics if profile is provided
+    const customFetch = options?.profile
+      ? getObservableFetch(
+          "anthropic",
+          options.profile,
+          options.externalAgentId,
+        )
       : undefined;
 
     // Check if this is a Bearer token (OAuth) or regular API key

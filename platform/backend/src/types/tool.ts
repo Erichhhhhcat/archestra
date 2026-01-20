@@ -20,11 +20,11 @@ export const SelectToolSchema = createSelectSchema(schema.toolsTable, {
 });
 
 export const ExtendedSelectToolSchema = SelectToolSchema.omit({
-  agentId: true,
+  profileId: true,
   mcpServerId: true,
 }).extend({
   // Nullable for MCP tools
-  agent: z
+  profile: z
     .object({
       id: z.string(),
       name: z.string(),
@@ -55,8 +55,8 @@ export type ToolParametersContent = z.infer<typeof ToolParametersContentSchema>;
 
 // Tool assignment schema (for embedding in ToolWithAssignments)
 export const ToolAssignmentSchema = z.object({
-  agentToolId: z.string(),
-  agent: z.object({
+  profileToolId: z.string(),
+  profile: z.object({
     id: z.string(),
     name: z.string(),
   }),

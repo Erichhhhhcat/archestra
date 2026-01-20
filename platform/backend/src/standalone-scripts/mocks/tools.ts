@@ -116,7 +116,7 @@ export const TOOL_NAMES = [
 
 export interface MockTool {
   id: string;
-  agentId: string;
+  profileId: string;
   name: string;
   description: string;
   parameters: Record<string, unknown>;
@@ -127,22 +127,22 @@ export interface MockTool {
 }
 
 /**
- * Generate mock tools distributed across agents
+ * Generate mock tools distributed across profiles
  */
 export function generateMockTools(
-  agentIds: string[],
+  profileIds: string[],
   toolNames: string[] = TOOL_NAMES,
 ): MockTool[] {
   return toolNames.map((name, index) => {
-    // Distribute tools across agents
-    const agentId = agentIds[index % agentIds.length];
-    const agentName = `Agent ${index % agentIds.length}`;
+    // Distribute tools across profiles
+    const profileId = profileIds[index % profileIds.length];
+    const profileName = `Profile ${index % profileIds.length}`;
 
     return {
       id: randomUUID(),
-      agentId,
+      profileId,
       name,
-      description: `${name.replace(/_/g, " ")} tool for ${agentName}`,
+      description: `${name.replace(/_/g, " ")} tool for ${profileName}`,
       parameters: generateRandomParameters(name),
       allowUsageWhenUntrustedDataIsPresent: randomBool(),
       dataIsTrustedByDefault: randomBool(0.3), // 30% chance

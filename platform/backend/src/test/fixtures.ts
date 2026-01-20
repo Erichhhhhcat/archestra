@@ -6,10 +6,10 @@ import { ARCHESTRA_MCP_CATALOG_ID, MEMBER_ROLE_NAME } from "@shared";
 import { beforeEach as baseBeforeEach, test as baseTest } from "vitest";
 import db, { schema } from "@/database";
 import {
-  AgentModel,
-  AgentToolModel,
   ChatApiKeyModel,
   InternalMcpCatalogModel,
+  ProfileModel,
+  ProfileToolModel,
   PromptModel,
   SessionModel,
   TeamModel,
@@ -18,10 +18,7 @@ import {
   TrustedDataPolicyModel,
 } from "@/models";
 import type {
-  Agent,
-  AgentTool,
   InsertAccount,
-  InsertAgent,
   InsertChatApiKey,
   InsertConversation,
   InsertInteraction,
@@ -31,11 +28,14 @@ import type {
   InsertMember,
   InsertOrganization,
   InsertOrganizationRole,
+  InsertProfile,
   InsertPrompt,
   InsertSession,
   InsertTeam,
   InsertUser,
   OrganizationRole,
+  Profile,
+  ProfileTool,
   Prompt,
   TeamMember,
   Tool,
@@ -57,10 +57,10 @@ interface TestFixtures {
   makeOrganization: typeof makeOrganization;
   makeTeam: typeof makeTeam;
   makeTeamMember: typeof makeTeamMember;
-  makeAgent: typeof makeAgent;
+  makeProfile: typeof makeProfile;
   makePrompt: typeof makePrompt;
   makeTool: typeof makeTool;
-  makeAgentTool: typeof makeAgentTool;
+  makeProfileTool: typeof makeProfileTool;
   makeToolPolicy: typeof makeToolPolicy;
   makeTrustedDataPolicy: typeof makeTrustedDataPolicy;
   makeCustomRole: typeof makeCustomRole;
@@ -176,15 +176,17 @@ async function makeTeamMember(
 }
 
 /**
- * Creates a test agent using the Agent model
+ * Creates a test profile using the Profile model
  */
-async function makeAgent(overrides: Partial<InsertAgent> = {}): Promise<Agent> {
-  const defaults: InsertAgent = {
-    name: `Test Agent ${crypto.randomUUID().substring(0, 8)}`,
+async function makeProfile(
+  overrides: Partial<InsertProfile> = {},
+): Promise<Profile> {
+  const defaults: InsertProfile = {
+    name: `Test Profile ${crypto.randomUUID().substring(0, 8)}`,
     teams: [],
     labels: [],
   };
-  return await AgentModel.create({
+  return await ProfileModel.create({
     ...defaults,
     ...overrides,
   });
@@ -193,17 +195,17 @@ async function makeAgent(overrides: Partial<InsertAgent> = {}): Promise<Agent> {
 /**
  * Creates a test prompt (UI "Agent") using the Prompt model.
  * Note: In the DB, "prompts" are called "Agents" in the UI.
- * Requires an organizationId and agentId (Profile in UI).
+ * Requires an organizationId and profileId.
  */
 async function makePrompt(params: {
   organizationId: string;
-  agentId: string;
+  profileId: string;
   overrides?: Partial<InsertPrompt>;
 }): Promise<Prompt> {
-  const { organizationId, agentId, overrides = {} } = params;
+  const { organizationId, profileId, overrides = {} } = params;
   return await PromptModel.create(organizationId, {
     name: `Test Prompt ${crypto.randomUUID().substring(0, 8)}`,
-    agentId,
+    profileId,
     ...overrides,
   });
 }
@@ -220,7 +222,7 @@ async function makeTool(
       | "parameters"
       | "catalogId"
       | "mcpServerId"
-      | "agentId"
+      | "profileId"
     >
   > = {},
 ): Promise<Tool> {
@@ -242,19 +244,19 @@ async function makeTool(
 }
 
 /**
- * Creates a test agent-tool relationship using the AgentTool model
+ * Creates a test profile-tool relationship using the ProfileTool model
  */
-async function makeAgentTool(
-  agentId: string,
+async function makeProfileTool(
+  profileId: string,
   toolId: string,
   overrides: Partial<
     Pick<
-      AgentTool,
+      ProfileTool,
       "credentialSourceMcpServerId" | "executionSourceMcpServerId"
     >
   > = {},
 ) {
-  return await AgentToolModel.create(agentId, toolId, overrides);
+  return await ProfileToolModel.create(profileId, toolId, overrides);
 }
 
 /**
@@ -515,7 +517,7 @@ function makeAuthHeaders(sessionToken: string): HeadersInit {
  * Creates a test conversation in the database
  */
 async function makeConversation(
-  agentId: string,
+  profileId: string,
   overrides: Partial<
     Pick<
       InsertConversation,
@@ -529,7 +531,7 @@ async function makeConversation(
       id: crypto.randomUUID(),
       userId: `user-${crypto.randomUUID().substring(0, 8)}`,
       organizationId: `org-${crypto.randomUUID().substring(0, 8)}`,
-      agentId,
+      profileId,
       title: `Test Conversation ${crypto.randomUUID().substring(0, 8)}`,
       selectedModel: "gpt-4o",
       createdAt: new Date(),
@@ -718,11 +720,11 @@ async function makeSsoProvider(
 }
 
 /**
- * Seeds and assigns Archestra tools to an agent.
+ * Seeds and assigns Archestra tools to a profile.
  * Creates the Archestra catalog entry if it doesn't exist, then seeds tools.
  * This is useful for tests that need Archestra tools to be available.
  */
-async function seedAndAssignArchestraTools(agentId: string): Promise<void> {
+async function seedAndAssignArchestraTools(profileId: string): Promise<void> {
   // Create Archestra catalog entry if it doesn't exist
   const existing = await InternalMcpCatalogModel.findById(
     ARCHESTRA_MCP_CATALOG_ID,
@@ -739,8 +741,8 @@ async function seedAndAssignArchestraTools(agentId: string): Promise<void> {
 
   // Seed and assign Archestra tools
   await ToolModel.seedArchestraTools(ARCHESTRA_MCP_CATALOG_ID);
-  await ToolModel.assignArchestraToolsToAgent(
-    agentId,
+  await ToolModel.assignArchestraToolsToProfile(
+    profileId,
     ARCHESTRA_MCP_CATALOG_ID,
   );
 }
@@ -762,8 +764,8 @@ export const test = baseTest.extend<TestFixtures>({
   makeTeamMember: async ({}, use) => {
     await use(makeTeamMember);
   },
-  makeAgent: async ({}, use) => {
-    await use(makeAgent);
+  makeProfile: async ({}, use) => {
+    await use(makeProfile);
   },
   makePrompt: async ({}, use) => {
     await use(makePrompt);
@@ -771,8 +773,8 @@ export const test = baseTest.extend<TestFixtures>({
   makeTool: async ({}, use) => {
     await use(makeTool);
   },
-  makeAgentTool: async ({}, use) => {
-    await use(makeAgentTool);
+  makeProfileTool: async ({}, use) => {
+    await use(makeProfileTool);
   },
   makeToolPolicy: async ({}, use) => {
     await use(makeToolPolicy);

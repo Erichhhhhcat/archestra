@@ -90,7 +90,7 @@ export class BrowserStreamService {
     agentId: string,
     matches: (toolName: string) => boolean,
   ): Promise<string | null> {
-    const tools = await ToolModel.getMcpToolsByAgent(agentId);
+    const tools = await ToolModel.getMcpToolsByProfile(agentId);
 
     for (const tool of tools) {
       const toolName = tool.name;
@@ -106,7 +106,7 @@ export class BrowserStreamService {
    * Check if Playwright MCP browser tools are available for an agent
    */
   async checkAvailability(agentId: string): Promise<AvailabilityResult> {
-    const tools = await ToolModel.getMcpToolsByAgent(agentId);
+    const tools = await ToolModel.getMcpToolsByProfile(agentId);
     const browserToolNames = tools.flatMap((tool) => {
       const toolName = tool.name;
       if (typeof toolName !== "string") return [];

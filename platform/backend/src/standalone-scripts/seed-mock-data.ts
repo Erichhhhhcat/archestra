@@ -3,10 +3,10 @@ import { ADMIN_ROLE_NAME, MEMBER_ROLE_NAME } from "@shared";
 import db, { schema } from "@/database";
 import { seedDefaultUserAndOrg } from "@/database/seed";
 import logger from "@/logging";
-import { AgentModel, OrganizationModel, TeamModel } from "@/models";
+import { OrganizationModel, ProfileModel, TeamModel } from "@/models";
 import {
-  generateMockAgents,
   generateMockInteractions,
+  generateMockProfiles,
   generateMockTools,
 } from "./mocks";
 
@@ -70,33 +70,33 @@ async function seedMockData() {
   await TeamModel.addMember(marketingTeam.id, member1User.id, MEMBER_ROLE_NAME);
   await TeamModel.addMember(marketingTeam.id, member2User.id, MEMBER_ROLE_NAME);
 
-  // Step 2: Create agents
-  logger.info("\nCreating agents...");
-  await AgentModel.getAgentOrCreateDefault(); // always recreate default agent
-  const agentData = generateMockAgents();
+  // Step 2: Create profiles
+  logger.info("\nCreating profiles...");
+  await ProfileModel.getProfileOrCreateDefault(); // always recreate default profile
+  const profileData = generateMockProfiles();
 
-  await db.insert(schema.agentsTable).values(agentData);
-  logger.info(`✅ Created ${agentData.length} agents`);
+  await db.insert(schema.profilesTable).values(profileData);
+  logger.info(`✅ Created ${profileData.length} profiles`);
 
-  // Note: Archestra tools are no longer auto-assigned to agents.
+  // Note: Archestra tools are no longer auto-assigned to profiles.
   // They are now managed like any other MCP server tools and must be explicitly assigned.
 
   if (CREATE_TOOLS_AND_INTERACTIONS === false) return;
 
-  // Step 3: Create tools linked to agents
+  // Step 3: Create tools linked to profiles
   logger.info("\nCreating tools...");
-  const agentIds = agentData
-    .map((agent) => agent.id)
+  const profileIds = profileData
+    .map((profile) => profile.id)
     .filter((id): id is string => !!id);
-  const toolData = generateMockTools(agentIds);
+  const toolData = generateMockTools(profileIds);
 
   await db.insert(schema.toolsTable).values(toolData);
   logger.info(`✅ Created ${toolData.length} tools`);
 
-  // Step 4: Create agent-tool relationships
-  logger.info("\nCreating agent-tool relationships...");
-  const agentToolData = toolData.map((tool) => ({
-    agentId: tool.agentId,
+  // Step 4: Create profile-tool relationships
+  logger.info("\nCreating profile-tool relationships...");
+  const profileToolData = toolData.map((tool) => ({
+    profileId: tool.profileId,
     toolId: tool.id,
     allowUsageWhenUntrustedDataIsPresent:
       tool.allowUsageWhenUntrustedDataIsPresent || false,
@@ -105,22 +105,24 @@ async function seedMockData() {
       : "untrusted") as "trusted" | "untrusted" | "sanitize_with_dual_llm",
   }));
 
-  await db.insert(schema.agentToolsTable).values(agentToolData);
-  logger.info(`✅ Created ${agentToolData.length} agent-tool relationships`);
+  await db.insert(schema.profileToolsTable).values(profileToolData);
+  logger.info(
+    `✅ Created ${profileToolData.length} profile-tool relationships`,
+  );
 
   // Step 5: Create 200 mock interactions
   logger.info("\nCreating interactions...");
 
-  // Group tools by agent for efficient lookup
-  const toolsByAgent = new Map<string, typeof toolData>();
+  // Group tools by profile for efficient lookup
+  const toolsByProfile = new Map<string, typeof toolData>();
   for (const tool of toolData) {
-    const existing = toolsByAgent.get(tool.agentId) || [];
-    toolsByAgent.set(tool.agentId, [...existing, tool]);
+    const existing = toolsByProfile.get(tool.profileId) || [];
+    toolsByProfile.set(tool.profileId, [...existing, tool]);
   }
 
   const interactionData = generateMockInteractions(
-    agentIds,
-    toolsByAgent,
+    profileIds,
+    toolsByProfile,
     200, // number of interactions
     0.3, // 30% block probability
   );

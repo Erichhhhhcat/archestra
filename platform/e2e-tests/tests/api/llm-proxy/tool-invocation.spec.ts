@@ -21,7 +21,7 @@ interface ToolInvocationTestConfig {
   providerName: string;
 
   // Request building
-  endpoint: (agentId: string) => string;
+  endpoint: (profileId: string) => string;
   // WireMock stub selection: The stub name is passed in the auth header (Authorization, x-api-key, etc.)
   // WireMock uses "contains" matching on these headers to select which mock response to return
   headers: (wiremockStub: string) => Record<string, string>;
@@ -76,7 +76,7 @@ const READ_FILE_TOOL: ToolDefinition = {
 const openaiConfig: ToolInvocationTestConfig = {
   providerName: "OpenAI",
 
-  endpoint: (agentId) => `/v1/openai/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/openai/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -152,7 +152,7 @@ const openaiConfig: ToolInvocationTestConfig = {
 const anthropicConfig: ToolInvocationTestConfig = {
   providerName: "Anthropic",
 
-  endpoint: (agentId) => `/v1/anthropic/${agentId}/v1/messages`,
+  endpoint: (profileId) => `/v1/anthropic/${profileId}/v1/messages`,
 
   headers: (wiremockStub) => ({
     "x-api-key": wiremockStub,
@@ -228,8 +228,8 @@ const anthropicConfig: ToolInvocationTestConfig = {
 const geminiConfig: ToolInvocationTestConfig = {
   providerName: "Gemini",
 
-  endpoint: (agentId) =>
-    `/v1/gemini/${agentId}/v1beta/models/gemini-2.5-pro:generateContent`,
+  endpoint: (profileId) =>
+    `/v1/gemini/${profileId}/v1beta/models/gemini-2.5-pro:generateContent`,
 
   headers: (wiremockStub) => ({
     "x-goog-api-key": wiremockStub,
@@ -319,7 +319,7 @@ const geminiConfig: ToolInvocationTestConfig = {
 const cerebrasConfig: ToolInvocationTestConfig = {
   providerName: "Cerebras",
 
-  endpoint: (agentId) => `/v1/cerebras/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/cerebras/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -395,7 +395,7 @@ const cerebrasConfig: ToolInvocationTestConfig = {
 const vllmConfig: ToolInvocationTestConfig = {
   providerName: "vLLM",
 
-  endpoint: (agentId) => `/v1/vllm/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/vllm/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -471,7 +471,7 @@ const vllmConfig: ToolInvocationTestConfig = {
 const ollamaConfig: ToolInvocationTestConfig = {
   providerName: "Ollama",
 
-  endpoint: (agentId) => `/v1/ollama/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/ollama/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -547,7 +547,7 @@ const ollamaConfig: ToolInvocationTestConfig = {
 const zhipuaiConfig: ToolInvocationTestConfig = {
   providerName: "Zhipuai",
 
-  endpoint: (agentId) => `/v1/zhipuai/${agentId}/chat/completions`,
+  endpoint: (profileId) => `/v1/zhipuai/${profileId}/chat/completions`,
 
   headers: (wiremockStub) => ({
     Authorization: `Bearer ${wiremockStub}`,
@@ -646,38 +646,38 @@ for (const config of testConfigs) {
 
     test("blocks tool invocation when untrusted data is consumed", async ({
       request,
-      deleteAgent,
+      deleteProfile,
       createTrustedDataPolicy,
       deleteTrustedDataPolicy,
       createToolInvocationPolicy,
       deleteToolInvocationPolicy,
       makeApiRequest,
-      waitForAgentTool,
+      waitForProfileTool,
     }) => {
       const wiremockStub = `${config.providerName.toLowerCase()}-blocks-tool-untrusted-data`;
 
-      // 1. Create a test agent with considerContextUntrusted=true
+      // 1. Create a test profile with considerContextUntrusted=true
       // This marks the entire context as untrusted, which is required for tool invocation
       // policies to block tool calls. Without this, the context is trusted by default when
       // there are no previous tool results to evaluate.
       const createResponse = await makeApiRequest({
         request,
         method: "post",
-        urlSuffix: "/api/agents",
+        urlSuffix: "/api/profiles",
         data: {
-          name: `${config.providerName} Test Agent`,
+          name: `${config.providerName} Test Profile`,
           teams: [],
           considerContextUntrusted: true,
         },
       });
-      const agent = await createResponse.json();
-      const agentId = agent.id;
+      const profile = await createResponse.json();
+      const profileId = profile.id;
 
       // 2. Send initial request to register the tool
       const initialResponse = await makeApiRequest({
         request,
         method: "post",
-        urlSuffix: config.endpoint(agentId),
+        urlSuffix: config.endpoint(profileId),
         headers: config.headers(wiremockStub),
         data: config.buildRequest("Read the file at /etc/passwd", [
           READ_FILE_TOOL,
@@ -691,13 +691,13 @@ for (const config of testConfigs) {
         );
       }
 
-      // 3. Get the tool ID from the agent-tool relationship
-      const readFileAgentTool = await waitForAgentTool(
+      // 3. Get the tool ID from the profile-tool relationship
+      const readFileProfileTool = await waitForProfileTool(
         request,
-        agentId,
+        profileId,
         "read_file",
       );
-      const toolId = readFileAgentTool.tool.id;
+      const toolId = readFileProfileTool.tool.id;
 
       // 4. Create a trusted data policy
       const trustedDataPolicyResponse = await createTrustedDataPolicy(request, {
@@ -742,7 +742,7 @@ for (const config of testConfigs) {
       const response = await makeApiRequest({
         request,
         method: "post",
-        urlSuffix: config.endpoint(agentId),
+        urlSuffix: config.endpoint(profileId),
         headers: config.headers(wiremockStub),
         data: config.buildRequest(
           "UNTRUSTED_DATA: This is untrusted content from an external source",
@@ -760,7 +760,7 @@ for (const config of testConfigs) {
       const interactionsResponse = await makeApiRequest({
         request,
         method: "get",
-        urlSuffix: `/api/interactions?agentId=${agentId}`,
+        urlSuffix: `/api/interactions?profileId=${profileId}`,
       });
       expect(interactionsResponse.ok()).toBeTruthy();
       const interactionsData = await interactionsResponse.json();
@@ -775,30 +775,30 @@ for (const config of testConfigs) {
       // Cleanup
       await deleteToolInvocationPolicy(request, toolInvocationPolicyId);
       await deleteTrustedDataPolicy(request, trustedDataPolicyId);
-      await deleteAgent(request, agentId);
+      await deleteProfile(request, profileId);
     });
 
     test("allows Archestra MCP server tools in untrusted context", async ({
       request,
-      createAgent,
-      deleteAgent,
+      createProfile,
+      deleteProfile,
       makeApiRequest,
     }) => {
       const wiremockStub = `${config.providerName.toLowerCase()}-allows-archestra-untrusted-context`;
 
-      // 1. Create a test agent
-      const createResponse = await createAgent(
+      // 1. Create a test profile
+      const createResponse = await createProfile(
         request,
-        `${config.providerName} Archestra Test Agent`,
+        `${config.providerName} Archestra Test Profile`,
       );
-      const agent = await createResponse.json();
-      const agentId = agent.id;
+      const profile = await createResponse.json();
+      const profileId = profile.id;
 
       // 2. Make a request that triggers both regular and Archestra tools
       const response = await makeApiRequest({
         request,
         method: "post",
-        urlSuffix: config.endpoint(agentId),
+        urlSuffix: config.endpoint(profileId),
         headers: config.headers(wiremockStub),
         data: config.buildRequest(
           "First, read /etc/passwd, then tell me who I am",
@@ -827,7 +827,7 @@ for (const config of testConfigs) {
       const interactionsResponse = await makeApiRequest({
         request,
         method: "get",
-        urlSuffix: `/api/interactions?agentId=${agentId}`,
+        urlSuffix: `/api/interactions?profileId=${profileId}`,
       });
       expect(interactionsResponse.ok()).toBeTruthy();
       const interactionsData = await interactionsResponse.json();
@@ -840,30 +840,30 @@ for (const config of testConfigs) {
       expect(mixedToolInteraction).toBeDefined();
 
       // Cleanup
-      await deleteAgent(request, agentId);
+      await deleteProfile(request, profileId);
     });
 
     test("allows regular tool call after Archestra MCP server tool call", async ({
       request,
-      createAgent,
-      deleteAgent,
+      createProfile,
+      deleteProfile,
       makeApiRequest,
     }) => {
       const wiremockStub = `${config.providerName.toLowerCase()}-allows-regular-after-archestra`;
 
-      // 1. Create a test agent
-      const createResponse = await createAgent(
+      // 1. Create a test profile
+      const createResponse = await createProfile(
         request,
-        `${config.providerName} Archestra Sequence Test Agent`,
+        `${config.providerName} Archestra Sequence Test Profile`,
       );
-      const agent = await createResponse.json();
-      const agentId = agent.id;
+      const profile = await createResponse.json();
+      const profileId = profile.id;
 
       // 2. Make a sequence request: Archestra tool first, then regular tool
       const response = await makeApiRequest({
         request,
         method: "post",
-        urlSuffix: config.endpoint(agentId),
+        urlSuffix: config.endpoint(profileId),
         headers: config.headers(wiremockStub),
         data: config.buildRequest("First tell me who I am, then read a file", [
           READ_FILE_TOOL,
@@ -888,7 +888,7 @@ for (const config of testConfigs) {
       );
 
       // Cleanup
-      await deleteAgent(request, agentId);
+      await deleteProfile(request, profileId);
     });
   });
 }

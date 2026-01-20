@@ -19,8 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Textarea } from "@/components/ui/textarea";
-import { useProfiles } from "@/lib/agent.query";
 import { useChatOpsStatus } from "@/lib/chatops.query";
+import { useProfiles } from "@/lib/profile.query";
 import {
   usePromptAgents,
   useSyncPromptAgents,
@@ -69,7 +69,7 @@ export function PromptDialog({
     return allPrompts
       .filter((p) => p.id !== prompt?.id)
       .map((p) => {
-        const profile = allProfiles.find((prof) => prof.id === p.agentId);
+        const profile = allProfiles.find((prof) => prof.id === p.profileId);
         return {
           value: p.id,
           label: profile ? `${p.name} (${profile.name})` : p.name,
@@ -83,7 +83,7 @@ export function PromptDialog({
       // edit
       if (prompt) {
         setName(prompt.name);
-        setProfileId(prompt.agentId);
+        setProfileId(prompt.profileId);
         setUserPrompt(prompt.userPrompt || "");
         setSystemPrompt(prompt.systemPrompt || "");
         // Note: agents are loaded separately via currentAgents query
@@ -153,7 +153,7 @@ export function PromptDialog({
           id: prompt.id,
           data: {
             name: trimmedName,
-            agentId,
+            profileId: agentId,
             userPrompt: trimmedUserPrompt || undefined,
             systemPrompt: trimmedSystemPrompt || undefined,
             allowedChatops,
@@ -164,7 +164,7 @@ export function PromptDialog({
       } else {
         const created = await createPrompt.mutateAsync({
           name: trimmedName,
-          agentId,
+          profileId: agentId,
           userPrompt: trimmedUserPrompt || undefined,
           systemPrompt: trimmedSystemPrompt || undefined,
           allowedChatops,

@@ -39,14 +39,14 @@ describe("websocket browser-stream screenshot handling", () => {
   });
 
   test("sends an error when screenshot data is missing", async ({
-    makeAgent,
+    makeProfile,
     makeConversation,
     makeOrganization,
     makeUser,
   }) => {
     const org = await makeOrganization();
     const user = await makeUser();
-    const agent = await makeAgent();
+    const agent = await makeProfile();
     const conversation = await makeConversation(agent.id, {
       userId: user.id,
       organizationId: org.id,

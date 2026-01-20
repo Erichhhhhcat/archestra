@@ -120,12 +120,12 @@ export function ChatToolsDisplay({
     () =>
       profileTools
         .filter(
-          (tool) =>
+          (tool: { name: string }) =>
             !tool.name.startsWith("archestra__") ||
             tool.name === "archestra__todo_write" ||
             tool.name === "archestra__artifact_write",
         )
-        .map((t) => t.id),
+        .map((t: { id: string }) => t.id),
     [profileTools],
   );
 
@@ -215,7 +215,7 @@ export function ChatToolsDisplay({
       return;
     }
     const newEnabledToolIds = currentEnabledToolIds.filter(
-      (id) => id !== toolId,
+      (id: string) => id !== toolId,
     );
     updateEnabledTools.mutateAsync({
       conversationId,
@@ -234,7 +234,7 @@ export function ChatToolsDisplay({
       return;
     }
     const newEnabledToolIds = currentEnabledToolIds.filter(
-      (id) => !toolIds.includes(id),
+      (id: string) => !toolIds.includes(id),
     );
     updateEnabledTools.mutateAsync({
       conversationId,

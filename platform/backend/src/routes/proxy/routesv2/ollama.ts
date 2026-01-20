@@ -93,9 +93,9 @@ const ollamaProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.OllamaChatCompletionsWithDefaultAgent,
+        operationId: RouteId.OllamaChatCompletionsWithDefaultProfile,
         description:
-          "Create a chat completion with Ollama (uses default agent)",
+          "Create a chat completion with Ollama (uses default profile)",
         tags: ["llm-proxy"],
         body: Ollama.API.ChatCompletionRequestSchema,
         headers: Ollama.API.ChatCompletionsHeadersSchema,
@@ -116,7 +116,7 @@ const ollamaProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
       }
       logger.debug(
         { url: request.url },
-        "[UnifiedProxy] Handling Ollama request (default agent)",
+        "[UnifiedProxy] Handling Ollama request (default profile)",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
         request.headers,
@@ -129,7 +129,7 @@ const ollamaProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         ollamaAdapterFactory,
         {
           organizationId: request.organizationId,
-          agentId: undefined,
+          profileId: undefined,
           externalAgentId,
           userId,
         },
@@ -138,16 +138,16 @@ const ollamaProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
   );
 
   fastify.post(
-    `${API_PREFIX}/:agentId${CHAT_COMPLETIONS_SUFFIX}`,
+    `${API_PREFIX}/:profileId${CHAT_COMPLETIONS_SUFFIX}`,
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.OllamaChatCompletionsWithAgent,
+        operationId: RouteId.OllamaChatCompletionsWithProfile,
         description:
-          "Create a chat completion with Ollama for a specific agent",
+          "Create a chat completion with Ollama for a specific profile",
         tags: ["llm-proxy"],
         params: z.object({
-          agentId: UuidIdSchema,
+          profileId: UuidIdSchema,
         }),
         body: Ollama.API.ChatCompletionRequestSchema,
         headers: Ollama.API.ChatCompletionsHeadersSchema,
@@ -167,8 +167,8 @@ const ollamaProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         });
       }
       logger.debug(
-        { url: request.url, agentId: request.params.agentId },
-        "[UnifiedProxy] Handling Ollama request (with agent)",
+        { url: request.url, profileId: request.params.profileId },
+        "[UnifiedProxy] Handling Ollama request (with profile)",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
         request.headers,
@@ -181,7 +181,7 @@ const ollamaProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         ollamaAdapterFactory,
         {
           organizationId: request.organizationId,
-          agentId: request.params.agentId,
+          profileId: request.params.profileId,
           externalAgentId,
           userId,
         },

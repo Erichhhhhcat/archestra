@@ -79,9 +79,9 @@ const openAiProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.OpenAiChatCompletionsWithDefaultAgent,
+        operationId: RouteId.OpenAiChatCompletionsWithDefaultProfile,
         description:
-          "Create a chat completion with OpenAI (uses default agent)",
+          "Create a chat completion with OpenAI (uses default profile)",
         tags: ["llm-proxy"],
         body: OpenAi.API.ChatCompletionRequestSchema,
         headers: OpenAi.API.ChatCompletionsHeadersSchema,
@@ -106,7 +106,7 @@ const openAiProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         openaiAdapterFactory,
         {
           organizationId: request.organizationId,
-          agentId: undefined,
+          profileId: undefined,
           externalAgentId,
           userId,
         },
@@ -115,16 +115,16 @@ const openAiProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
   );
 
   fastify.post(
-    `${API_PREFIX}/:agentId${CHAT_COMPLETIONS_SUFFIX}`,
+    `${API_PREFIX}/:profileId${CHAT_COMPLETIONS_SUFFIX}`,
     {
       bodyLimit: PROXY_BODY_LIMIT,
       schema: {
-        operationId: RouteId.OpenAiChatCompletionsWithAgent,
+        operationId: RouteId.OpenAiChatCompletionsWithProfile,
         description:
-          "Create a chat completion with OpenAI for a specific agent",
+          "Create a chat completion with OpenAI for a specific profile",
         tags: ["llm-proxy"],
         params: z.object({
-          agentId: UuidIdSchema,
+          profileId: UuidIdSchema,
         }),
         body: OpenAi.API.ChatCompletionRequestSchema,
         headers: OpenAi.API.ChatCompletionsHeadersSchema,
@@ -135,8 +135,8 @@ const openAiProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
     },
     async (request, reply) => {
       logger.debug(
-        { url: request.url, agentId: request.params.agentId },
-        "[UnifiedProxy] Handling OpenAI request (with agent)",
+        { url: request.url, profileId: request.params.profileId },
+        "[UnifiedProxy] Handling OpenAI request (with profile)",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
         request.headers,
@@ -149,7 +149,7 @@ const openAiProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         openaiAdapterFactory,
         {
           organizationId: request.organizationId,
-          agentId: request.params.agentId,
+          profileId: request.params.profileId,
           externalAgentId,
           userId,
         },

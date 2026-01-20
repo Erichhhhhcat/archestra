@@ -16,7 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useProfiles } from "@/lib/agent.query";
+import { useProfiles } from "@/lib/profile.query";
 import { usePrompt } from "@/lib/prompts.query";
 
 type Prompt = archestraApiTypes.GetPromptsResponses["200"][number];

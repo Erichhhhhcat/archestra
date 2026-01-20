@@ -41,7 +41,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useAutoConfigurePolicies } from "@/lib/agent-tools.query";
 import { useInternalMcpCatalogSuspense } from "@/lib/internal-mcp-catalog.query";
 import {
   useBulkCallPolicyMutation,
@@ -58,6 +57,7 @@ import {
   RESULT_POLICY_ACTION_OPTIONS,
   type ResultPolicyAction,
 } from "@/lib/policy.utils";
+import { useAutoConfigurePolicies } from "@/lib/profile-tools.query";
 import {
   type ToolWithAssignmentsData,
   useToolsWithAssignments,

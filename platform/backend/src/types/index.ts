@@ -1,6 +1,4 @@
 export * from "./account";
-export * from "./agent";
-export * from "./agent-tool";
 export * from "./api";
 export * from "./autonomy-policies";
 export * from "./chat-api-key";
@@ -23,6 +21,8 @@ export * from "./member";
 export * from "./message";
 export * from "./optimization-rule";
 export * from "./organization";
+export * from "./profile";
+export * from "./profile-tool";
 export * from "./prompt";
 export * from "./role";
 export * from "./secret";

@@ -15,14 +15,14 @@ import {
 } from "@/types";
 
 // Match the schema from getMcpServerTools endpoint
-const ToolWithAssignedAgentCountSchema = z.object({
+const ToolWithAssignedProfileCountSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().nullable(),
   parameters: z.record(z.string(), z.any()),
   createdAt: z.coerce.date(),
-  assignedAgentCount: z.number(),
-  assignedAgents: z.array(
+  assignedProfileCount: z.number(),
+  assignedProfiles: z.array(
     z.object({
       id: z.string(),
       name: z.string(),
@@ -225,7 +225,7 @@ const internalMcpCatalogRoutes: FastifyPluginAsyncZod = async (fastify) => {
           id: UuidIdSchema,
         }),
         response: constructResponseSchema(
-          z.array(ToolWithAssignedAgentCountSchema),
+          z.array(ToolWithAssignedProfileCountSchema),
         ),
       },
     },

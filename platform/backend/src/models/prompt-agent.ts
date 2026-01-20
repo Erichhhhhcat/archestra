@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import db, { schema } from "@/database";
 import logger from "@/logging";
-import AgentTeamModel from "./agent-team";
+import ProfileTeamModel from "./profile-team";
 import ToolModel from "./tool";
 
 /**
@@ -58,10 +58,10 @@ class PromptAgentModel {
       .limit(1);
 
     if (agentPrompt) {
-      // Create the agent delegation tool in the tools table
-      await ToolModel.createAgentDelegationTool({
+      // Create the profile delegation tool in the tools table
+      await ToolModel.createProfileDelegationTool({
         promptAgentId: result.id,
-        agentName: agentPrompt.name,
+        profileName: agentPrompt.name,
         description: agentPrompt.systemPrompt,
       });
     }
@@ -132,12 +132,12 @@ class PromptAgentModel {
         promptId: schema.promptAgentsTable.promptId,
         agentPromptId: schema.promptAgentsTable.agentPromptId,
         createdAt: schema.promptAgentsTable.createdAt,
-        // Agent prompt details
+        // Delegated prompt details
         name: schema.promptsTable.name,
         systemPrompt: schema.promptsTable.systemPrompt,
         // Profile details
-        profileId: schema.agentsTable.id,
-        profileName: schema.agentsTable.name,
+        profileId: schema.profilesTable.id,
+        profileName: schema.profilesTable.name,
       })
       .from(schema.promptAgentsTable)
       .innerJoin(
@@ -145,8 +145,8 @@ class PromptAgentModel {
         eq(schema.promptAgentsTable.agentPromptId, schema.promptsTable.id),
       )
       .innerJoin(
-        schema.agentsTable,
-        eq(schema.promptsTable.agentId, schema.agentsTable.id),
+        schema.profilesTable,
+        eq(schema.promptsTable.profileId, schema.profilesTable.id),
       )
       .where(eq(schema.promptAgentsTable.promptId, promptId));
 
@@ -221,9 +221,9 @@ class PromptAgentModel {
       for (const row of insertedRows) {
         const promptDetail = promptDetailsMap.get(row.agentPromptId);
         if (promptDetail) {
-          await ToolModel.createAgentDelegationTool({
+          await ToolModel.createProfileDelegationTool({
             promptAgentId: row.id,
-            agentName: promptDetail.name,
+            profileName: promptDetail.name,
             description: promptDetail.systemPrompt,
           });
         }
@@ -237,7 +237,7 @@ class PromptAgentModel {
   }
 
   /**
-   * Bulk assign agents to a prompt
+   * Bulk assign prompts to a prompt
    * Ignores duplicates
    */
   static async bulkAssign(params: {
@@ -248,7 +248,7 @@ class PromptAgentModel {
 
     logger.debug(
       { promptId, agentPromptIds },
-      "PromptAgentModel.bulkAssign: bulk assigning agents to prompt",
+      "PromptAgentModel.bulkAssign: bulk assigning prompts to prompt",
     );
 
     // Get current assignments to avoid duplicates
@@ -285,9 +285,9 @@ class PromptAgentModel {
       for (const row of insertedRows) {
         const promptDetail = promptDetailsMap.get(row.agentPromptId);
         if (promptDetail) {
-          await ToolModel.createAgentDelegationTool({
+          await ToolModel.createProfileDelegationTool({
             promptAgentId: row.id,
-            agentName: promptDetail.name,
+            profileName: promptDetail.name,
             description: promptDetail.systemPrompt,
           });
         }
@@ -302,7 +302,7 @@ class PromptAgentModel {
 
   /**
    * Get all prompt-agent connections for an organization
-   * Used for canvas visualization of agent relationships
+   * Used for canvas visualization of profile relationships
    * Filters by user's team access unless they're an admin
    */
   static async findAllByOrganizationId(
@@ -320,8 +320,8 @@ class PromptAgentModel {
         id: schema.promptAgentsTable.id,
         promptId: schema.promptAgentsTable.promptId,
         agentPromptId: schema.promptAgentsTable.agentPromptId,
-        // Include agentId for filtering
-        agentId: schema.promptsTable.agentId,
+        // Include profileId for filtering
+        profileId: schema.promptsTable.profileId,
       })
       .from(schema.promptAgentsTable)
       .innerJoin(
@@ -339,15 +339,13 @@ class PromptAgentModel {
       }));
     }
 
-    // For non-admins, batch-load accessible agent IDs and filter in memory
-    const accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
-      userId,
-      false,
-    );
-    const accessibleAgentIdSet = new Set(accessibleAgentIds);
+    // For non-admins, batch-load accessible profile IDs and filter in memory
+    const accessibleProfileIds =
+      await ProfileTeamModel.getUserAccessibleProfileIds(userId, false);
+    const accessibleProfileIdSet = new Set(accessibleProfileIds);
 
     return results
-      .filter((r) => r.agentId && accessibleAgentIdSet.has(r.agentId))
+      .filter((r) => r.profileId && accessibleProfileIdSet.has(r.profileId))
       .map(({ id, promptId, agentPromptId }) => ({
         id,
         promptId,

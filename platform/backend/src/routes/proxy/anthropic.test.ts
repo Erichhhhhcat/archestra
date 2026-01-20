@@ -5,7 +5,7 @@ import {
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 import config from "@/config";
-import { AgentModel, TokenPriceModel } from "@/models";
+import { ProfileModel, TokenPriceModel } from "@/models";
 import { afterEach, beforeEach, describe, expect, test } from "@/test";
 import anthropicProxyRoutes from "./anthropic";
 
@@ -26,15 +26,15 @@ describe("Anthropic cost tracking", () => {
       pricePerMillionOutput: "75.00",
     });
 
-    // Create a test agent with cost optimization enabled
-    const agent = await AgentModel.create({
-      name: "Test Cost Agent",
+    // Create a test profile with cost optimization enabled
+    const profile = await ProfileModel.create({
+      name: "Test Cost Profile",
       teams: [],
     });
 
     const response = await app.inject({
       method: "POST",
-      url: `/v1/anthropic/${agent.id}/v1/messages`,
+      url: `/v1/anthropic/${profile.id}/v1/messages`,
       headers: {
         "content-type": "application/json",
         authorization: "Bearer test-key",
@@ -54,7 +54,7 @@ describe("Anthropic cost tracking", () => {
     // Find the created interaction
     const { InteractionModel } = await import("@/models");
     const interactions = await InteractionModel.getAllInteractionsForProfile(
-      agent.id,
+      profile.id,
     );
     expect(interactions.length).toBeGreaterThan(0);
 
@@ -83,9 +83,9 @@ describe("Anthropic streaming mode", () => {
       pricePerMillionOutput: "75.00",
     });
 
-    // Create a test agent
-    const agent = await AgentModel.create({
-      name: "Test Streaming Agent",
+    // Create a test profile
+    const profile = await ProfileModel.create({
+      name: "Test Streaming Profile",
       teams: [],
     });
 
@@ -93,12 +93,12 @@ describe("Anthropic streaming mode", () => {
 
     // Get initial interaction count
     const initialInteractions =
-      await InteractionModel.getAllInteractionsForProfile(agent.id);
+      await InteractionModel.getAllInteractionsForProfile(profile.id);
     const initialCount = initialInteractions.length;
 
     const response = await app.inject({
       method: "POST",
-      url: `/v1/anthropic/${agent.id}/v1/messages`,
+      url: `/v1/anthropic/${profile.id}/v1/messages`,
       headers: {
         "content-type": "application/json",
         authorization: "Bearer test-key",
@@ -127,7 +127,7 @@ describe("Anthropic streaming mode", () => {
 
     // Find the created interaction
     const interactions = await InteractionModel.getAllInteractionsForProfile(
-      agent.id,
+      profile.id,
     );
     expect(interactions.length).toBe(initialCount + 1);
 
@@ -170,9 +170,9 @@ describe("Anthropic streaming mode", () => {
           pricePerMillionOutput: "75.00",
         });
 
-        // Create a test agent
-        const agent = await AgentModel.create({
-          name: "Test Interrupted Streaming Agent",
+        // Create a test profile
+        const profile = await ProfileModel.create({
+          name: "Test Interrupted Streaming Profile",
           teams: [],
         });
 
@@ -180,12 +180,12 @@ describe("Anthropic streaming mode", () => {
 
         // Get initial interaction count
         const initialInteractions =
-          await InteractionModel.getAllInteractionsForProfile(agent.id);
+          await InteractionModel.getAllInteractionsForProfile(profile.id);
         const initialCount = initialInteractions.length;
 
         const response = await app.inject({
           method: "POST",
-          url: `/v1/anthropic/${agent.id}/v1/messages`,
+          url: `/v1/anthropic/${profile.id}/v1/messages`,
           headers: {
             "content-type": "application/json",
             authorization: "Bearer test-key",
@@ -209,7 +209,7 @@ describe("Anthropic streaming mode", () => {
 
         // Verify interaction was still recorded despite interruption
         const interactions =
-          await InteractionModel.getAllInteractionsForProfile(agent.id);
+          await InteractionModel.getAllInteractionsForProfile(profile.id);
         expect(interactions.length).toBe(initialCount + 1);
 
         const interaction = interactions[interactions.length - 1];
@@ -251,15 +251,15 @@ describe("Anthropic tool call accumulation", () => {
         pricePerMillionOutput: "75.00",
       });
 
-      // Create a test agent
-      const agent = await AgentModel.create({
-        name: "Test Tool Call Agent",
+      // Create a test profile
+      const profile = await ProfileModel.create({
+        name: "Test Tool Call Profile",
         teams: [],
       });
 
       const response = await app.inject({
         method: "POST",
-        url: `/v1/anthropic/${agent.id}/v1/messages`,
+        url: `/v1/anthropic/${profile.id}/v1/messages`,
         headers: {
           "content-type": "application/json",
           authorization: "Bearer test-key",

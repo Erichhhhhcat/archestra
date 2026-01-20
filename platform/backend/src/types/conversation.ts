@@ -40,7 +40,7 @@ export const UpdateConversationSchema = createUpdateSchema(
   selectedModel: true,
   selectedProvider: true,
   chatApiKeyId: true,
-  agentId: true,
+  profileId: true,
   artifact: true,
 });
 
