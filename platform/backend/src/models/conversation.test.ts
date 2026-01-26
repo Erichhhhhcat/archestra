@@ -27,8 +27,8 @@ describe("ConversationModel", () => {
     expect(conversation.organizationId).toBe(org.id);
     expect(conversation.agentId).toBe(agent.id);
     expect(conversation.agent).toBeDefined();
-    expect(conversation.agent.id).toBe(agent.id);
-    expect(conversation.agent.name).toBe("Test Agent");
+    expect(conversation.agent?.id).toBe(agent.id);
+    expect(conversation.agent?.name).toBe("Test Agent");
     expect(conversation.createdAt).toBeDefined();
     expect(conversation.updatedAt).toBeDefined();
     expect(Array.isArray(conversation.messages)).toBe(true);
@@ -61,8 +61,8 @@ describe("ConversationModel", () => {
     expect(found?.id).toBe(created.id);
     expect(found?.title).toBe("Find Test");
     expect(found?.selectedModel).toBe("claude-3-opus-20240229");
-    expect(found?.agent.id).toBe(agent.id);
-    expect(found?.agent.name).toBe("Find Test Agent");
+    expect(found?.agent?.id).toBe(agent.id);
+    expect(found?.agent?.name).toBe("Find Test Agent");
     expect(Array.isArray(found?.messages)).toBe(true);
   });
 
@@ -133,7 +133,7 @@ describe("ConversationModel", () => {
     expect(updated?.title).toBe("Updated Title");
     expect(updated?.selectedModel).toBe("claude-3-opus-20240229");
     expect(updated?.id).toBe(created.id);
-    expect(updated?.agent.id).toBe(agent.id);
+    expect(updated?.agent?.id).toBe(agent.id);
     expect(Array.isArray(updated?.messages)).toBe(true);
   });
 

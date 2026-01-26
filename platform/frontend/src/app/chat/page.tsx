@@ -2,6 +2,7 @@
 
 import type { UIMessage } from "@ai-sdk/react";
 import {
+  AlertTriangle,
   Bot,
   Edit,
   Eye,
@@ -824,6 +825,9 @@ export default function ChatPage() {
   // Determine which agent ID to use for prompt input
   const activeAgentId = conversation?.agent?.id ?? initialAgentId;
 
+  // Check if the conversation's agent was deleted
+  const isAgentDeleted = conversationId && conversation && !conversation.agent;
+
   // Show loading spinner while essential data is loading
   if (isLoadingApiKeyCheck || isLoadingAgents) {
     return <LoadingSpinner />;
@@ -1069,73 +1073,95 @@ export default function ChatPage() {
             />
           </div>
 
-          {activeAgentId && (
+          {isAgentDeleted ? (
             <div className="sticky bottom-0 bg-background border-t p-4">
-              <div className="max-w-4xl mx-auto space-y-3">
-                <ArchestraPromptInput
-                  onSubmit={
-                    conversationId && conversation?.agent.id
-                      ? handleSubmit
-                      : handleInitialSubmit
-                  }
-                  status={
-                    conversationId && conversation?.agent.id
-                      ? status
-                      : createConversationMutation.isPending
-                        ? "submitted"
-                        : "ready"
-                  }
-                  selectedModel={
-                    conversationId && conversation?.agent.id
-                      ? (conversation?.selectedModel ?? "")
-                      : initialModel
-                  }
-                  onModelChange={
-                    conversationId && conversation?.agent.id
-                      ? handleModelChange
-                      : handleInitialModelChange
-                  }
-                  messageCount={
-                    conversationId && conversation?.agent.id
-                      ? messages.length
-                      : undefined
-                  }
-                  agentId={
-                    conversationId && conversation?.agent.id
-                      ? conversation.agent.id
-                      : activeAgentId
-                  }
-                  conversationId={conversationId}
-                  currentConversationChatApiKeyId={
-                    conversationId && conversation?.agent.id
-                      ? conversation?.chatApiKeyId
-                      : undefined
-                  }
-                  currentProvider={
-                    conversationId && conversation?.agent.id
-                      ? currentProvider
-                      : initialProvider
-                  }
-                  textareaRef={textareaRef}
-                  initialApiKeyId={
-                    conversationId && conversation?.agent.id
-                      ? undefined
-                      : initialApiKeyId
-                  }
-                  onApiKeyChange={
-                    conversationId && conversation?.agent.id
-                      ? undefined
-                      : setInitialApiKeyId
-                  }
-                  allowFileUploads={organization?.allowChatFileUploads ?? false}
-                  isModelsLoading={isModelsLoading}
-                  onEditAgent={() => openDialog("edit-agent")}
-                />
-                <div className="text-center">
-                  <Version inline />
+              <div className="max-w-4xl mx-auto">
+                <div className="flex items-center justify-between gap-4 p-4 rounded-lg border border-muted bg-muted/50">
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <AlertTriangle className="h-5 w-5 text-amber-500" />
+                    <span>
+                      The agent associated with this conversation has been
+                      deleted.
+                    </span>
+                  </div>
+                  <Button onClick={() => router.push("/chat")}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Conversation
+                  </Button>
                 </div>
               </div>
             </div>
+          ) : (
+            activeAgentId && (
+              <div className="sticky bottom-0 bg-background border-t p-4">
+                <div className="max-w-4xl mx-auto space-y-3">
+                  <ArchestraPromptInput
+                    onSubmit={
+                      conversationId && conversation?.agent?.id
+                        ? handleSubmit
+                        : handleInitialSubmit
+                    }
+                    status={
+                      conversationId && conversation?.agent?.id
+                        ? status
+                        : createConversationMutation.isPending
+                          ? "submitted"
+                          : "ready"
+                    }
+                    selectedModel={
+                      conversationId && conversation?.agent?.id
+                        ? (conversation?.selectedModel ?? "")
+                        : initialModel
+                    }
+                    onModelChange={
+                      conversationId && conversation?.agent?.id
+                        ? handleModelChange
+                        : handleInitialModelChange
+                    }
+                    messageCount={
+                      conversationId && conversation?.agent?.id
+                        ? messages.length
+                        : undefined
+                    }
+                    agentId={
+                      conversationId && conversation?.agent?.id
+                        ? conversation.agent?.id
+                        : activeAgentId
+                    }
+                    conversationId={conversationId}
+                    currentConversationChatApiKeyId={
+                      conversationId && conversation?.agent?.id
+                        ? conversation?.chatApiKeyId
+                        : undefined
+                    }
+                    currentProvider={
+                      conversationId && conversation?.agent?.id
+                        ? currentProvider
+                        : initialProvider
+                    }
+                    textareaRef={textareaRef}
+                    initialApiKeyId={
+                      conversationId && conversation?.agent?.id
+                        ? undefined
+                        : initialApiKeyId
+                    }
+                    onApiKeyChange={
+                      conversationId && conversation?.agent?.id
+                        ? undefined
+                        : setInitialApiKeyId
+                    }
+                    allowFileUploads={
+                      organization?.allowChatFileUploads ?? false
+                    }
+                    isModelsLoading={isModelsLoading}
+                    onEditAgent={() => openDialog("edit-agent")}
+                  />
+                  <div className="text-center">
+                    <Version inline />
+                  </div>
+                </div>
+              </div>
+            )
           )}
         </div>
       </div>

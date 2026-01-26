@@ -173,6 +173,14 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         throw new ApiError(404, "Conversation not found");
       }
 
+      // Check if the agent was deleted
+      if (!conversation.agentId || !conversation.agent) {
+        throw new ApiError(
+          400,
+          "The agent associated with this conversation has been deleted",
+        );
+      }
+
       // Use agent ID as external agent ID if available, otherwise use header value
       // This allows agent names to be displayed in LLM proxy logs
       const headerExternalAgentId = getExternalAgentId(headers);
@@ -732,7 +740,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         organizationId,
       });
 
-      if (conversation && browserStreamFeature.isEnabled()) {
+      if (conversation?.agentId && browserStreamFeature.isEnabled()) {
         // Close browser tab for this conversation (best effort, don't fail if it errors)
         try {
           await browserStreamFeature.closeTab(conversation.agentId, id, {

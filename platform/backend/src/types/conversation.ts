@@ -21,13 +21,16 @@ const insertUpdateExtendedFields = {
 export const SelectConversationSchema = createSelectSchema(
   schema.conversationsTable,
 ).extend({
-  agent: z.object({
-    id: z.string(),
-    name: z.string(),
-    systemPrompt: z.string().nullable(),
-    userPrompt: z.string().nullable(),
-    agentType: z.enum(["profile", "mcp_gateway", "llm_proxy", "agent"]),
-  }),
+  // Agent is nullable when the associated profile has been deleted
+  agent: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      systemPrompt: z.string().nullable(),
+      userPrompt: z.string().nullable(),
+      agentType: z.enum(["profile", "mcp_gateway", "llm_proxy", "agent"]),
+    })
+    .nullable(),
   messages: z.array(z.any()), // UIMessage[] from AI SDK
   ...selectExtendedFields,
 });
@@ -35,11 +38,17 @@ export const SelectConversationSchema = createSelectSchema(
 export const InsertConversationSchema = createInsertSchema(
   schema.conversationsTable,
   insertUpdateExtendedFields,
-).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    // Override agentId to be required for creating conversations
+    // (it's nullable in the DB schema to preserve conversations when agents are deleted)
+    agentId: z.string().uuid(),
+  });
 
 export const UpdateConversationSchema = createUpdateSchema(
   schema.conversationsTable,
