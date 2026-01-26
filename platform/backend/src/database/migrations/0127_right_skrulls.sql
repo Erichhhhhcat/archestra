@@ -1,0 +1,4 @@
+ALTER TABLE "mcp_tool_calls" DROP CONSTRAINT "mcp_tool_calls_agent_id_agents_id_fk";
+--> statement-breakpoint
+ALTER TABLE "mcp_tool_calls" ALTER COLUMN "agent_id" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "mcp_tool_calls" ADD CONSTRAINT "mcp_tool_calls_agent_id_agents_id_fk" FOREIGN KEY ("agent_id") REFERENCES "public"."agents"("id") ON DELETE set null ON UPDATE no action;

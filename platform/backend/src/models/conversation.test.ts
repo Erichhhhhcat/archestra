@@ -1431,4 +1431,181 @@ describe("ConversationModel", () => {
     expect(results[0].id).toBe(conv2.id);
     expect(results[1].id).toBe(conv1.id);
   });
+
+  describe("preserves conversations when agent is deleted", () => {
+    test("conversation is preserved with null agent when agent is deleted", async ({
+      makeUser,
+      makeOrganization,
+      makeAgent,
+    }) => {
+      const AgentModel = (await import("./agent")).default;
+      const user = await makeUser();
+      const org = await makeOrganization();
+      const agent = await makeAgent({
+        name: "Agent To Delete",
+        teams: [],
+      });
+
+      // Create a conversation with the agent
+      const conversation = await ConversationModel.create({
+        userId: user.id,
+        organizationId: org.id,
+        agentId: agent.id,
+        title: "Conversation to preserve",
+        selectedModel: "claude-3-haiku-20240307",
+      });
+
+      // Verify conversation has agent before deletion
+      expect(conversation.agent).toBeDefined();
+      expect(conversation.agent?.id).toBe(agent.id);
+
+      // Delete the agent
+      await AgentModel.delete(agent.id);
+
+      // Conversation should still exist but with null agent
+      const found = await ConversationModel.findById({
+        id: conversation.id,
+        userId: user.id,
+        organizationId: org.id,
+      });
+
+      expect(found).toBeDefined();
+      expect(found?.id).toBe(conversation.id);
+      expect(found?.title).toBe("Conversation to preserve");
+      expect(found?.agentId).toBeNull();
+      expect(found?.agent).toBeNull();
+    });
+
+    test("findAll returns conversations with deleted agents", async ({
+      makeUser,
+      makeOrganization,
+      makeAgent,
+    }) => {
+      const AgentModel = (await import("./agent")).default;
+      const user = await makeUser();
+      const org = await makeOrganization();
+      const agentToDelete = await makeAgent({
+        name: "Agent To Delete",
+        teams: [],
+      });
+      const agentToKeep = await makeAgent({
+        name: "Agent To Keep",
+        teams: [],
+      });
+
+      // Create conversations with both agents
+      await ConversationModel.create({
+        userId: user.id,
+        organizationId: org.id,
+        agentId: agentToDelete.id,
+        title: "Conversation with deleted agent",
+        selectedModel: "claude-3-haiku-20240307",
+      });
+
+      await ConversationModel.create({
+        userId: user.id,
+        organizationId: org.id,
+        agentId: agentToKeep.id,
+        title: "Conversation with existing agent",
+        selectedModel: "claude-3-haiku-20240307",
+      });
+
+      // Delete one agent
+      await AgentModel.delete(agentToDelete.id);
+
+      // Both conversations should be returned
+      const conversations = await ConversationModel.findAll(user.id, org.id);
+
+      expect(conversations).toHaveLength(2);
+
+      const deletedAgentConv = conversations.find(
+        (c) => c.title === "Conversation with deleted agent",
+      );
+      const existingAgentConv = conversations.find(
+        (c) => c.title === "Conversation with existing agent",
+      );
+
+      expect(deletedAgentConv).toBeDefined();
+      expect(deletedAgentConv?.agent).toBeNull();
+      expect(deletedAgentConv?.agentId).toBeNull();
+
+      expect(existingAgentConv).toBeDefined();
+      expect(existingAgentConv?.agent).toBeDefined();
+      expect(existingAgentConv?.agent?.id).toBe(agentToKeep.id);
+    });
+
+    test("conversation can still be updated after agent is deleted", async ({
+      makeUser,
+      makeOrganization,
+      makeAgent,
+    }) => {
+      const AgentModel = (await import("./agent")).default;
+      const user = await makeUser();
+      const org = await makeOrganization();
+      const agent = await makeAgent({
+        name: "Agent To Delete",
+        teams: [],
+      });
+
+      const conversation = await ConversationModel.create({
+        userId: user.id,
+        organizationId: org.id,
+        agentId: agent.id,
+        title: "Original Title",
+        selectedModel: "claude-3-haiku-20240307",
+      });
+
+      // Delete the agent
+      await AgentModel.delete(agent.id);
+
+      // Update the conversation title
+      const updated = await ConversationModel.update(
+        conversation.id,
+        user.id,
+        org.id,
+        { title: "Updated Title After Agent Deletion" },
+      );
+
+      expect(updated).toBeDefined();
+      expect(updated?.title).toBe("Updated Title After Agent Deletion");
+      expect(updated?.agent).toBeNull();
+    });
+
+    test("conversation can still be deleted after agent is deleted", async ({
+      makeUser,
+      makeOrganization,
+      makeAgent,
+    }) => {
+      const AgentModel = (await import("./agent")).default;
+      const user = await makeUser();
+      const org = await makeOrganization();
+      const agent = await makeAgent({
+        name: "Agent To Delete",
+        teams: [],
+      });
+
+      const conversation = await ConversationModel.create({
+        userId: user.id,
+        organizationId: org.id,
+        agentId: agent.id,
+        title: "Conversation to delete",
+        selectedModel: "claude-3-haiku-20240307",
+      });
+
+      // Delete the agent
+      await AgentModel.delete(agent.id);
+
+      // Delete the conversation
+      await ConversationModel.delete(conversation.id, user.id, org.id);
+
+      // Verify conversation is deleted
+      const found = await ConversationModel.findById({
+        id: conversation.id,
+        userId: user.id,
+        organizationId: org.id,
+      });
+
+      expect(found).toBeNull();
+    });
+  });
 });
