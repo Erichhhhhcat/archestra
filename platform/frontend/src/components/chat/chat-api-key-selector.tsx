@@ -227,7 +227,11 @@ export function ChatApiKeySelector({
     const selectedKey = availableKeys.find((k) => k.id === keyId);
 
     // If key is from a different provider, switch to that provider's default model
-    if (selectedKey && selectedKey.provider !== currentProvider && onModelChange) {
+    if (
+      selectedKey &&
+      selectedKey.provider !== currentProvider &&
+      onModelChange
+    ) {
       const defaultModel =
         providerDefaultModels[
           selectedKey.provider as keyof typeof providerDefaultModels
