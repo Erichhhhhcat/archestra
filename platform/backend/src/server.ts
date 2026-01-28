@@ -24,6 +24,7 @@ import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
 import {
   hasZodFastifySchemaValidationErrors,
+  isResponseSerializationError,
   jsonSchemaTransform,
   jsonSchemaTransformObject,
   serializerCompiler,
@@ -60,6 +61,7 @@ import {
   Cerebras,
   Cohere,
   Gemini,
+  Mistral,
   Ollama,
   OpenAi,
   Vllm,
@@ -126,6 +128,12 @@ export function registerOpenApiSchemas() {
   });
   z.globalRegistry.add(Cohere.API.ChatResponseSchema, {
     id: "CohereChatResponse",
+  });
+  z.globalRegistry.add(Mistral.API.ChatCompletionRequestSchema, {
+    id: "MistralChatCompletionRequest",
+  });
+  z.globalRegistry.add(Mistral.API.ChatCompletionResponseSchema, {
+    id: "MistralChatCompletionResponse",
   });
   z.globalRegistry.add(Vllm.API.ChatCompletionRequestSchema, {
     id: "VllmChatCompletionRequest",
@@ -276,6 +284,31 @@ export const createFastifyInstance = () =>
     .setSerializerCompiler(serializerCompiler)
     // https://fastify.dev/docs/latest/Reference/Server/#seterrorhandler
     .setErrorHandler<ApiError | Error>(function (error, _request, reply) {
+      // Handle response serialization errors (when response doesn't match schema)
+      if (isResponseSerializationError(error)) {
+        const issues = error.cause?.issues ?? [];
+        this.log.error(
+          {
+            statusCode: 500,
+            method: error.method,
+            url: error.url,
+            validationErrors: issues.map((issue) => ({
+              path: issue.path?.join("."),
+              code: issue.code,
+              message: issue.message,
+            })),
+          },
+          "Response serialization error: response doesn't match schema",
+        );
+
+        return reply.status(500).send({
+          error: {
+            message: "Response doesn't match the schema",
+            type: "api_internal_server_error",
+          },
+        });
+      }
+
       // Handle Zod validation errors (from fastify-type-provider-zod)
       if (hasZodFastifySchemaValidationErrors(error)) {
         const message = error.message || "Validation error";

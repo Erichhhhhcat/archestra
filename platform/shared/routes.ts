@@ -164,6 +164,11 @@ export const RouteId = {
     "cerebrasChatCompletionsWithDefaultAgent",
   CerebrasChatCompletionsWithAgent: "cerebrasChatCompletionsWithAgent",
 
+  // Proxy Routes - Mistral
+  MistralChatCompletionsWithDefaultAgent:
+    "mistralChatCompletionsWithDefaultAgent",
+  MistralChatCompletionsWithAgent: "mistralChatCompletionsWithAgent",
+
   // Proxy Routes - vLLM
   VllmChatCompletionsWithDefaultAgent: "vllmChatCompletionsWithDefaultAgent",
   VllmChatCompletionsWithAgent: "vllmChatCompletionsWithAgent",
@@ -176,6 +181,17 @@ export const RouteId = {
   ZhipuaiChatCompletionsWithDefaultAgent:
     "zhipuaiChatCompletionsWithDefaultAgent",
   ZhipuaiChatCompletionsWithAgent: "zhipuaiChatCompletionsWithAgent",
+
+  // Proxy Routes - AWS Bedrock
+  BedrockConverseWithDefaultAgent: "bedrockConverseWithDefaultAgent",
+  BedrockConverseWithAgent: "bedrockConverseWithAgent",
+  BedrockConverseStreamWithDefaultAgent:
+    "bedrockConverseStreamWithDefaultAgent",
+  BedrockConverseStreamWithAgent: "bedrockConverseStreamWithAgent",
+  // AI SDK compatible routes (model ID in URL)
+  BedrockConverseWithAgentAndModel: "bedrockConverseWithAgentAndModel",
+  BedrockConverseStreamWithAgentAndModel:
+    "bedrockConverseStreamWithAgentAndModel",
 
   // Chat Routes
   StreamChat: "streamChat",

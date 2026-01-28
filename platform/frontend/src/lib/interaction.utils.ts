@@ -1,6 +1,7 @@
 import type { SupportedProvider } from "@shared";
 import type { PartialUIMessage } from "@/components/chatbot-demo";
 import AnthropicMessagesInteraction from "./llmProviders/anthropic";
+import BedrockConverseInteraction from "./llmProviders/bedrock";
 import CerebrasChatCompletionInteraction from "./llmProviders/cerebras";
 import CohereChatInteraction from "./llmProviders/cohere";
 import type {
@@ -9,6 +10,7 @@ import type {
   InteractionUtils,
 } from "./llmProviders/common";
 import GeminiGenerateContentInteraction from "./llmProviders/gemini";
+import MistralChatCompletionInteraction from "./llmProviders/mistral";
 import OllamaChatCompletionInteraction from "./llmProviders/ollama";
 import OpenAiChatCompletionInteraction from "./llmProviders/openai";
 import VllmChatCompletionInteraction from "./llmProviders/vllm";
@@ -122,10 +124,14 @@ export class DynamicInteraction implements InteractionUtils {
       return new OpenAiChatCompletionInteraction(interaction);
     } else if (type === "anthropic:messages") {
       return new AnthropicMessagesInteraction(interaction);
+    } else if (type === "bedrock:converse") {
+      return new BedrockConverseInteraction(interaction);
     } else if (type === "zhipuai:chatCompletions") {
       return new ZhipuaiChatCompletionInteraction(interaction);
     } else if (type === "cerebras:chatCompletions") {
       return new CerebrasChatCompletionInteraction(interaction);
+    } else if (type === "mistral:chatCompletions") {
+      return new MistralChatCompletionInteraction(interaction);
     } else if (type === "vllm:chatCompletions") {
       return new VllmChatCompletionInteraction(interaction);
     } else if (type === "ollama:chatCompletions") {

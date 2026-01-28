@@ -314,9 +314,6 @@ export type OpenAiChatCompletionResponseInput = {
                 arguments: string;
                 name: string;
             } | unknown;
-            /**
-             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1197
-             */
             tool_calls?: Array<{
                 id: string;
                 type: 'function';
@@ -337,7 +334,7 @@ export type OpenAiChatCompletionResponseInput = {
                     input: string;
                     name: string;
                 };
-            }>;
+            }> | unknown;
         };
     }>;
     created: number;
@@ -1851,6 +1848,417 @@ export type CohereChatResponseInput = {
     };
 };
 
+export type MistralChatCompletionRequestInput = {
+    model: string;
+    /**
+     * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1186
+     */
+    messages: Array<{
+        content: string | Array<{
+            type: 'text';
+            text: string;
+        }>;
+        role: 'developer';
+        name?: string;
+    } | {
+        content: string | Array<{
+            type: 'text';
+            text: string;
+        }>;
+        role: 'system';
+        name?: string;
+    } | {
+        content: string | Array<{
+            type: 'text';
+            text: string;
+        } | {
+            type: 'image_url';
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L765
+             */
+            image_url: {
+                url: string;
+                detail?: 'auto' | 'low' | 'high';
+            };
+        } | {
+            type: 'input_audio';
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L792
+             */
+            input_audio: {
+                data: string;
+                format: 'wav' | 'mp3';
+            };
+        } | {
+            type: 'file';
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L732
+             */
+            file: {
+                file_data?: string;
+                file_id?: string;
+                filename?: string;
+            };
+        }>;
+        role: 'user';
+        name?: string;
+    } | {
+        role: 'assistant';
+        audio?: {
+            id: string;
+        } | unknown;
+        content?: string | Array<{
+            type: 'text';
+            text: string;
+        }> | Array<{
+            type: 'refusal';
+            refusal: string;
+        }> | unknown;
+        /**
+         * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L431
+         */
+        function_call?: {
+            arguments: string;
+            name: string;
+        } | unknown;
+        name?: string;
+        refusal?: string | unknown;
+        /**
+         * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1197
+         */
+        tool_calls?: Array<{
+            id: string;
+            type: 'function';
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1165
+             */
+            function: {
+                arguments: string;
+                name: string;
+            };
+        } | {
+            id: string;
+            type: 'custom';
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1128
+             */
+            custom: {
+                input: string;
+                name: string;
+            };
+        }>;
+    } | {
+        role: 'tool';
+        content: string | Array<{
+            type: 'text';
+            text: string;
+        } | {
+            type: 'image_url';
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L765
+             */
+            image_url: {
+                url: string;
+                detail?: 'auto' | 'low' | 'high';
+            };
+        }>;
+        tool_call_id: string;
+    } | {
+        role: 'function';
+        content: string | unknown;
+        name: string;
+    }>;
+    /**
+     *
+     * A function tool that can be used to generate a response.
+     *
+     * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1392
+     *
+     */
+    tools?: Array<{
+        type: 'function';
+        /**
+         * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L174
+         */
+        function: {
+            name: string;
+            description?: string;
+            /**
+             *
+             * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
+             *
+             * The parameters the functions accepts, described as a JSON Schema object. See the
+             * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
+             * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+             * documentation about the format.
+             *
+             * Omitting parameters defines a function with an empty parameter list.
+             *
+             */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            strict?: boolean | unknown;
+        };
+    } | {
+        type: 'custom';
+        custom: {
+            /**
+             * The name of the custom tool, used to identify it in tool calls
+             */
+            name: string;
+            /**
+             * Optional description of the custom tool, used to provide more context
+             */
+            description?: string;
+            /**
+             * The input format for the custom tool. Default is unconstrained text.
+             */
+            format?: {
+                /**
+                 * Unconstrained text format. Always `text`
+                 */
+                type: 'text';
+            } | {
+                type: 'grammar';
+                /**
+                 * Your chosen grammar
+                 */
+                grammar: {
+                    /**
+                     * The grammar definition
+                     */
+                    definition: string;
+                    /**
+                     * The syntax of the grammar definition
+                     */
+                    syntax: 'lark' | 'regex';
+                };
+            };
+        };
+    }>;
+    /**
+     * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1405
+     */
+    tool_choice?: 'none' | 'auto' | 'required' | {
+        type: 'allowed_tools';
+        /**
+         * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1455
+         */
+        allowed_tools: {
+            /**
+             *
+             * Constrains the tools available to the model to a pre-defined set.
+             *
+             * auto allows the model to pick from among the allowed tools and generate a
+             * message.
+             *
+             * required requires the model to call one or more of the allowed tools.
+             *
+             */
+            mode: 'auto' | 'required';
+            /**
+             * A list of tool definitions that the model should be allowed to call
+             */
+            tools: Array<{
+                [key: string]: {
+                    type: 'function';
+                    /**
+                     * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L174
+                     */
+                    function: {
+                        name: string;
+                        description?: string;
+                        /**
+                         *
+                         * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
+                         *
+                         * The parameters the functions accepts, described as a JSON Schema object. See the
+                         * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
+                         * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+                         * documentation about the format.
+                         *
+                         * Omitting parameters defines a function with an empty parameter list.
+                         *
+                         */
+                        parameters?: {
+                            [key: string]: unknown;
+                        };
+                        strict?: boolean | unknown;
+                    };
+                };
+            }>;
+        };
+    } | {
+        type: 'function';
+        function: {
+            name: string;
+        };
+    } | {
+        type: 'custom';
+        custom: {
+            /**
+             * The name of the custom tool, used to identify it in tool calls
+             */
+            name: string;
+            /**
+             * Optional description of the custom tool, used to provide more context
+             */
+            description?: string;
+            /**
+             * The input format for the custom tool. Default is unconstrained text.
+             */
+            format?: {
+                /**
+                 * Unconstrained text format. Always `text`
+                 */
+                type: 'text';
+            } | {
+                type: 'grammar';
+                /**
+                 * Your chosen grammar
+                 */
+                grammar: {
+                    /**
+                     * The grammar definition
+                     */
+                    definition: string;
+                    /**
+                     * The syntax of the grammar definition
+                     */
+                    syntax: 'lark' | 'regex';
+                };
+            };
+        };
+    };
+    temperature?: number | unknown;
+    max_tokens?: number | unknown;
+    stream?: boolean | unknown;
+};
+
+export type MistralChatCompletionResponseInput = {
+    id: string;
+    choices: Array<{
+        finish_reason: 'stop' | 'length' | 'tool_calls' | 'content_filter' | 'function_call';
+        index: number;
+        logprobs: unknown;
+        /**
+         * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1000
+         */
+        message: {
+            content: string | unknown;
+            refusal?: string | unknown;
+            role: 'assistant';
+            annotations?: Array<unknown>;
+            audio?: unknown;
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L431
+             */
+            function_call?: {
+                arguments: string;
+                name: string;
+            } | unknown;
+            tool_calls?: Array<{
+                id: string;
+                type: 'function';
+                /**
+                 * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1165
+                 */
+                function: {
+                    arguments: string;
+                    name: string;
+                };
+            } | {
+                id: string;
+                type: 'custom';
+                /**
+                 * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1128
+                 */
+                custom: {
+                    input: string;
+                    name: string;
+                };
+            }> | unknown;
+        };
+    }>;
+    created: number;
+    model: string;
+    object: 'chat.completion';
+    server_tier?: string;
+    system_fingerprint?: string | unknown;
+    /**
+     * https://github.com/openai/openai-node/blob/master/src/resources/completions.ts#L113
+     */
+    usage?: {
+        completion_tokens: number;
+        prompt_tokens: number;
+        total_tokens: number;
+        /**
+         * https://github.com/openai/openai-node/blob/master/src/resources/completions.ts#L144
+         */
+        completion_tokens_details?: unknown;
+        /**
+         * https://github.com/openai/openai-node/blob/master/src/resources/completions.ts#L173
+         */
+        prompt_tokens_details?: unknown;
+    };
+    [key: string]: unknown | string | Array<{
+        finish_reason: 'stop' | 'length' | 'tool_calls' | 'content_filter' | 'function_call';
+        index: number;
+        logprobs: unknown;
+        /**
+         * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1000
+         */
+        message: {
+            content: string | unknown;
+            refusal?: string | unknown;
+            role: 'assistant';
+            annotations?: Array<unknown>;
+            audio?: unknown;
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L431
+             */
+            function_call?: {
+                arguments: string;
+                name: string;
+            } | unknown;
+            tool_calls?: Array<{
+                id: string;
+                type: 'function';
+                /**
+                 * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1165
+                 */
+                function: {
+                    arguments: string;
+                    name: string;
+                };
+            } | {
+                id: string;
+                type: 'custom';
+                /**
+                 * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1128
+                 */
+                custom: {
+                    input: string;
+                    name: string;
+                };
+            }> | unknown;
+        };
+    }> | number | 'chat.completion' | string | unknown | {
+        completion_tokens: number;
+        prompt_tokens: number;
+        total_tokens: number;
+        /**
+         * https://github.com/openai/openai-node/blob/master/src/resources/completions.ts#L144
+         */
+        completion_tokens_details?: unknown;
+        /**
+         * https://github.com/openai/openai-node/blob/master/src/resources/completions.ts#L173
+         */
+        prompt_tokens_details?: unknown;
+    } | undefined;
+};
+
 export type VllmChatCompletionRequestInput = {
     model: string;
     /**
@@ -3045,9 +3453,6 @@ export type OpenAiChatCompletionResponse = {
                 arguments: string;
                 name: string;
             } | unknown;
-            /**
-             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1197
-             */
             tool_calls?: Array<{
                 id: string;
                 type: 'function';
@@ -3068,7 +3473,7 @@ export type OpenAiChatCompletionResponse = {
                     input: string;
                     name: string;
                 };
-            }>;
+            }> | unknown;
         };
     }>;
     created: number;
@@ -4580,6 +4985,417 @@ export type CohereChatResponse = {
             output_tokens?: number;
         };
     };
+};
+
+export type MistralChatCompletionRequest = {
+    model: string;
+    /**
+     * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1186
+     */
+    messages: Array<{
+        content: string | Array<{
+            type: 'text';
+            text: string;
+        }>;
+        role: 'developer';
+        name?: string;
+    } | {
+        content: string | Array<{
+            type: 'text';
+            text: string;
+        }>;
+        role: 'system';
+        name?: string;
+    } | {
+        content: string | Array<{
+            type: 'text';
+            text: string;
+        } | {
+            type: 'image_url';
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L765
+             */
+            image_url: {
+                url: string;
+                detail?: 'auto' | 'low' | 'high';
+            };
+        } | {
+            type: 'input_audio';
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L792
+             */
+            input_audio: {
+                data: string;
+                format: 'wav' | 'mp3';
+            };
+        } | {
+            type: 'file';
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L732
+             */
+            file: {
+                file_data?: string;
+                file_id?: string;
+                filename?: string;
+            };
+        }>;
+        role: 'user';
+        name?: string;
+    } | {
+        role: 'assistant';
+        audio?: {
+            id: string;
+        } | unknown;
+        content?: string | Array<{
+            type: 'text';
+            text: string;
+        }> | Array<{
+            type: 'refusal';
+            refusal: string;
+        }> | unknown;
+        /**
+         * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L431
+         */
+        function_call?: {
+            arguments: string;
+            name: string;
+        } | unknown;
+        name?: string;
+        refusal?: string | unknown;
+        /**
+         * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1197
+         */
+        tool_calls?: Array<{
+            id: string;
+            type: 'function';
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1165
+             */
+            function: {
+                arguments: string;
+                name: string;
+            };
+        } | {
+            id: string;
+            type: 'custom';
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1128
+             */
+            custom: {
+                input: string;
+                name: string;
+            };
+        }>;
+    } | {
+        role: 'tool';
+        content: string | Array<{
+            type: 'text';
+            text: string;
+        } | {
+            type: 'image_url';
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L765
+             */
+            image_url: {
+                url: string;
+                detail?: 'auto' | 'low' | 'high';
+            };
+        }>;
+        tool_call_id: string;
+    } | {
+        role: 'function';
+        content: string | unknown;
+        name: string;
+    }>;
+    /**
+     *
+     * A function tool that can be used to generate a response.
+     *
+     * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1392
+     *
+     */
+    tools?: Array<{
+        type: 'function';
+        /**
+         * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L174
+         */
+        function: {
+            name: string;
+            description?: string;
+            /**
+             *
+             * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
+             *
+             * The parameters the functions accepts, described as a JSON Schema object. See the
+             * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
+             * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+             * documentation about the format.
+             *
+             * Omitting parameters defines a function with an empty parameter list.
+             *
+             */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            strict?: boolean | unknown;
+        };
+    } | {
+        type: 'custom';
+        custom: {
+            /**
+             * The name of the custom tool, used to identify it in tool calls
+             */
+            name: string;
+            /**
+             * Optional description of the custom tool, used to provide more context
+             */
+            description?: string;
+            /**
+             * The input format for the custom tool. Default is unconstrained text.
+             */
+            format?: {
+                /**
+                 * Unconstrained text format. Always `text`
+                 */
+                type: 'text';
+            } | {
+                type: 'grammar';
+                /**
+                 * Your chosen grammar
+                 */
+                grammar: {
+                    /**
+                     * The grammar definition
+                     */
+                    definition: string;
+                    /**
+                     * The syntax of the grammar definition
+                     */
+                    syntax: 'lark' | 'regex';
+                };
+            };
+        };
+    }>;
+    /**
+     * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1405
+     */
+    tool_choice?: 'none' | 'auto' | 'required' | {
+        type: 'allowed_tools';
+        /**
+         * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1455
+         */
+        allowed_tools: {
+            /**
+             *
+             * Constrains the tools available to the model to a pre-defined set.
+             *
+             * auto allows the model to pick from among the allowed tools and generate a
+             * message.
+             *
+             * required requires the model to call one or more of the allowed tools.
+             *
+             */
+            mode: 'auto' | 'required';
+            /**
+             * A list of tool definitions that the model should be allowed to call
+             */
+            tools: Array<{
+                [key: string]: {
+                    type: 'function';
+                    /**
+                     * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L174
+                     */
+                    function: {
+                        name: string;
+                        description?: string;
+                        /**
+                         *
+                         * https://github.com/openai/openai-node/blob/master/src/resources/shared.ts#L217
+                         *
+                         * The parameters the functions accepts, described as a JSON Schema object. See the
+                         * [guide](https://platform.openai.com/docs/guides/function-calling) for examples,
+                         * and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+                         * documentation about the format.
+                         *
+                         * Omitting parameters defines a function with an empty parameter list.
+                         *
+                         */
+                        parameters?: {
+                            [key: string]: unknown;
+                        };
+                        strict?: boolean | unknown;
+                    };
+                };
+            }>;
+        };
+    } | {
+        type: 'function';
+        function: {
+            name: string;
+        };
+    } | {
+        type: 'custom';
+        custom: {
+            /**
+             * The name of the custom tool, used to identify it in tool calls
+             */
+            name: string;
+            /**
+             * Optional description of the custom tool, used to provide more context
+             */
+            description?: string;
+            /**
+             * The input format for the custom tool. Default is unconstrained text.
+             */
+            format?: {
+                /**
+                 * Unconstrained text format. Always `text`
+                 */
+                type: 'text';
+            } | {
+                type: 'grammar';
+                /**
+                 * Your chosen grammar
+                 */
+                grammar: {
+                    /**
+                     * The grammar definition
+                     */
+                    definition: string;
+                    /**
+                     * The syntax of the grammar definition
+                     */
+                    syntax: 'lark' | 'regex';
+                };
+            };
+        };
+    };
+    temperature?: number | unknown;
+    max_tokens?: number | unknown;
+    stream?: boolean | unknown;
+};
+
+export type MistralChatCompletionResponse = {
+    id: string;
+    choices: Array<{
+        finish_reason: 'stop' | 'length' | 'tool_calls' | 'content_filter' | 'function_call';
+        index: number;
+        logprobs: unknown;
+        /**
+         * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1000
+         */
+        message: {
+            content: string | unknown;
+            refusal?: string | unknown;
+            role: 'assistant';
+            annotations?: Array<unknown>;
+            audio?: unknown;
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L431
+             */
+            function_call?: {
+                arguments: string;
+                name: string;
+            } | unknown;
+            tool_calls?: Array<{
+                id: string;
+                type: 'function';
+                /**
+                 * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1165
+                 */
+                function: {
+                    arguments: string;
+                    name: string;
+                };
+            } | {
+                id: string;
+                type: 'custom';
+                /**
+                 * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1128
+                 */
+                custom: {
+                    input: string;
+                    name: string;
+                };
+            }> | unknown;
+        };
+    }>;
+    created: number;
+    model: string;
+    object: 'chat.completion';
+    server_tier?: string;
+    system_fingerprint?: string | unknown;
+    /**
+     * https://github.com/openai/openai-node/blob/master/src/resources/completions.ts#L113
+     */
+    usage?: {
+        completion_tokens: number;
+        prompt_tokens: number;
+        total_tokens: number;
+        /**
+         * https://github.com/openai/openai-node/blob/master/src/resources/completions.ts#L144
+         */
+        completion_tokens_details?: unknown;
+        /**
+         * https://github.com/openai/openai-node/blob/master/src/resources/completions.ts#L173
+         */
+        prompt_tokens_details?: unknown;
+    };
+    [key: string]: unknown | string | Array<{
+        finish_reason: 'stop' | 'length' | 'tool_calls' | 'content_filter' | 'function_call';
+        index: number;
+        logprobs: unknown;
+        /**
+         * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1000
+         */
+        message: {
+            content: string | unknown;
+            refusal?: string | unknown;
+            role: 'assistant';
+            annotations?: Array<unknown>;
+            audio?: unknown;
+            /**
+             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L431
+             */
+            function_call?: {
+                arguments: string;
+                name: string;
+            } | unknown;
+            tool_calls?: Array<{
+                id: string;
+                type: 'function';
+                /**
+                 * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1165
+                 */
+                function: {
+                    arguments: string;
+                    name: string;
+                };
+            } | {
+                id: string;
+                type: 'custom';
+                /**
+                 * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1128
+                 */
+                custom: {
+                    input: string;
+                    name: string;
+                };
+            }> | unknown;
+        };
+    }> | number | 'chat.completion' | string | unknown | {
+        completion_tokens: number;
+        prompt_tokens: number;
+        total_tokens: number;
+        /**
+         * https://github.com/openai/openai-node/blob/master/src/resources/completions.ts#L144
+         */
+        completion_tokens_details?: unknown;
+        /**
+         * https://github.com/openai/openai-node/blob/master/src/resources/completions.ts#L173
+         */
+        prompt_tokens_details?: unknown;
+    } | undefined;
 };
 
 export type VllmChatCompletionRequest = {
@@ -9552,8 +10368,1449 @@ export type BulkUpsertDefaultResultPolicyResponses = {
 
 export type BulkUpsertDefaultResultPolicyResponse = BulkUpsertDefaultResultPolicyResponses[keyof BulkUpsertDefaultResultPolicyResponses];
 
+export type BedrockConverseWithDefaultAgentData = {
+    body: {
+        modelId: string;
+        messages?: Array<{
+            role: 'user' | 'assistant';
+            content: Array<{
+                text: string;
+            } | {
+                image: {
+                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                document: {
+                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                    name: string;
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            } | {
+                toolUse: {
+                    toolUseId: string;
+                    name: string;
+                    input: {
+                        [key: string]: unknown;
+                    };
+                };
+            } | {
+                toolResult: {
+                    toolUseId: string;
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    }>;
+                    status?: 'success' | 'error';
+                };
+            }>;
+        }>;
+        system?: Array<{
+            text: string;
+        } | {
+            guardContent: {
+                text: {
+                    text: string;
+                    qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                };
+            };
+        }>;
+        inferenceConfig?: {
+            maxTokens?: number;
+            temperature?: number;
+            topP?: number;
+            stopSequences?: Array<string>;
+        };
+        toolConfig?: {
+            tools: Array<{
+                toolSpec: {
+                    name: string;
+                    description?: string;
+                    inputSchema: {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            }>;
+            toolChoice?: {
+                auto?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                any?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                tool: {
+                    name: string;
+                };
+            };
+        };
+        guardrailConfig?: {
+            guardrailIdentifier: string;
+            guardrailVersion: string;
+            trace?: 'enabled' | 'disabled';
+        };
+        additionalModelRequestFields?: {
+            [key: string]: unknown;
+        };
+        additionalModelResponseFieldPaths?: Array<string>;
+        promptVariables?: {
+            [key: string]: {
+                text: string;
+            } | {
+                json: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+        requestMetadata?: {
+            [key: string]: string;
+        };
+        _isStreaming?: boolean;
+    };
+    headers?: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Authorization header with Bearer token
+         */
+        authorization?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/v1/bedrock/converse';
+};
+
+export type BedrockConverseWithDefaultAgentErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type BedrockConverseWithDefaultAgentError = BedrockConverseWithDefaultAgentErrors[keyof BedrockConverseWithDefaultAgentErrors];
+
+export type BedrockConverseWithDefaultAgentResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        $metadata?: {
+            httpStatusCode?: number;
+            requestId?: string;
+            attempts?: number;
+            totalRetryDelay?: number;
+        };
+        output: {
+            message?: {
+                role: 'assistant';
+                content: Array<{
+                    text: string;
+                } | {
+                    toolUse: {
+                        toolUseId: string;
+                        name: string;
+                        input: {
+                            [key: string]: unknown;
+                        };
+                    };
+                }>;
+            };
+        };
+        stopReason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'guardrail_intervened' | 'content_filtered' | 'model_context_window_exceeded';
+        usage: {
+            inputTokens: number;
+            outputTokens: number;
+            totalTokens?: number;
+            cacheReadInputTokens?: number;
+            cacheWriteInputTokens?: number;
+        };
+        metrics?: {
+            latencyMs?: number;
+        };
+        additionalModelResponseFields?: {
+            [key: string]: unknown;
+        };
+        trace?: {
+            guardrail?: {
+                inputAssessment?: {
+                    [key: string]: unknown;
+                };
+                outputAssessments?: {
+                    [key: string]: unknown;
+                };
+                modelOutput?: Array<string>;
+                actionReason?: string;
+            };
+            promptRouter?: {
+                invokedModelId?: string;
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+    };
+};
+
+export type BedrockConverseWithDefaultAgentResponse = BedrockConverseWithDefaultAgentResponses[keyof BedrockConverseWithDefaultAgentResponses];
+
+export type BedrockConverseWithAgentData = {
+    body: {
+        modelId: string;
+        messages?: Array<{
+            role: 'user' | 'assistant';
+            content: Array<{
+                text: string;
+            } | {
+                image: {
+                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                document: {
+                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                    name: string;
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            } | {
+                toolUse: {
+                    toolUseId: string;
+                    name: string;
+                    input: {
+                        [key: string]: unknown;
+                    };
+                };
+            } | {
+                toolResult: {
+                    toolUseId: string;
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    }>;
+                    status?: 'success' | 'error';
+                };
+            }>;
+        }>;
+        system?: Array<{
+            text: string;
+        } | {
+            guardContent: {
+                text: {
+                    text: string;
+                    qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                };
+            };
+        }>;
+        inferenceConfig?: {
+            maxTokens?: number;
+            temperature?: number;
+            topP?: number;
+            stopSequences?: Array<string>;
+        };
+        toolConfig?: {
+            tools: Array<{
+                toolSpec: {
+                    name: string;
+                    description?: string;
+                    inputSchema: {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            }>;
+            toolChoice?: {
+                auto?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                any?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                tool: {
+                    name: string;
+                };
+            };
+        };
+        guardrailConfig?: {
+            guardrailIdentifier: string;
+            guardrailVersion: string;
+            trace?: 'enabled' | 'disabled';
+        };
+        additionalModelRequestFields?: {
+            [key: string]: unknown;
+        };
+        additionalModelResponseFieldPaths?: Array<string>;
+        promptVariables?: {
+            [key: string]: {
+                text: string;
+            } | {
+                json: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+        requestMetadata?: {
+            [key: string]: string;
+        };
+        _isStreaming?: boolean;
+    };
+    headers?: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Authorization header with Bearer token
+         */
+        authorization?: string;
+    };
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/v1/bedrock/{agentId}/converse';
+};
+
+export type BedrockConverseWithAgentErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type BedrockConverseWithAgentError = BedrockConverseWithAgentErrors[keyof BedrockConverseWithAgentErrors];
+
+export type BedrockConverseWithAgentResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        $metadata?: {
+            httpStatusCode?: number;
+            requestId?: string;
+            attempts?: number;
+            totalRetryDelay?: number;
+        };
+        output: {
+            message?: {
+                role: 'assistant';
+                content: Array<{
+                    text: string;
+                } | {
+                    toolUse: {
+                        toolUseId: string;
+                        name: string;
+                        input: {
+                            [key: string]: unknown;
+                        };
+                    };
+                }>;
+            };
+        };
+        stopReason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'guardrail_intervened' | 'content_filtered' | 'model_context_window_exceeded';
+        usage: {
+            inputTokens: number;
+            outputTokens: number;
+            totalTokens?: number;
+            cacheReadInputTokens?: number;
+            cacheWriteInputTokens?: number;
+        };
+        metrics?: {
+            latencyMs?: number;
+        };
+        additionalModelResponseFields?: {
+            [key: string]: unknown;
+        };
+        trace?: {
+            guardrail?: {
+                inputAssessment?: {
+                    [key: string]: unknown;
+                };
+                outputAssessments?: {
+                    [key: string]: unknown;
+                };
+                modelOutput?: Array<string>;
+                actionReason?: string;
+            };
+            promptRouter?: {
+                invokedModelId?: string;
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+    };
+};
+
+export type BedrockConverseWithAgentResponse = BedrockConverseWithAgentResponses[keyof BedrockConverseWithAgentResponses];
+
+export type BedrockConverseStreamWithDefaultAgentData = {
+    body: {
+        modelId: string;
+        messages?: Array<{
+            role: 'user' | 'assistant';
+            content: Array<{
+                text: string;
+            } | {
+                image: {
+                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                document: {
+                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                    name: string;
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            } | {
+                toolUse: {
+                    toolUseId: string;
+                    name: string;
+                    input: {
+                        [key: string]: unknown;
+                    };
+                };
+            } | {
+                toolResult: {
+                    toolUseId: string;
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    }>;
+                    status?: 'success' | 'error';
+                };
+            }>;
+        }>;
+        system?: Array<{
+            text: string;
+        } | {
+            guardContent: {
+                text: {
+                    text: string;
+                    qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                };
+            };
+        }>;
+        inferenceConfig?: {
+            maxTokens?: number;
+            temperature?: number;
+            topP?: number;
+            stopSequences?: Array<string>;
+        };
+        toolConfig?: {
+            tools: Array<{
+                toolSpec: {
+                    name: string;
+                    description?: string;
+                    inputSchema: {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            }>;
+            toolChoice?: {
+                auto?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                any?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                tool: {
+                    name: string;
+                };
+            };
+        };
+        guardrailConfig?: {
+            guardrailIdentifier: string;
+            guardrailVersion: string;
+            trace?: 'enabled' | 'disabled';
+        };
+        additionalModelRequestFields?: {
+            [key: string]: unknown;
+        };
+        additionalModelResponseFieldPaths?: Array<string>;
+        promptVariables?: {
+            [key: string]: {
+                text: string;
+            } | {
+                json: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+        requestMetadata?: {
+            [key: string]: string;
+        };
+        _isStreaming?: boolean;
+    };
+    headers?: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Authorization header with Bearer token
+         */
+        authorization?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/v1/bedrock/converse-stream';
+};
+
+export type BedrockConverseStreamWithDefaultAgentResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
+export type BedrockConverseStreamWithAgentData = {
+    body: {
+        modelId: string;
+        messages?: Array<{
+            role: 'user' | 'assistant';
+            content: Array<{
+                text: string;
+            } | {
+                image: {
+                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                document: {
+                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                    name: string;
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            } | {
+                toolUse: {
+                    toolUseId: string;
+                    name: string;
+                    input: {
+                        [key: string]: unknown;
+                    };
+                };
+            } | {
+                toolResult: {
+                    toolUseId: string;
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    }>;
+                    status?: 'success' | 'error';
+                };
+            }>;
+        }>;
+        system?: Array<{
+            text: string;
+        } | {
+            guardContent: {
+                text: {
+                    text: string;
+                    qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                };
+            };
+        }>;
+        inferenceConfig?: {
+            maxTokens?: number;
+            temperature?: number;
+            topP?: number;
+            stopSequences?: Array<string>;
+        };
+        toolConfig?: {
+            tools: Array<{
+                toolSpec: {
+                    name: string;
+                    description?: string;
+                    inputSchema: {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            }>;
+            toolChoice?: {
+                auto?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                any?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                tool: {
+                    name: string;
+                };
+            };
+        };
+        guardrailConfig?: {
+            guardrailIdentifier: string;
+            guardrailVersion: string;
+            trace?: 'enabled' | 'disabled';
+        };
+        additionalModelRequestFields?: {
+            [key: string]: unknown;
+        };
+        additionalModelResponseFieldPaths?: Array<string>;
+        promptVariables?: {
+            [key: string]: {
+                text: string;
+            } | {
+                json: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+        requestMetadata?: {
+            [key: string]: string;
+        };
+        _isStreaming?: boolean;
+    };
+    headers?: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Authorization header with Bearer token
+         */
+        authorization?: string;
+    };
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/v1/bedrock/{agentId}/converse-stream';
+};
+
+export type BedrockConverseStreamWithAgentResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
+export type BedrockConverseWithAgentAndModelData = {
+    body?: {
+        modelId?: string;
+        messages?: Array<{
+            role: 'user' | 'assistant';
+            content: Array<{
+                text: string;
+            } | {
+                image: {
+                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                document: {
+                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                    name: string;
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            } | {
+                toolUse: {
+                    toolUseId: string;
+                    name: string;
+                    input: {
+                        [key: string]: unknown;
+                    };
+                };
+            } | {
+                toolResult: {
+                    toolUseId: string;
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    }>;
+                    status?: 'success' | 'error';
+                };
+            }>;
+        }>;
+        system?: Array<{
+            text: string;
+        } | {
+            guardContent: {
+                text: {
+                    text: string;
+                    qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                };
+            };
+        }>;
+        inferenceConfig?: {
+            maxTokens?: number;
+            temperature?: number;
+            topP?: number;
+            stopSequences?: Array<string>;
+        };
+        toolConfig?: {
+            tools: Array<{
+                toolSpec: {
+                    name: string;
+                    description?: string;
+                    inputSchema: {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            }>;
+            toolChoice?: {
+                auto?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                any?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                tool: {
+                    name: string;
+                };
+            };
+        };
+        guardrailConfig?: {
+            guardrailIdentifier: string;
+            guardrailVersion: string;
+            trace?: 'enabled' | 'disabled';
+        };
+        additionalModelRequestFields?: {
+            [key: string]: unknown;
+        };
+        additionalModelResponseFieldPaths?: Array<string>;
+        promptVariables?: {
+            [key: string]: {
+                text: string;
+            } | {
+                json: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+        requestMetadata?: {
+            [key: string]: string;
+        };
+        _isStreaming?: boolean;
+    };
+    headers?: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Authorization header with Bearer token
+         */
+        authorization?: string;
+    };
+    path: {
+        agentId: string;
+        modelId: string;
+    };
+    query?: never;
+    url: '/v1/bedrock/{agentId}/model/{modelId}/converse';
+};
+
+export type BedrockConverseWithAgentAndModelErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type BedrockConverseWithAgentAndModelError = BedrockConverseWithAgentAndModelErrors[keyof BedrockConverseWithAgentAndModelErrors];
+
+export type BedrockConverseWithAgentAndModelResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        $metadata?: {
+            httpStatusCode?: number;
+            requestId?: string;
+            attempts?: number;
+            totalRetryDelay?: number;
+        };
+        output: {
+            message?: {
+                role: 'assistant';
+                content: Array<{
+                    text: string;
+                } | {
+                    toolUse: {
+                        toolUseId: string;
+                        name: string;
+                        input: {
+                            [key: string]: unknown;
+                        };
+                    };
+                }>;
+            };
+        };
+        stopReason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'guardrail_intervened' | 'content_filtered' | 'model_context_window_exceeded';
+        usage: {
+            inputTokens: number;
+            outputTokens: number;
+            totalTokens?: number;
+            cacheReadInputTokens?: number;
+            cacheWriteInputTokens?: number;
+        };
+        metrics?: {
+            latencyMs?: number;
+        };
+        additionalModelResponseFields?: {
+            [key: string]: unknown;
+        };
+        trace?: {
+            guardrail?: {
+                inputAssessment?: {
+                    [key: string]: unknown;
+                };
+                outputAssessments?: {
+                    [key: string]: unknown;
+                };
+                modelOutput?: Array<string>;
+                actionReason?: string;
+            };
+            promptRouter?: {
+                invokedModelId?: string;
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+    };
+};
+
+export type BedrockConverseWithAgentAndModelResponse = BedrockConverseWithAgentAndModelResponses[keyof BedrockConverseWithAgentAndModelResponses];
+
+export type BedrockConverseStreamWithAgentAndModelData = {
+    body?: {
+        modelId?: string;
+        messages?: Array<{
+            role: 'user' | 'assistant';
+            content: Array<{
+                text: string;
+            } | {
+                image: {
+                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                document: {
+                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                    name: string;
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            } | {
+                toolUse: {
+                    toolUseId: string;
+                    name: string;
+                    input: {
+                        [key: string]: unknown;
+                    };
+                };
+            } | {
+                toolResult: {
+                    toolUseId: string;
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    }>;
+                    status?: 'success' | 'error';
+                };
+            }>;
+        }>;
+        system?: Array<{
+            text: string;
+        } | {
+            guardContent: {
+                text: {
+                    text: string;
+                    qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                };
+            };
+        }>;
+        inferenceConfig?: {
+            maxTokens?: number;
+            temperature?: number;
+            topP?: number;
+            stopSequences?: Array<string>;
+        };
+        toolConfig?: {
+            tools: Array<{
+                toolSpec: {
+                    name: string;
+                    description?: string;
+                    inputSchema: {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            }>;
+            toolChoice?: {
+                auto?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                any?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                tool: {
+                    name: string;
+                };
+            };
+        };
+        guardrailConfig?: {
+            guardrailIdentifier: string;
+            guardrailVersion: string;
+            trace?: 'enabled' | 'disabled';
+        };
+        additionalModelRequestFields?: {
+            [key: string]: unknown;
+        };
+        additionalModelResponseFieldPaths?: Array<string>;
+        promptVariables?: {
+            [key: string]: {
+                text: string;
+            } | {
+                json: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+        requestMetadata?: {
+            [key: string]: string;
+        };
+        _isStreaming?: boolean;
+    };
+    headers?: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Authorization header with Bearer token
+         */
+        authorization?: string;
+    };
+    path: {
+        agentId: string;
+        modelId: string;
+    };
+    query?: never;
+    url: '/v1/bedrock/{agentId}/model/{modelId}/converse-stream';
+};
+
+export type BedrockConverseStreamWithAgentAndModelResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
 export type CerebrasChatCompletionsWithDefaultAgentData = {
-    body?: CerebrasChatCompletionRequestInput;
+    body?: MistralChatCompletionRequestInput;
     headers: {
         /**
          * The user agent of the client
@@ -9638,7 +11895,7 @@ export type CerebrasChatCompletionsWithDefaultAgentResponses = {
 export type CerebrasChatCompletionsWithDefaultAgentResponse = CerebrasChatCompletionsWithDefaultAgentResponses[keyof CerebrasChatCompletionsWithDefaultAgentResponses];
 
 export type CerebrasChatCompletionsWithAgentData = {
-    body?: CerebrasChatCompletionRequestInput;
+    body?: MistralChatCompletionRequestInput;
     headers: {
         /**
          * The user agent of the client
@@ -9798,7 +12055,7 @@ export type GetChatApiKeysResponses = {
         id: string;
         organizationId: string;
         name: string;
-        provider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         secretId: string | null;
         scope: 'personal' | 'team' | 'org_wide';
         userId: string | null;
@@ -9818,7 +12075,7 @@ export type GetChatApiKeysResponse = GetChatApiKeysResponses[keyof GetChatApiKey
 export type CreateChatApiKeyData = {
     body: {
         name: string;
-        provider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         apiKey?: string;
         scope?: 'personal' | 'team' | 'org_wide';
         teamId?: string;
@@ -9897,7 +12154,7 @@ export type CreateChatApiKeyResponses = {
         id: string;
         organizationId: string;
         name: string;
-        provider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         secretId: string | null;
         scope: 'personal' | 'team' | 'org_wide';
         userId: string | null;
@@ -9913,7 +12170,7 @@ export type GetAvailableChatApiKeysData = {
     body?: never;
     path?: never;
     query?: {
-        provider?: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider?: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
     };
     url: '/api/chat-api-keys/available';
 };
@@ -9985,7 +12242,7 @@ export type GetAvailableChatApiKeysResponses = {
         id: string;
         organizationId: string;
         name: string;
-        provider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         secretId: string | null;
         scope: 'personal' | 'team' | 'org_wide';
         userId: string | null;
@@ -10157,7 +12414,7 @@ export type GetChatApiKeyResponses = {
         id: string;
         organizationId: string;
         name: string;
-        provider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         secretId: string | null;
         scope: 'personal' | 'team' | 'org_wide';
         userId: string | null;
@@ -10257,7 +12514,7 @@ export type UpdateChatApiKeyResponses = {
         id: string;
         organizationId: string;
         name: string;
-        provider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         secretId: string | null;
         scope: 'personal' | 'team' | 'org_wide';
         userId: string | null;
@@ -10273,7 +12530,7 @@ export type GetChatModelsData = {
     body?: never;
     path?: never;
     query?: {
-        provider?: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider?: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
     };
     url: '/api/chat/models';
 };
@@ -10344,8 +12601,16 @@ export type GetChatModelsResponses = {
     200: Array<{
         id: string;
         displayName: string;
-        provider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         createdAt?: string;
+        capabilities?: {
+            contextLength: number | null;
+            inputModalities: Array<'text' | 'image' | 'audio' | 'video' | 'pdf'> | null;
+            outputModalities: Array<'text' | 'image' | 'audio'> | null;
+            supportsToolCalling: boolean | null;
+            pricePerMillionInput: string | null;
+            pricePerMillionOutput: string | null;
+        };
     }>;
 };
 
@@ -10578,7 +12843,7 @@ export type GetChatConversationsResponses = {
         chatApiKeyId: string | null;
         title: string | null;
         selectedModel: string;
-        selectedProvider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         hasCustomToolSelection: boolean;
         todoList: string | number | boolean | null | {
             [key: string]: unknown;
@@ -10604,7 +12869,7 @@ export type CreateChatConversationData = {
         agentId: string;
         title?: string | null;
         selectedModel?: string;
-        selectedProvider?: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider?: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         chatApiKeyId?: string | null;
     };
     path?: never;
@@ -10683,7 +12948,7 @@ export type CreateChatConversationResponses = {
         chatApiKeyId: string | null;
         title: string | null;
         selectedModel: string;
-        selectedProvider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         hasCustomToolSelection: boolean;
         todoList: string | number | boolean | null | {
             [key: string]: unknown;
@@ -10863,7 +13128,7 @@ export type GetChatConversationResponses = {
         chatApiKeyId: string | null;
         title: string | null;
         selectedModel: string;
-        selectedProvider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         hasCustomToolSelection: boolean;
         todoList: string | number | boolean | null | {
             [key: string]: unknown;
@@ -10888,7 +13153,7 @@ export type UpdateChatConversationData = {
     body?: {
         title?: string | null;
         selectedModel?: string;
-        selectedProvider?: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider?: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         chatApiKeyId?: string | null;
         agentId?: string;
         artifact?: string | null;
@@ -10971,7 +13236,7 @@ export type UpdateChatConversationResponses = {
         chatApiKeyId: string | null;
         title: string | null;
         selectedModel: string;
-        selectedProvider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         hasCustomToolSelection: boolean;
         todoList: string | number | boolean | null | {
             [key: string]: unknown;
@@ -11160,7 +13425,7 @@ export type GenerateChatConversationTitleResponses = {
         chatApiKeyId: string | null;
         title: string | null;
         selectedModel: string;
-        selectedProvider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         hasCustomToolSelection: boolean;
         todoList: string | number | boolean | null | {
             [key: string]: unknown;
@@ -11265,7 +13530,7 @@ export type UpdateChatMessageResponses = {
         chatApiKeyId: string | null;
         title: string | null;
         selectedModel: string;
-        selectedProvider: 'anthropic' | 'cerebras' | 'gemini' | 'cohere' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         hasCustomToolSelection: boolean;
         todoList: string | number | boolean | null | {
             [key: string]: unknown;
@@ -12691,6 +14956,7 @@ export type GetFeaturesResponses = {
         geminiVertexAiEnabled: boolean;
         vllmEnabled: boolean;
         ollamaEnabled: boolean;
+        mistralEnabled: boolean;
         globalToolPolicy: 'permissive' | 'restrictive';
         browserStreamingEnabled: boolean;
         incomingEmail: {
@@ -13610,8 +15876,8 @@ export type GetInteractionsResponses = {
             userId: string | null;
             sessionId: string | null;
             sessionSource: string | null;
-            request: CerebrasChatCompletionRequest;
-            processedRequest?: CerebrasChatCompletionRequest | null;
+            request: MistralChatCompletionRequest;
+            processedRequest?: MistralChatCompletionRequest | null;
             response: OpenAiChatCompletionResponse;
             type: 'openai:chatCompletions';
             model: string | null;
@@ -13682,10 +15948,426 @@ export type GetInteractionsResponses = {
             userId: string | null;
             sessionId: string | null;
             sessionSource: string | null;
-            request: CerebrasChatCompletionRequest;
-            processedRequest?: CerebrasChatCompletionRequest | null;
+            request: {
+                modelId: string;
+                messages?: Array<{
+                    role: 'user' | 'assistant';
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        guardContent: {
+                            text: {
+                                text: string;
+                                qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                            };
+                        };
+                    } | {
+                        toolUse: {
+                            toolUseId: string;
+                            name: string;
+                            input: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    } | {
+                        toolResult: {
+                            toolUseId: string;
+                            content: Array<{
+                                text: string;
+                            } | {
+                                image: {
+                                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                                    source: {
+                                        bytes: string;
+                                    } | {
+                                        s3Location: {
+                                            uri: string;
+                                            bucketOwner?: string;
+                                        };
+                                    };
+                                };
+                            } | {
+                                json: {
+                                    [key: string]: unknown;
+                                };
+                            } | {
+                                document: {
+                                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                                    name: string;
+                                    source: {
+                                        bytes: string;
+                                    } | {
+                                        s3Location: {
+                                            uri: string;
+                                            bucketOwner?: string;
+                                        };
+                                    };
+                                };
+                            }>;
+                            status?: 'success' | 'error';
+                        };
+                    }>;
+                }>;
+                system?: Array<{
+                    text: string;
+                } | {
+                    guardContent: {
+                        text: {
+                            text: string;
+                            qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                        };
+                    };
+                }>;
+                inferenceConfig?: {
+                    maxTokens?: number;
+                    temperature?: number;
+                    topP?: number;
+                    stopSequences?: Array<string>;
+                };
+                toolConfig?: {
+                    tools: Array<{
+                        toolSpec: {
+                            name: string;
+                            description?: string;
+                            inputSchema: {
+                                json: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    }>;
+                    toolChoice?: {
+                        auto?: {
+                            [key: string]: never;
+                        };
+                    } | {
+                        any?: {
+                            [key: string]: never;
+                        };
+                    } | {
+                        tool: {
+                            name: string;
+                        };
+                    };
+                };
+                guardrailConfig?: {
+                    guardrailIdentifier: string;
+                    guardrailVersion: string;
+                    trace?: 'enabled' | 'disabled';
+                };
+                additionalModelRequestFields?: {
+                    [key: string]: unknown;
+                };
+                additionalModelResponseFieldPaths?: Array<string>;
+                promptVariables?: {
+                    [key: string]: {
+                        text: string;
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+                performanceConfig?: {
+                    latency?: 'optimized';
+                };
+                serviceTier?: {
+                    type?: 'default' | 'throughput';
+                };
+                requestMetadata?: {
+                    [key: string]: string;
+                };
+                _isStreaming?: boolean;
+            };
+            processedRequest?: {
+                modelId: string;
+                messages?: Array<{
+                    role: 'user' | 'assistant';
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        guardContent: {
+                            text: {
+                                text: string;
+                                qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                            };
+                        };
+                    } | {
+                        toolUse: {
+                            toolUseId: string;
+                            name: string;
+                            input: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    } | {
+                        toolResult: {
+                            toolUseId: string;
+                            content: Array<{
+                                text: string;
+                            } | {
+                                image: {
+                                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                                    source: {
+                                        bytes: string;
+                                    } | {
+                                        s3Location: {
+                                            uri: string;
+                                            bucketOwner?: string;
+                                        };
+                                    };
+                                };
+                            } | {
+                                json: {
+                                    [key: string]: unknown;
+                                };
+                            } | {
+                                document: {
+                                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                                    name: string;
+                                    source: {
+                                        bytes: string;
+                                    } | {
+                                        s3Location: {
+                                            uri: string;
+                                            bucketOwner?: string;
+                                        };
+                                    };
+                                };
+                            }>;
+                            status?: 'success' | 'error';
+                        };
+                    }>;
+                }>;
+                system?: Array<{
+                    text: string;
+                } | {
+                    guardContent: {
+                        text: {
+                            text: string;
+                            qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                        };
+                    };
+                }>;
+                inferenceConfig?: {
+                    maxTokens?: number;
+                    temperature?: number;
+                    topP?: number;
+                    stopSequences?: Array<string>;
+                };
+                toolConfig?: {
+                    tools: Array<{
+                        toolSpec: {
+                            name: string;
+                            description?: string;
+                            inputSchema: {
+                                json: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    }>;
+                    toolChoice?: {
+                        auto?: {
+                            [key: string]: never;
+                        };
+                    } | {
+                        any?: {
+                            [key: string]: never;
+                        };
+                    } | {
+                        tool: {
+                            name: string;
+                        };
+                    };
+                };
+                guardrailConfig?: {
+                    guardrailIdentifier: string;
+                    guardrailVersion: string;
+                    trace?: 'enabled' | 'disabled';
+                };
+                additionalModelRequestFields?: {
+                    [key: string]: unknown;
+                };
+                additionalModelResponseFieldPaths?: Array<string>;
+                promptVariables?: {
+                    [key: string]: {
+                        text: string;
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+                performanceConfig?: {
+                    latency?: 'optimized';
+                };
+                serviceTier?: {
+                    type?: 'default' | 'throughput';
+                };
+                requestMetadata?: {
+                    [key: string]: string;
+                };
+                _isStreaming?: boolean;
+            } | null;
+            response: {
+                $metadata?: {
+                    httpStatusCode?: number;
+                    requestId?: string;
+                    attempts?: number;
+                    totalRetryDelay?: number;
+                };
+                output: {
+                    message?: {
+                        role: 'assistant';
+                        content: Array<{
+                            text: string;
+                        } | {
+                            toolUse: {
+                                toolUseId: string;
+                                name: string;
+                                input: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        }>;
+                    };
+                };
+                stopReason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'guardrail_intervened' | 'content_filtered' | 'model_context_window_exceeded';
+                usage: {
+                    inputTokens: number;
+                    outputTokens: number;
+                    totalTokens?: number;
+                    cacheReadInputTokens?: number;
+                    cacheWriteInputTokens?: number;
+                };
+                metrics?: {
+                    latencyMs?: number;
+                };
+                additionalModelResponseFields?: {
+                    [key: string]: unknown;
+                };
+                trace?: {
+                    guardrail?: {
+                        inputAssessment?: {
+                            [key: string]: unknown;
+                        };
+                        outputAssessments?: {
+                            [key: string]: unknown;
+                        };
+                        modelOutput?: Array<string>;
+                        actionReason?: string;
+                    };
+                    promptRouter?: {
+                        invokedModelId?: string;
+                    };
+                };
+                performanceConfig?: {
+                    latency?: 'optimized';
+                };
+                serviceTier?: {
+                    type?: 'default' | 'throughput';
+                };
+            };
+            type: 'bedrock:converse';
+            model: string | null;
+            baselineModel: string | null;
+            inputTokens: number | null;
+            outputTokens: number | null;
+            baselineCost: string | null;
+            cost: string | null;
+            toonTokensBefore: number | null;
+            toonTokensAfter: number | null;
+            toonCostSavings: string | null;
+            toonSkipReason: string | null;
+            createdAt: string;
+            requestType?: 'main' | 'subagent';
+            externalAgentIdLabel?: string | null;
+        } | {
+            id: string;
+            profileId: string;
+            externalAgentId: string | null;
+            userId: string | null;
+            sessionId: string | null;
+            sessionSource: string | null;
+            request: MistralChatCompletionRequest;
+            processedRequest?: MistralChatCompletionRequest | null;
             response: CerebrasChatCompletionResponse;
             type: 'cerebras:chatCompletions';
+            model: string | null;
+            baselineModel: string | null;
+            inputTokens: number | null;
+            outputTokens: number | null;
+            baselineCost: string | null;
+            cost: string | null;
+            toonTokensBefore: number | null;
+            toonTokensAfter: number | null;
+            toonCostSavings: string | null;
+            toonSkipReason: string | null;
+            createdAt: string;
+            requestType?: 'main' | 'subagent';
+            externalAgentIdLabel?: string | null;
+        } | {
+            id: string;
+            profileId: string;
+            externalAgentId: string | null;
+            userId: string | null;
+            sessionId: string | null;
+            sessionSource: string | null;
+            request: MistralChatCompletionRequest;
+            processedRequest?: MistralChatCompletionRequest | null;
+            response: MistralChatCompletionResponse;
+            type: 'mistral:chatCompletions';
             model: string | null;
             baselineModel: string | null;
             inputTokens: number | null;
@@ -14180,8 +16862,8 @@ export type GetInteractionResponses = {
         userId: string | null;
         sessionId: string | null;
         sessionSource: string | null;
-        request: CerebrasChatCompletionRequest;
-        processedRequest?: CerebrasChatCompletionRequest | null;
+        request: MistralChatCompletionRequest;
+        processedRequest?: MistralChatCompletionRequest | null;
         response: OpenAiChatCompletionResponse;
         type: 'openai:chatCompletions';
         model: string | null;
@@ -14252,10 +16934,426 @@ export type GetInteractionResponses = {
         userId: string | null;
         sessionId: string | null;
         sessionSource: string | null;
-        request: CerebrasChatCompletionRequest;
-        processedRequest?: CerebrasChatCompletionRequest | null;
+        request: {
+            modelId: string;
+            messages?: Array<{
+                role: 'user' | 'assistant';
+                content: Array<{
+                    text: string;
+                } | {
+                    image: {
+                        format: 'png' | 'jpeg' | 'gif' | 'webp';
+                        source: {
+                            bytes: string;
+                        } | {
+                            s3Location: {
+                                uri: string;
+                                bucketOwner?: string;
+                            };
+                        };
+                    };
+                } | {
+                    document: {
+                        format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                        name: string;
+                        source: {
+                            bytes: string;
+                        } | {
+                            s3Location: {
+                                uri: string;
+                                bucketOwner?: string;
+                            };
+                        };
+                    };
+                } | {
+                    guardContent: {
+                        text: {
+                            text: string;
+                            qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                        };
+                    };
+                } | {
+                    toolUse: {
+                        toolUseId: string;
+                        name: string;
+                        input: {
+                            [key: string]: unknown;
+                        };
+                    };
+                } | {
+                    toolResult: {
+                        toolUseId: string;
+                        content: Array<{
+                            text: string;
+                        } | {
+                            image: {
+                                format: 'png' | 'jpeg' | 'gif' | 'webp';
+                                source: {
+                                    bytes: string;
+                                } | {
+                                    s3Location: {
+                                        uri: string;
+                                        bucketOwner?: string;
+                                    };
+                                };
+                            };
+                        } | {
+                            json: {
+                                [key: string]: unknown;
+                            };
+                        } | {
+                            document: {
+                                format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                                name: string;
+                                source: {
+                                    bytes: string;
+                                } | {
+                                    s3Location: {
+                                        uri: string;
+                                        bucketOwner?: string;
+                                    };
+                                };
+                            };
+                        }>;
+                        status?: 'success' | 'error';
+                    };
+                }>;
+            }>;
+            system?: Array<{
+                text: string;
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            }>;
+            inferenceConfig?: {
+                maxTokens?: number;
+                temperature?: number;
+                topP?: number;
+                stopSequences?: Array<string>;
+            };
+            toolConfig?: {
+                tools: Array<{
+                    toolSpec: {
+                        name: string;
+                        description?: string;
+                        inputSchema: {
+                            json: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                }>;
+                toolChoice?: {
+                    auto?: {
+                        [key: string]: never;
+                    };
+                } | {
+                    any?: {
+                        [key: string]: never;
+                    };
+                } | {
+                    tool: {
+                        name: string;
+                    };
+                };
+            };
+            guardrailConfig?: {
+                guardrailIdentifier: string;
+                guardrailVersion: string;
+                trace?: 'enabled' | 'disabled';
+            };
+            additionalModelRequestFields?: {
+                [key: string]: unknown;
+            };
+            additionalModelResponseFieldPaths?: Array<string>;
+            promptVariables?: {
+                [key: string]: {
+                    text: string;
+                } | {
+                    json: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            performanceConfig?: {
+                latency?: 'optimized';
+            };
+            serviceTier?: {
+                type?: 'default' | 'throughput';
+            };
+            requestMetadata?: {
+                [key: string]: string;
+            };
+            _isStreaming?: boolean;
+        };
+        processedRequest?: {
+            modelId: string;
+            messages?: Array<{
+                role: 'user' | 'assistant';
+                content: Array<{
+                    text: string;
+                } | {
+                    image: {
+                        format: 'png' | 'jpeg' | 'gif' | 'webp';
+                        source: {
+                            bytes: string;
+                        } | {
+                            s3Location: {
+                                uri: string;
+                                bucketOwner?: string;
+                            };
+                        };
+                    };
+                } | {
+                    document: {
+                        format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                        name: string;
+                        source: {
+                            bytes: string;
+                        } | {
+                            s3Location: {
+                                uri: string;
+                                bucketOwner?: string;
+                            };
+                        };
+                    };
+                } | {
+                    guardContent: {
+                        text: {
+                            text: string;
+                            qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                        };
+                    };
+                } | {
+                    toolUse: {
+                        toolUseId: string;
+                        name: string;
+                        input: {
+                            [key: string]: unknown;
+                        };
+                    };
+                } | {
+                    toolResult: {
+                        toolUseId: string;
+                        content: Array<{
+                            text: string;
+                        } | {
+                            image: {
+                                format: 'png' | 'jpeg' | 'gif' | 'webp';
+                                source: {
+                                    bytes: string;
+                                } | {
+                                    s3Location: {
+                                        uri: string;
+                                        bucketOwner?: string;
+                                    };
+                                };
+                            };
+                        } | {
+                            json: {
+                                [key: string]: unknown;
+                            };
+                        } | {
+                            document: {
+                                format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                                name: string;
+                                source: {
+                                    bytes: string;
+                                } | {
+                                    s3Location: {
+                                        uri: string;
+                                        bucketOwner?: string;
+                                    };
+                                };
+                            };
+                        }>;
+                        status?: 'success' | 'error';
+                    };
+                }>;
+            }>;
+            system?: Array<{
+                text: string;
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            }>;
+            inferenceConfig?: {
+                maxTokens?: number;
+                temperature?: number;
+                topP?: number;
+                stopSequences?: Array<string>;
+            };
+            toolConfig?: {
+                tools: Array<{
+                    toolSpec: {
+                        name: string;
+                        description?: string;
+                        inputSchema: {
+                            json: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                }>;
+                toolChoice?: {
+                    auto?: {
+                        [key: string]: never;
+                    };
+                } | {
+                    any?: {
+                        [key: string]: never;
+                    };
+                } | {
+                    tool: {
+                        name: string;
+                    };
+                };
+            };
+            guardrailConfig?: {
+                guardrailIdentifier: string;
+                guardrailVersion: string;
+                trace?: 'enabled' | 'disabled';
+            };
+            additionalModelRequestFields?: {
+                [key: string]: unknown;
+            };
+            additionalModelResponseFieldPaths?: Array<string>;
+            promptVariables?: {
+                [key: string]: {
+                    text: string;
+                } | {
+                    json: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            performanceConfig?: {
+                latency?: 'optimized';
+            };
+            serviceTier?: {
+                type?: 'default' | 'throughput';
+            };
+            requestMetadata?: {
+                [key: string]: string;
+            };
+            _isStreaming?: boolean;
+        } | null;
+        response: {
+            $metadata?: {
+                httpStatusCode?: number;
+                requestId?: string;
+                attempts?: number;
+                totalRetryDelay?: number;
+            };
+            output: {
+                message?: {
+                    role: 'assistant';
+                    content: Array<{
+                        text: string;
+                    } | {
+                        toolUse: {
+                            toolUseId: string;
+                            name: string;
+                            input: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    }>;
+                };
+            };
+            stopReason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'guardrail_intervened' | 'content_filtered' | 'model_context_window_exceeded';
+            usage: {
+                inputTokens: number;
+                outputTokens: number;
+                totalTokens?: number;
+                cacheReadInputTokens?: number;
+                cacheWriteInputTokens?: number;
+            };
+            metrics?: {
+                latencyMs?: number;
+            };
+            additionalModelResponseFields?: {
+                [key: string]: unknown;
+            };
+            trace?: {
+                guardrail?: {
+                    inputAssessment?: {
+                        [key: string]: unknown;
+                    };
+                    outputAssessments?: {
+                        [key: string]: unknown;
+                    };
+                    modelOutput?: Array<string>;
+                    actionReason?: string;
+                };
+                promptRouter?: {
+                    invokedModelId?: string;
+                };
+            };
+            performanceConfig?: {
+                latency?: 'optimized';
+            };
+            serviceTier?: {
+                type?: 'default' | 'throughput';
+            };
+        };
+        type: 'bedrock:converse';
+        model: string | null;
+        baselineModel: string | null;
+        inputTokens: number | null;
+        outputTokens: number | null;
+        baselineCost: string | null;
+        cost: string | null;
+        toonTokensBefore: number | null;
+        toonTokensAfter: number | null;
+        toonCostSavings: string | null;
+        toonSkipReason: string | null;
+        createdAt: string;
+        requestType?: 'main' | 'subagent';
+        externalAgentIdLabel?: string | null;
+    } | {
+        id: string;
+        profileId: string;
+        externalAgentId: string | null;
+        userId: string | null;
+        sessionId: string | null;
+        sessionSource: string | null;
+        request: MistralChatCompletionRequest;
+        processedRequest?: MistralChatCompletionRequest | null;
         response: CerebrasChatCompletionResponse;
         type: 'cerebras:chatCompletions';
+        model: string | null;
+        baselineModel: string | null;
+        inputTokens: number | null;
+        outputTokens: number | null;
+        baselineCost: string | null;
+        cost: string | null;
+        toonTokensBefore: number | null;
+        toonTokensAfter: number | null;
+        toonCostSavings: string | null;
+        toonSkipReason: string | null;
+        createdAt: string;
+        requestType?: 'main' | 'subagent';
+        externalAgentIdLabel?: string | null;
+    } | {
+        id: string;
+        profileId: string;
+        externalAgentId: string | null;
+        userId: string | null;
+        sessionId: string | null;
+        sessionSource: string | null;
+        request: MistralChatCompletionRequest;
+        processedRequest?: MistralChatCompletionRequest | null;
+        response: MistralChatCompletionResponse;
+        type: 'mistral:chatCompletions';
         model: string | null;
         baselineModel: string | null;
         inputTokens: number | null;
@@ -18409,6 +21507,178 @@ export type GetMcpToolCallResponses = {
 
 export type GetMcpToolCallResponse = GetMcpToolCallResponses[keyof GetMcpToolCallResponses];
 
+export type MistralChatCompletionsWithDefaultAgentData = {
+    body?: MistralChatCompletionRequestInput;
+    headers: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Bearer token for OpenAI
+         */
+        authorization: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/v1/mistral/chat/completions';
+};
+
+export type MistralChatCompletionsWithDefaultAgentErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type MistralChatCompletionsWithDefaultAgentError = MistralChatCompletionsWithDefaultAgentErrors[keyof MistralChatCompletionsWithDefaultAgentErrors];
+
+export type MistralChatCompletionsWithDefaultAgentResponses = {
+    /**
+     * Default Response
+     */
+    200: MistralChatCompletionResponse;
+};
+
+export type MistralChatCompletionsWithDefaultAgentResponse = MistralChatCompletionsWithDefaultAgentResponses[keyof MistralChatCompletionsWithDefaultAgentResponses];
+
+export type MistralChatCompletionsWithAgentData = {
+    body?: MistralChatCompletionRequestInput;
+    headers: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Bearer token for OpenAI
+         */
+        authorization: string;
+    };
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/v1/mistral/{agentId}/chat/completions';
+};
+
+export type MistralChatCompletionsWithAgentErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type MistralChatCompletionsWithAgentError = MistralChatCompletionsWithAgentErrors[keyof MistralChatCompletionsWithAgentErrors];
+
+export type MistralChatCompletionsWithAgentResponses = {
+    /**
+     * Default Response
+     */
+    200: MistralChatCompletionResponse;
+};
+
+export type MistralChatCompletionsWithAgentResponse = MistralChatCompletionsWithAgentResponses[keyof MistralChatCompletionsWithAgentResponses];
+
 export type InitiateOAuthData = {
     body: {
         catalogId: string;
@@ -18749,7 +22019,7 @@ export type OllamaChatCompletionsWithAgentResponses = {
 export type OllamaChatCompletionsWithAgentResponse = OllamaChatCompletionsWithAgentResponses[keyof OllamaChatCompletionsWithAgentResponses];
 
 export type OpenAiChatCompletionsWithDefaultAgentData = {
-    body?: CerebrasChatCompletionRequestInput;
+    body?: MistralChatCompletionRequestInput;
     headers: {
         /**
          * The user agent of the client
@@ -18834,7 +22104,7 @@ export type OpenAiChatCompletionsWithDefaultAgentResponses = {
 export type OpenAiChatCompletionsWithDefaultAgentResponse = OpenAiChatCompletionsWithDefaultAgentResponses[keyof OpenAiChatCompletionsWithDefaultAgentResponses];
 
 export type OpenAiChatCompletionsWithAgentData = {
-    body?: CerebrasChatCompletionRequestInput;
+    body?: MistralChatCompletionRequestInput;
     headers: {
         /**
          * The user agent of the client
@@ -18999,7 +22269,7 @@ export type GetOptimizationRulesResponses = {
         } | {
             hasTools: boolean;
         }>;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         targetModel: string;
         enabled: boolean;
         createdAt: string;
@@ -19019,7 +22289,7 @@ export type CreateOptimizationRuleData = {
         } | {
             hasTools: boolean;
         }>;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         targetModel: string;
         enabled?: boolean;
         createdAt?: unknown;
@@ -19102,7 +22372,7 @@ export type CreateOptimizationRuleResponses = {
         } | {
             hasTools: boolean;
         }>;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         targetModel: string;
         enabled: boolean;
         createdAt: string;
@@ -19201,7 +22471,7 @@ export type UpdateOptimizationRuleData = {
         } | {
             hasTools: boolean;
         }>;
-        provider?: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'vllm' | 'ollama' | 'zhipuai';
+        provider?: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         targetModel?: string;
         enabled?: boolean;
         createdAt?: unknown;
@@ -19286,7 +22556,7 @@ export type UpdateOptimizationRuleResponses = {
         } | {
             hasTools: boolean;
         }>;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         targetModel: string;
         enabled: boolean;
         createdAt: string;
@@ -21963,7 +25233,7 @@ export type GetTokenPricesResponses = {
      */
     200: Array<{
         id: string;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
@@ -21976,7 +25246,7 @@ export type GetTokenPricesResponse = GetTokenPricesResponses[keyof GetTokenPrice
 
 export type CreateTokenPriceData = {
     body: {
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
@@ -22051,7 +25321,7 @@ export type CreateTokenPriceResponses = {
      */
     200: {
         id: string;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
@@ -22215,7 +25485,7 @@ export type GetTokenPriceResponses = {
      */
     200: {
         id: string;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
@@ -22228,7 +25498,7 @@ export type GetTokenPriceResponse = GetTokenPriceResponses[keyof GetTokenPriceRe
 
 export type UpdateTokenPriceData = {
     body?: {
-        provider?: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'vllm' | 'ollama' | 'zhipuai';
+        provider?: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         model?: string;
         pricePerMillionInput?: string;
         pricePerMillionOutput?: string;
@@ -22305,7 +25575,7 @@ export type UpdateTokenPriceResponses = {
      */
     200: {
         id: string;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
