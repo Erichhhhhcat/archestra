@@ -25,7 +25,7 @@ export function useUpdateChatMessage(conversationId: string) {
       });
 
       if (error) {
-        showErrorToastFromApiError(error, "Failed to update message");
+        showErrorToastFromApiError(error);
         return null;
       }
 

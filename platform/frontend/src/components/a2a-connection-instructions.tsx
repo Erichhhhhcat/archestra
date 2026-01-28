@@ -145,10 +145,7 @@ export function A2AConnectionInstructions({
       // Fetch personal token value
       const response = await archestraApiSdk.getUserTokenValue();
       if (response.error || !response.data) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to fetch personal token value",
-        );
+        showErrorToastFromApiError(response.error);
         setIsLoadingToken(false);
         return;
       }
@@ -163,7 +160,7 @@ export function A2AConnectionInstructions({
         path: { tokenId: selectedTeamToken.id },
       });
       if (response.error || !response.data) {
-        showErrorToastFromApiError(response.error, "Failed to fetch token");
+        showErrorToastFromApiError(response.error);
         setIsLoadingToken(false);
         return;
       }

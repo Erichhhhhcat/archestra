@@ -296,10 +296,7 @@ export function McpConnectionInstructions({
       // Fetch personal token value
       const response = await archestraApiSdk.getUserTokenValue();
       if (response.error || !response.data) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to fetch personal token value",
-        );
+        showErrorToastFromApiError(response.error);
         setIsLoadingToken(false);
         return;
       }
@@ -314,7 +311,7 @@ export function McpConnectionInstructions({
         path: { tokenId: selectedTeamToken.id },
       });
       if (response.error || !response.data) {
-        showErrorToastFromApiError(response.error, "Failed to fetch token");
+        showErrorToastFromApiError(response.error);
         setIsLoadingToken(false);
         return;
       }
@@ -356,10 +353,7 @@ export function McpConnectionInstructions({
       // Fetch personal token value
       const response = await archestraApiSdk.getUserTokenValue();
       if (response.error || !response.data) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to fetch personal token value",
-        );
+        showErrorToastFromApiError(response.error);
         setIsCopyingConfig(false);
         return;
       }
@@ -374,7 +368,7 @@ export function McpConnectionInstructions({
         path: { tokenId: selectedTeamToken.id },
       });
       if (response.error || !response.data) {
-        showErrorToastFromApiError(response.error, "Failed to fetch token");
+        showErrorToastFromApiError(response.error);
         setIsCopyingConfig(false);
         return;
       }

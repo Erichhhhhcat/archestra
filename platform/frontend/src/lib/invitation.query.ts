@@ -27,7 +27,7 @@ export function useInvitationCheck(invitationId: string | null | undefined) {
 
       if (!response.ok) {
         const error = await response.json();
-        showErrorToastFromApiError(error, "Failed to check invitation");
+        showErrorToastFromApiError(error);
         return null;
       }
 

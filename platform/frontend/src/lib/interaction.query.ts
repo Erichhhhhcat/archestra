@@ -81,10 +81,7 @@ export function useInteractions({
         },
       });
       if (response.error) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to fetch interactions",
-        );
+        showErrorToastFromApiError(response.error);
         return defaultResponse;
       }
       return response.data ?? defaultResponse;
@@ -121,10 +118,7 @@ export function useInteraction({
     queryFn: async () => {
       const response = await getInteraction({ path: { interactionId } });
       if (response.error) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to fetch interaction",
-        );
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data ?? null;
@@ -140,10 +134,7 @@ export function useUniqueExternalAgentIds() {
     queryFn: async () => {
       const response = await getUniqueExternalAgentIds();
       if (response.error) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to fetch external agent IDs",
-        );
+        showErrorToastFromApiError(response.error);
         return [];
       }
       return response.data ?? [];
@@ -157,7 +148,7 @@ export function useUniqueUserIds() {
     queryFn: async () => {
       const response = await getUniqueUserIds();
       if (response.error) {
-        showErrorToastFromApiError(response.error, "Failed to fetch user IDs");
+        showErrorToastFromApiError(response.error);
         return [];
       }
       return response.data ?? [];
@@ -226,7 +217,7 @@ export function useInteractionSessions({
         },
       });
       if (response.error) {
-        showErrorToastFromApiError(response.error, "Failed to fetch sessions");
+        showErrorToastFromApiError(response.error);
         return defaultResponse;
       }
       return response.data ?? defaultResponse;

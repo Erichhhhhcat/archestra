@@ -195,10 +195,7 @@ export function useCreateInvitation(organizationId: string | undefined) {
       });
 
       if (response.error) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to generate invitation link",
-        );
+        showErrorToastFromApiError(response.error);
         return null;
       }
 
@@ -243,10 +240,7 @@ export function useOrganizationOnboardingStatus(enabled: boolean) {
       const { data, error } = await archestraApiSdk.getOnboardingStatus();
 
       if (error || !data) {
-        showErrorToastFromApiError(
-          error,
-          "Failed to fetch organization onboarding status",
-        );
+        showErrorToastFromApiError(error);
         return null;
       }
 
@@ -273,7 +267,7 @@ export function useUpdateOrganization(
         await archestraApiSdk.updateOrganization({ body: data });
 
       if (error || !updatedOrganization) {
-        showErrorToastFromApiError(error, onErrorMessage);
+        showErrorToastFromApiError(error);
         return null;
       }
 

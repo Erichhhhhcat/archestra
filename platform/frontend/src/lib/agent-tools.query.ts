@@ -295,10 +295,7 @@ export function useAutoConfigurePolicies() {
       });
 
       if (result.error || !result.data) {
-        showErrorToastFromApiError(
-          result.error,
-          "Failed to auto-configure policies",
-        );
+        showErrorToastFromApiError(result.error);
         return null;
       }
 
@@ -389,7 +386,7 @@ export function useSyncAgentDelegations() {
         body: { targetAgentIds },
       });
       if (response.error) {
-        showErrorToastFromApiError(response.error, "Failed to sync delegations");
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data;
@@ -434,10 +431,7 @@ export function useRemoveAgentDelegation() {
         path: { agentId, targetAgentId },
       });
       if (response.error) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to remove delegation",
-        );
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data;

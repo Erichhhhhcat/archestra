@@ -26,10 +26,7 @@ export function useUserToken() {
     queryFn: async () => {
       const response = await getUserToken();
       if (response.error || !response.data) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to fetch personal token",
-        );
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data as UserToken;

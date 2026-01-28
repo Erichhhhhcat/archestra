@@ -50,7 +50,7 @@ export function useCreateRole() {
     mutationFn: async (data: archestraApiTypes.CreateRoleData["body"]) => {
       const response = await createRole({ body: data });
       if (response.error) {
-        showErrorToastFromApiError(response.error, "Failed to create role");
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data;
@@ -81,7 +81,7 @@ export function useUpdateRole() {
         body: data,
       });
       if (response.error) {
-        showErrorToastFromApiError(response.error, "Failed to update role");
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data;
@@ -106,7 +106,7 @@ export function useDeleteRole() {
     mutationFn: async (roleId: string) => {
       const response = await deleteRole({ path: { roleId } });
       if (response.error) {
-        showErrorToastFromApiError(response.error, "Failed to delete role");
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data;

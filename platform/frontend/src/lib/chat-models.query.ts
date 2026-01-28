@@ -29,7 +29,7 @@ export function useChatModels() {
     queryFn: async () => {
       const { data, error } = await getChatModels();
       if (error) {
-        showErrorToastFromApiError(error, "Failed to fetch chat models");
+        showErrorToastFromApiError(error);
         return [] as ChatModel[];
       }
       return (data ?? []) as ChatModel[];

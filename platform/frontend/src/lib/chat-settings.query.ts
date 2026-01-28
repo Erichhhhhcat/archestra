@@ -27,7 +27,7 @@ export function useChatApiKeys() {
     queryFn: async () => {
       const { data, error } = await getChatApiKeys();
       if (error) {
-        showErrorToastFromApiError(error, "Failed to fetch chat API keys");
+        showErrorToastFromApiError(error);
         return [];
       }
       return data ?? [];
@@ -43,10 +43,7 @@ export function useAvailableChatApiKeys(provider?: SupportedChatProvider) {
         query: provider ? { provider } : undefined,
       });
       if (error) {
-        showErrorToastFromApiError(
-          error,
-          "Failed to fetch available chat API keys",
-        );
+        showErrorToastFromApiError(error);
         return [];
       }
       return data ?? [];
@@ -64,7 +61,7 @@ export function useCreateChatApiKey() {
         body: data,
       });
       if (error) {
-        showErrorToastFromApiError(error, "Failed to create API key");
+        showErrorToastFromApiError(error);
         return null;
       }
       return responseData;
@@ -94,7 +91,7 @@ export function useUpdateChatApiKey() {
         body: data,
       });
       if (error) {
-        showErrorToastFromApiError(error, "Failed to update API key");
+        showErrorToastFromApiError(error);
         return null;
       }
       return responseData;
@@ -116,7 +113,7 @@ export function useDeleteChatApiKey() {
         path: { id },
       });
       if (error) {
-        showErrorToastFromApiError(error, "Failed to delete API key");
+        showErrorToastFromApiError(error);
         return null;
       }
       return responseData;

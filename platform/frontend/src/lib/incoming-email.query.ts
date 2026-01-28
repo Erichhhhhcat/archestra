@@ -24,10 +24,7 @@ export function useIncomingEmailStatus() {
     queryFn: async () => {
       const { data, error } = await getIncomingEmailStatus();
       if (error) {
-        showErrorToastFromApiError(
-          error,
-          "Failed to fetch incoming email status",
-        );
+        showErrorToastFromApiError(error);
         return null;
       }
       return data as archestraApiTypes.GetIncomingEmailStatusResponses["200"];
@@ -44,7 +41,7 @@ export function useSetupIncomingEmailWebhook() {
         body: { webhookUrl },
       });
       if (response.error) {
-        showErrorToastFromApiError(response.error, "Failed to setup webhook");
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data as archestraApiTypes.SetupIncomingEmailWebhookResponses["200"];
@@ -64,10 +61,7 @@ export function useRenewIncomingEmailSubscription() {
     mutationFn: async () => {
       const response = await renewIncomingEmailSubscription();
       if (response.error) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to renew subscription",
-        );
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data as archestraApiTypes.RenewIncomingEmailSubscriptionResponses["200"];
@@ -87,10 +81,7 @@ export function useDeleteIncomingEmailSubscription() {
     mutationFn: async () => {
       const response = await deleteIncomingEmailSubscription();
       if (response.error) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to delete subscription",
-        );
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data as archestraApiTypes.DeleteIncomingEmailSubscriptionResponses["200"];
@@ -116,10 +107,7 @@ export function useAgentEmailAddress(agentId: string | null) {
         path: { agentId },
       });
       if (error) {
-        showErrorToastFromApiError(
-          error,
-          "Failed to fetch agent email address",
-        );
+        showErrorToastFromApiError(error);
         return null;
       }
       return data as archestraApiTypes.GetAgentEmailAddressResponses["200"];

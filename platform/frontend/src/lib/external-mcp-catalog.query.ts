@@ -38,10 +38,7 @@ export function useMcpRegistryServersInfinite(
         },
       });
       if (response.error || !response.data) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to fetch servers from catalog",
-        );
+        showErrorToastFromApiError(response.error);
         return undefined;
       }
       return response.data;
@@ -84,10 +81,7 @@ export function useMcpServerCategories() {
     > => {
       const response = await archestraCatalogSdk.getMcpServerCategories();
       if (response.error || !response.data) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to fetch categories from catalog",
-        );
+        showErrorToastFromApiError(response.error);
         return [];
       }
       return response.data.categories;

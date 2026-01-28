@@ -30,7 +30,7 @@ export function useGetSecret(secretId: string | null | undefined) {
       }
       const response = await getSecret({ path: { id: secretId } });
       if (response.error) {
-        showErrorToastFromApiError(response.error, "Failed to fetch secret");
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data;
@@ -44,10 +44,7 @@ export function useCheckSecretsConnectivity() {
     mutationFn: async () => {
       const response = await checkSecretsConnectivity();
       if (response.error) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to check secrets connectivity",
-        );
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data as archestraApiTypes.CheckSecretsConnectivityResponses["200"];

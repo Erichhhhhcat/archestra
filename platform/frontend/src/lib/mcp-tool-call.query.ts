@@ -67,10 +67,7 @@ export function useMcpToolCalls({
         },
       });
       if (response.error) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to fetch MCP tool calls",
-        );
+        showErrorToastFromApiError(response.error);
         return defaultResponse;
       }
       return response.data ?? defaultResponse;
@@ -101,10 +98,7 @@ export function useMcpToolCall({
     queryFn: async () => {
       const response = await getMcpToolCall({ path: { mcpToolCallId } });
       if (response.error) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to fetch MCP tool call",
-        );
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data ?? null;

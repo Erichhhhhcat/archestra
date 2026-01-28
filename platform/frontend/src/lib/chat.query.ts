@@ -34,10 +34,7 @@ export function useConversation(conversationId?: string) {
         // Only show toast for non-404/400 errors (those are expected for invalid/not found)
         const status = response.response.status;
         if (status !== 400 && status !== 404) {
-          showErrorToastFromApiError(
-            response.error,
-            "Failed to fetch conversation",
-          );
+          showErrorToastFromApiError(response.error);
         }
         return null;
       }
@@ -69,7 +66,7 @@ export function useConversations({
       });
 
       if (error) {
-        showErrorToastFromApiError(error, "Failed to fetch conversations");
+        showErrorToastFromApiError(error);
         return [];
       }
       return data;
@@ -104,7 +101,7 @@ export function useCreateConversation() {
         },
       });
       if (error) {
-        showErrorToastFromApiError(error, "Failed to create conversation");
+        showErrorToastFromApiError(error);
         return null;
       }
       return data;
@@ -146,7 +143,7 @@ export function useUpdateConversation() {
         body: { title, selectedModel, selectedProvider, chatApiKeyId, agentId },
       });
       if (error) {
-        showErrorToastFromApiError(error, "Failed to update conversation");
+        showErrorToastFromApiError(error);
         return null;
       }
       return data;
@@ -172,7 +169,7 @@ export function useDeleteConversation() {
         path: { id },
       });
       if (error) {
-        showErrorToastFromApiError(error, "Failed to delete conversation");
+        showErrorToastFromApiError(error);
         return null;
       }
       return data;
@@ -202,10 +199,7 @@ export function useGenerateConversationTitle() {
         body: { regenerate },
       });
       if (error) {
-        showErrorToastFromApiError(
-          error,
-          "Failed to generate conversation title",
-        );
+        showErrorToastFromApiError(error);
         return null;
       }
       return data;
@@ -229,7 +223,7 @@ export function useChatProfileMcpTools(agentId: string | undefined) {
         path: { agentId },
       });
       if (error) {
-        showErrorToastFromApiError(error, "Failed to fetch MCP tools");
+        showErrorToastFromApiError(error);
         return [];
       }
       return data;
@@ -256,7 +250,7 @@ export function useConversationEnabledTools(
         path: { id: conversationId },
       });
       if (error) {
-        showErrorToastFromApiError(error, "Failed to fetch enabled tools");
+        showErrorToastFromApiError(error);
         return null;
       }
       return data;
@@ -287,7 +281,7 @@ export function useUpdateConversationEnabledTools() {
         body: { toolIds },
       });
       if (error) {
-        showErrorToastFromApiError(error, "Failed to update enabled tools");
+        showErrorToastFromApiError(error);
         return null;
       }
       return data;
@@ -313,7 +307,7 @@ export function useClearConversationEnabledTools() {
         path: { id: conversationId },
       });
       if (error) {
-        showErrorToastFromApiError(error, "Failed to clear enabled tools");
+        showErrorToastFromApiError(error);
         return null;
       }
       return data;
@@ -341,7 +335,7 @@ export function useProfileToolsWithIds(agentId: string | undefined) {
         query: { excludeLlmProxyOrigin: true },
       });
       if (error) {
-        showErrorToastFromApiError(error, "Failed to fetch profile tools");
+        showErrorToastFromApiError(error);
         return [];
       }
       return data;
@@ -366,7 +360,7 @@ export function useAgentDelegationTools(agentId: string | undefined) {
         query: { excludeLlmProxyOrigin: true },
       });
       if (error) {
-        showErrorToastFromApiError(error, "Failed to fetch agent tools");
+        showErrorToastFromApiError(error);
         return [];
       }
       // Filter for delegation tools (tools with name starting with "delegate_to_")

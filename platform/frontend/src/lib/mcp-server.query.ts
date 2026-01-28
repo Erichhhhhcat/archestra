@@ -271,10 +271,7 @@ export function useMcpServerLogs(mcpServerId: string | null) {
         query: { lines: 100 },
       });
       if (response.error) {
-        showErrorToastFromApiError(
-          response.error,
-          "Failed to fetch MCP server logs",
-        );
+        showErrorToastFromApiError(response.error);
         return null;
       }
       return response.data ?? null;
