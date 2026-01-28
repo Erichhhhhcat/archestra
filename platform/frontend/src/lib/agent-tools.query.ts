@@ -389,7 +389,10 @@ export function useSyncAgentDelegations() {
         body: { targetAgentIds },
       });
       if (response.error) {
-        showErrorToastFromApiError(response.error, "Failed to sync delegations");
+        showErrorToastFromApiError(
+          response.error,
+          "Failed to sync delegations",
+        );
         return null;
       }
       return response.data;
