@@ -38,7 +38,7 @@ describe("KnowledgeGraphUploadIndicator", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  test("renders nothing when only non-text files are attached", () => {
+  test("renders nothing when only unsupported files are attached", () => {
     vi.mocked(useFeatureValue).mockReturnValue({
       enabled: true,
       displayName: "Test KG",
@@ -49,12 +49,27 @@ describe("KnowledgeGraphUploadIndicator", () => {
         files={[
           { mediaType: "image/png", filename: "photo.png" },
           { mediaType: "image/jpeg", filename: "image.jpg" },
-          { mediaType: "application/pdf", filename: "document.pdf" },
+          { mediaType: "video/mp4", filename: "video.mp4" },
         ]}
       />,
     );
 
     expect(container.firstChild).toBeNull();
+  });
+
+  test("renders indicator for PDF files", () => {
+    vi.mocked(useFeatureValue).mockReturnValue({
+      enabled: true,
+      displayName: "Test KG",
+    });
+
+    render(
+      <KnowledgeGraphUploadIndicator
+        files={[{ mediaType: "application/pdf", filename: "document.pdf" }]}
+      />,
+    );
+
+    expect(screen.getByText("KG Upload")).toBeInTheDocument();
   });
 
   test("renders indicator when text files are attached", () => {
@@ -89,7 +104,7 @@ describe("KnowledgeGraphUploadIndicator", () => {
     expect(screen.getByText("KG Upload")).toBeInTheDocument();
   });
 
-  test("counts only text documents in mixed file list", () => {
+  test("counts only supported documents in mixed file list", () => {
     vi.mocked(useFeatureValue).mockReturnValue({
       enabled: true,
       displayName: "Test KG",
@@ -106,7 +121,7 @@ describe("KnowledgeGraphUploadIndicator", () => {
       />,
     );
 
-    // Should render since there are 2 text documents
+    // Should render since there are 3 supported documents (txt, json, pdf)
     expect(screen.getByText("KG Upload")).toBeInTheDocument();
   });
 

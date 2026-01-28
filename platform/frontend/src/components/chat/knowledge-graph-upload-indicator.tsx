@@ -15,8 +15,8 @@ interface KnowledgeGraphUploadIndicatorProps {
 }
 
 /**
- * Shows a small indicator when text documents are attached and a knowledge graph provider is configured.
- * Only text-based documents (not images, PDFs, etc.) will be ingested into the knowledge graph.
+ * Shows a small indicator when supported documents are attached and a knowledge graph provider is configured.
+ * Text-based documents and PDFs will be ingested into the knowledge graph (not images, audio, video).
  * Displays a database icon with short text, and a tooltip with more details on hover.
  */
 export function KnowledgeGraphUploadIndicator({

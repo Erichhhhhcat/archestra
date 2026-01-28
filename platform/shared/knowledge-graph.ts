@@ -5,7 +5,7 @@
 
 /**
  * Supported document MIME types for knowledge graph ingestion.
- * These are text-based formats that can be meaningfully indexed.
+ * These are formats that can be meaningfully indexed (text-based and PDFs).
  */
 export const SUPPORTED_DOCUMENT_TYPES = [
   "text/plain",
@@ -26,6 +26,8 @@ export const SUPPORTED_DOCUMENT_TYPES = [
   "text/x-java",
   "text/x-c",
   "text/x-cpp",
+  // PDF documents
+  "application/pdf",
 ] as const;
 
 /**
@@ -64,6 +66,7 @@ export const SUPPORTED_EXTENSIONS = [
   ".css",
   ".scss",
   ".less",
+  ".pdf",
 ] as const;
 
 export type SupportedDocumentType = (typeof SUPPORTED_DOCUMENT_TYPES)[number];
@@ -125,11 +128,12 @@ function getFilename(file: FileInfo): string | null | undefined {
 }
 
 /**
- * Checks if a file is a supported text document for knowledge graph ingestion.
+ * Checks if a file is a supported document for knowledge graph ingestion.
  * A file is considered supported if either its MIME type or extension matches.
+ * Supports text-based formats and PDFs.
  *
  * @param file - Object containing optional mediaType and name/filename properties
- * @returns true if the file is a supported text document
+ * @returns true if the file is a supported document
  */
 export function isTextDocument(file: FileInfo): boolean {
   return (

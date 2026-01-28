@@ -1,10 +1,11 @@
+import { describe, expect, test } from "vitest";
+
 import {
   countTextDocuments,
   hasSupportedExtension,
   isSupportedDocumentType,
   isTextDocument,
-} from "@shared";
-import { describe, expect, test } from "vitest";
+} from "./knowledge-graph";
 
 describe("isSupportedDocumentType", () => {
   test("returns true for supported MIME types", () => {
@@ -15,6 +16,7 @@ describe("isSupportedDocumentType", () => {
     expect(isSupportedDocumentType("text/html")).toBe(true);
     expect(isSupportedDocumentType("text/javascript")).toBe(true);
     expect(isSupportedDocumentType("application/javascript")).toBe(true);
+    expect(isSupportedDocumentType("application/pdf")).toBe(true);
   });
 
   test("returns true for MIME types with parameters", () => {
@@ -28,7 +30,6 @@ describe("isSupportedDocumentType", () => {
   test("returns false for unsupported MIME types", () => {
     expect(isSupportedDocumentType("image/png")).toBe(false);
     expect(isSupportedDocumentType("image/jpeg")).toBe(false);
-    expect(isSupportedDocumentType("application/pdf")).toBe(false);
     expect(isSupportedDocumentType("audio/mp3")).toBe(false);
     expect(isSupportedDocumentType("video/mp4")).toBe(false);
     expect(isSupportedDocumentType("application/octet-stream")).toBe(false);
@@ -72,11 +73,15 @@ describe("hasSupportedExtension", () => {
     expect(hasSupportedExtension("SCRIPT.PY")).toBe(true);
   });
 
+  test("returns true for PDF extension", () => {
+    expect(hasSupportedExtension("document.pdf")).toBe(true);
+    expect(hasSupportedExtension("REPORT.PDF")).toBe(true);
+  });
+
   test("returns false for unsupported extensions", () => {
     expect(hasSupportedExtension("photo.png")).toBe(false);
     expect(hasSupportedExtension("image.jpg")).toBe(false);
     expect(hasSupportedExtension("image.jpeg")).toBe(false);
-    expect(hasSupportedExtension("document.pdf")).toBe(false);
     expect(hasSupportedExtension("song.mp3")).toBe(false);
     expect(hasSupportedExtension("video.mp4")).toBe(false);
     expect(hasSupportedExtension("archive.zip")).toBe(false);
@@ -133,10 +138,10 @@ describe("isTextDocument", () => {
     ).toBe(false);
   });
 
-  test("returns false for PDF files", () => {
+  test("returns true for PDF files", () => {
     expect(
       isTextDocument({ mediaType: "application/pdf", filename: "doc.pdf" }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test("returns false for audio files", () => {
@@ -181,13 +186,21 @@ describe("countTextDocuments", () => {
     expect(countTextDocuments(files)).toBe(2);
   });
 
-  test("returns 0 when no text documents present", () => {
+  test("returns 0 when no supported documents present", () => {
     const files = [
       { mediaType: "image/png", filename: "photo.png" },
       { mediaType: "image/jpeg", filename: "image.jpg" },
-      { mediaType: "application/pdf", filename: "doc.pdf" },
+      { mediaType: "video/mp4", filename: "video.mp4" },
     ];
     expect(countTextDocuments(files)).toBe(0);
+  });
+
+  test("counts PDF documents", () => {
+    const files = [
+      { mediaType: "application/pdf", filename: "doc.pdf" },
+      { mediaType: "image/png", filename: "photo.png" },
+    ];
+    expect(countTextDocuments(files)).toBe(1);
   });
 
   test("returns total count when all files are text documents", () => {
