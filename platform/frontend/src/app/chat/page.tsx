@@ -175,12 +175,29 @@ export default function ChatPage() {
     }
   }, [initialAgentId, searchParams, internalAgents]);
 
-  // Initialize model from localStorage or default to first available
+  // Initialize model from agent's llmModel, localStorage, or default to first available
   useEffect(() => {
-    if (!initialModel) {
-      const allModels = Object.values(modelsByProvider).flat();
-      if (allModels.length === 0) return;
+    const allModels = Object.values(modelsByProvider).flat();
+    if (allModels.length === 0) return;
 
+    // If agent has configured llmModel, use it
+    const selectedAgent = initialAgentId
+      ? internalAgents.find((a) => a.id === initialAgentId)
+      : null;
+    if (selectedAgent?.llmModel) {
+      // Check if the configured model exists in available models
+      if (allModels.some((m) => m.id === selectedAgent.llmModel)) {
+        setInitialModel(selectedAgent.llmModel);
+        // Also set the API key if configured
+        if (selectedAgent.llmApiKeyId) {
+          setInitialApiKeyId(selectedAgent.llmApiKeyId);
+        }
+        return;
+      }
+    }
+
+    // Only initialize from localStorage/defaults if no model is set
+    if (!initialModel) {
       // Try to restore from localStorage
       const savedModelId = localStorage.getItem("selected-chat-model");
       if (savedModelId && allModels.some((m) => m.id === savedModelId)) {
@@ -199,7 +216,7 @@ export default function ChatPage() {
         }
       }
     }
-  }, [modelsByProvider, initialModel]);
+  }, [modelsByProvider, initialModel, initialAgentId, internalAgents]);
 
   // Save model to localStorage when changed
   const handleInitialModelChange = useCallback((modelId: string) => {
@@ -769,10 +786,25 @@ export default function ChatPage() {
   };
 
   // Handle initial agent change (when no conversation exists)
-  const handleInitialAgentChange = useCallback((agentId: string) => {
-    setInitialAgentId(agentId);
-    localStorage.setItem("selected-chat-agent", agentId);
-  }, []);
+  const handleInitialAgentChange = useCallback(
+    (agentId: string) => {
+      setInitialAgentId(agentId);
+      localStorage.setItem("selected-chat-agent", agentId);
+
+      // If the new agent has configured LLM settings, use them
+      const newAgent = internalAgents.find((a) => a.id === agentId);
+      if (newAgent?.llmModel) {
+        const allModels = Object.values(modelsByProvider).flat();
+        if (allModels.some((m) => m.id === newAgent.llmModel)) {
+          setInitialModel(newAgent.llmModel);
+        }
+      }
+      if (newAgent?.llmApiKeyId) {
+        setInitialApiKeyId(newAgent.llmApiKeyId);
+      }
+    },
+    [internalAgents, modelsByProvider],
+  );
 
   // Handle initial submit (when no conversation exists)
   const handleInitialSubmit: PromptInputProps["onSubmit"] = useCallback(

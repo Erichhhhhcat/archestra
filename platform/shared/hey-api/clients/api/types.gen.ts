@@ -6377,6 +6377,8 @@ export type GetAgentsResponses = {
             incomingEmailEnabled: boolean;
             incomingEmailSecurityMode: 'private' | 'internal' | 'public';
             incomingEmailAllowedDomain: string | null;
+            llmApiKeyId: string | null;
+            llmModel: string | null;
             createdAt: string;
             updatedAt: string;
             tools: Array<{
@@ -6418,6 +6420,7 @@ export type GetAgentsResponses = {
                 keyId?: string;
                 valueId?: string;
             }>;
+            resolvedLlmModel: string | null;
         }>;
         pagination: {
             currentPage: number;
@@ -6449,6 +6452,8 @@ export type CreateAgentData = {
         incomingEmailEnabled?: boolean;
         incomingEmailSecurityMode?: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain?: string | null;
+        llmApiKeyId?: string | null;
+        llmModel?: string | null;
         teams: Array<string>;
         labels?: Array<{
             key: string;
@@ -6546,6 +6551,8 @@ export type CreateAgentResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -6587,6 +6594,7 @@ export type CreateAgentResponses = {
             keyId?: string;
             valueId?: string;
         }>;
+        resolvedLlmModel: string | null;
     };
 };
 
@@ -6692,6 +6700,8 @@ export type GetAllAgentsResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -6733,6 +6743,7 @@ export type GetAllAgentsResponses = {
             keyId?: string;
             valueId?: string;
         }>;
+        resolvedLlmModel: string | null;
     }>;
 };
 
@@ -6829,6 +6840,8 @@ export type GetDefaultMcpGatewayResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -6870,6 +6883,7 @@ export type GetDefaultMcpGatewayResponses = {
             keyId?: string;
             valueId?: string;
         }>;
+        resolvedLlmModel: string | null;
     };
 };
 
@@ -6966,6 +6980,8 @@ export type GetDefaultLlmProxyResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -7007,6 +7023,7 @@ export type GetDefaultLlmProxyResponses = {
             keyId?: string;
             valueId?: string;
         }>;
+        resolvedLlmModel: string | null;
     };
 };
 
@@ -7184,6 +7201,8 @@ export type GetAgentResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -7225,6 +7244,7 @@ export type GetAgentResponses = {
             keyId?: string;
             valueId?: string;
         }>;
+        resolvedLlmModel: string | null;
     };
 };
 
@@ -7247,6 +7267,8 @@ export type UpdateAgentData = {
         incomingEmailEnabled?: boolean;
         incomingEmailSecurityMode?: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain?: string | null;
+        llmApiKeyId?: string | null;
+        llmModel?: string | null;
         teams?: Array<string>;
         labels?: Array<{
             key: string;
@@ -7346,6 +7368,8 @@ export type UpdateAgentResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -7387,6 +7411,7 @@ export type UpdateAgentResponses = {
             keyId?: string;
             valueId?: string;
         }>;
+        resolvedLlmModel: string | null;
     };
 };
 
@@ -7486,6 +7511,8 @@ export type GetAgentVersionsResponses = {
             incomingEmailEnabled: boolean;
             incomingEmailSecurityMode: 'private' | 'internal' | 'public';
             incomingEmailAllowedDomain: string | null;
+            llmApiKeyId: string | null;
+            llmModel: string | null;
             createdAt: string;
             updatedAt: string;
             tools: Array<{
@@ -7527,6 +7554,7 @@ export type GetAgentVersionsResponses = {
                 keyId?: string;
                 valueId?: string;
             }>;
+            resolvedLlmModel: string | null;
         };
         history: Array<{
             version: number;
@@ -7637,6 +7665,8 @@ export type RollbackAgentResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -7678,6 +7708,7 @@ export type RollbackAgentResponses = {
             keyId?: string;
             valueId?: string;
         }>;
+        resolvedLlmModel: string | null;
     };
 };
 

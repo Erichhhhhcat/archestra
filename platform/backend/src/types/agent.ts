@@ -88,6 +88,8 @@ export const SelectAgentSchema = createSelectSchema(
   tools: z.array(SelectToolSchema),
   teams: z.array(AgentTeamInfoSchema),
   labels: z.array(AgentLabelWithDetailsSchema),
+  /** Resolved model ID based on agent's LLM configuration (computed, not stored) */
+  resolvedLlmModel: z.string().nullable(),
 });
 
 // Base schema without refinement - can be used with .partial()

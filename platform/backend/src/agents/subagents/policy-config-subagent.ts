@@ -92,11 +92,14 @@ Examples:
     incomingEmailEnabled: false,
     incomingEmailSecurityMode: "private",
     incomingEmailAllowedDomain: null,
+    llmApiKeyId: null,
+    llmModel: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     tools: [],
     teams: [],
     labels: [],
+    resolvedLlmModel: null,
   };
 
   /**

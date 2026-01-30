@@ -1,21 +1,32 @@
 "use client";
 
 import type { archestraApiTypes } from "@shared";
-import { archestraApiSdk } from "@shared";
+import {
+  archestraApiSdk,
+  providerDisplayNames,
+  type SupportedProvider,
+} from "@shared";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Bot,
   Building2,
+  Check,
   ExternalLink,
   Globe,
+  Key,
   Loader2,
   Lock,
   Search,
+  Sparkles,
+  User,
+  Users,
   X,
+  Zap,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ModelSelectorLogo } from "@/components/ai-elements/model-selector";
 import {
   type ProfileLabel,
   ProfileLabels,
@@ -39,16 +50,26 @@ import {
 import { ExpandableText } from "@/components/ui/expandable-text";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel as SelectGroupLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -66,6 +87,11 @@ import {
 } from "@/lib/agent-tools.query";
 import { useHasPermissions } from "@/lib/auth.query";
 import { useChatProfileMcpTools } from "@/lib/chat.query";
+import {
+  type ChatModel,
+  useModelsByProvider,
+} from "@/lib/chat-models.query";
+import { useAvailableChatApiKeys } from "@/lib/chat-settings.query";
 import { useChatOpsStatus } from "@/lib/chatops.query";
 import { useFeatures } from "@/lib/features.query";
 import { useInternalMcpCatalog } from "@/lib/internal-mcp-catalog.query";
@@ -289,6 +315,210 @@ function SubagentsEditor({
   );
 }
 
+// LLM Configuration with pill-style selectors
+interface LlmConfigurationPillsProps {
+  llmModel: string | null;
+  llmApiKeyId: string | null;
+  modelsByProvider: Record<SupportedProvider, ChatModel[]>;
+  availableApiKeys: ReturnType<typeof useAvailableChatApiKeys>["data"];
+  onModelChange: (provider: string, modelId: string) => void;
+  onApiKeyChange: (provider: string, keyId: string) => void;
+}
+
+const SCOPE_ICONS_LLM: Record<string, React.ReactNode> = {
+  personal: <User className="h-3 w-3" />,
+  team: <Users className="h-3 w-3" />,
+  org_wide: <Building2 className="h-3 w-3" />,
+};
+
+/** Map provider names to logo provider names for models.dev */
+const providerToLogoProvider: Record<SupportedProvider, string> = {
+  openai: "openai",
+  anthropic: "anthropic",
+  gemini: "google",
+  bedrock: "amazon-bedrock",
+  cerebras: "cerebras",
+  cohere: "cohere",
+  mistral: "mistral",
+  vllm: "vllm",
+  ollama: "ollama-cloud",
+  zhipuai: "zhipuai",
+};
+
+function LlmConfigurationPills({
+  llmModel,
+  llmApiKeyId,
+  modelsByProvider,
+  availableApiKeys,
+  onModelChange,
+  onApiKeyChange,
+}: LlmConfigurationPillsProps) {
+  const [modelOpen, setModelOpen] = useState(false);
+  const [apiKeyOpen, setApiKeyOpen] = useState(false);
+
+  // Find selected model info
+  const selectedModelInfo = useMemo(() => {
+    for (const [provider, models] of Object.entries(modelsByProvider)) {
+      const model = models?.find((m) => m.id === llmModel);
+      if (model) {
+        return { provider: provider as SupportedProvider, model };
+      }
+    }
+    return null;
+  }, [modelsByProvider, llmModel]);
+
+  // Find selected API key info
+  const selectedApiKey = useMemo(() => {
+    return availableApiKeys?.find((k) => k.id === llmApiKeyId);
+  }, [availableApiKeys, llmApiKeyId]);
+
+  // Group API keys by provider
+  const apiKeysByProvider = useMemo(() => {
+    const grouped: Record<string, NonNullable<typeof availableApiKeys>> = {};
+    for (const key of availableApiKeys || []) {
+      if (!grouped[key.provider]) grouped[key.provider] = [];
+      grouped[key.provider]!.push(key);
+    }
+    return grouped;
+  }, [availableApiKeys]);
+
+  return (
+    <div className="space-y-2">
+      <Label>LLM Configuration</Label>
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Model Pill */}
+        <Popover open={modelOpen} onOpenChange={setModelOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={`h-8 px-3 gap-1.5 text-xs max-w-[250px] ${!llmModel ? "border-dashed opacity-70" : ""}`}
+            >
+              {selectedModelInfo ? (
+                <ModelSelectorLogo
+                  provider={providerToLogoProvider[selectedModelInfo.provider]}
+                  className="shrink-0"
+                />
+              ) : (
+                <Sparkles className="h-3 w-3 shrink-0" />
+              )}
+              <span className="font-medium truncate">
+                {llmModel || "Select model"}
+              </span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Search models..." />
+              <CommandList>
+                <CommandEmpty>No models found.</CommandEmpty>
+                {Object.entries(modelsByProvider)
+                  .filter(([, models]) => models && models.length > 0)
+                  .map(([provider, models]) => {
+                    // Sort alphabetically by model ID
+                    const sortedModels = [...(models || [])].sort((a, b) =>
+                      a.id.localeCompare(b.id),
+                    );
+                    return (
+                      <CommandGroup
+                        key={provider}
+                        heading={
+                          providerDisplayNames[provider as SupportedProvider] ??
+                          provider
+                        }
+                      >
+                        {sortedModels.map((model) => (
+                          <CommandItem
+                            key={model.id}
+                            value={`${provider} ${model.id} ${model.displayName}`}
+                            onSelect={() => {
+                              onModelChange(provider, model.id);
+                              setModelOpen(false);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <ModelSelectorLogo
+                                provider={providerToLogoProvider[provider as SupportedProvider]}
+                                className="shrink-0"
+                              />
+                              <span className="truncate">{model.displayName}</span>
+                            </div>
+                            <Check
+                              className={`h-4 w-4 shrink-0 ${llmModel === model.id ? "opacity-100" : "opacity-0"}`}
+                            />
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    );
+                  })}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+
+        {/* API Key Pill */}
+        <Popover open={apiKeyOpen} onOpenChange={setApiKeyOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={`h-8 px-3 gap-1.5 text-xs max-w-[200px] ${!llmApiKeyId ? "border-dashed opacity-70" : ""}`}
+            >
+              <Key className="h-3 w-3 shrink-0" />
+              <span className="font-medium truncate">
+                {selectedApiKey?.name || "Select API key"}
+              </span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Search API keys..." />
+              <CommandList>
+                <CommandEmpty>No API keys found.</CommandEmpty>
+                {Object.entries(apiKeysByProvider).map(([provider, keys]) => (
+                  <CommandGroup
+                    key={provider}
+                    heading={
+                      providerDisplayNames[provider as SupportedProvider] ??
+                      provider
+                    }
+                  >
+                    {keys?.map((apiKey) => (
+                      <CommandItem
+                        key={apiKey.id}
+                        value={`${provider} ${apiKey.name} ${apiKey.teamName || ""}`}
+                        onSelect={() => {
+                          onApiKeyChange(provider, apiKey.id);
+                          setApiKeyOpen(false);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {SCOPE_ICONS_LLM[apiKey.scope]}
+                          <span className="truncate">{apiKey.name}</span>
+                          {apiKey.scope === "team" && apiKey.teamName && (
+                            <span className="text-[10px] text-muted-foreground">
+                              ({apiKey.teamName})
+                            </span>
+                          )}
+                        </div>
+                        <Check
+                          className={`h-4 w-4 shrink-0 ${llmApiKeyId === apiKey.id ? "opacity-100" : "opacity-0"}`}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                ))}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
+  );
+}
+
 // Helper functions for type-specific UI text
 function getDialogTitle(
   agentType: "profile" | "mcp_gateway" | "llm_proxy" | "agent",
@@ -369,6 +599,8 @@ export function AgentDialog({
   const { data: currentDelegations = [] } = useAgentDelegations(agent?.id);
   const { data: chatopsProviders = [] } = useChatOpsStatus();
   const { data: features } = useFeatures();
+  const { data: availableApiKeys = [] } = useAvailableChatApiKeys();
+  const { modelsByProvider } = useModelsByProvider();
 
   // Fetch fresh agent data when dialog opens
   const { data: freshAgent, refetch: refetchAgent } = useProfile(agent?.id);
@@ -408,6 +640,10 @@ export function AgentDialog({
   const [toolsSearchOpen, setToolsSearchOpen] = useState(false);
   const [toolsShowAll, setToolsShowAll] = useState(false);
   const [selectedToolsCount, setSelectedToolsCount] = useState(0);
+
+  // LLM Configuration state (static model only)
+  const [llmApiKeyId, setLlmApiKeyId] = useState<string | null>(null);
+  const [llmModel, setLlmModel] = useState<string | null>(null);
 
   // Determine type-specific visibility based on agentType prop
   const isInternalAgent = agentType === "agent";
@@ -460,6 +696,9 @@ export function AgentDialog({
         setIncomingEmailAllowedDomain(
           agentData.incomingEmailAllowedDomain || "",
         );
+        // LLM Configuration
+        setLlmApiKeyId(agentData.llmApiKeyId || null);
+        setLlmModel(agentData.llmModel || null);
       } else {
         // Create mode - reset all fields
         setName("");
@@ -474,6 +713,9 @@ export function AgentDialog({
         setIncomingEmailEnabled(false);
         setIncomingEmailSecurityMode("private");
         setIncomingEmailAllowedDomain("");
+        // LLM Configuration - reset to defaults
+        setLlmApiKeyId(null);
+        setLlmModel(null);
       }
       // Reset search and counts when dialog opens
       setSubagentsSearch("");
@@ -561,6 +803,14 @@ export function AgentDialog({
           }
         : {};
 
+      // Build LLM settings for internal agents
+      const llmSettings = isInternalAgent
+        ? {
+            llmApiKeyId: llmApiKeyId || null,
+            llmModel: llmModel || null,
+          }
+        : {};
+
       if (agent) {
         // Update existing agent
         const updated = await updateAgent.mutateAsync({
@@ -578,6 +828,7 @@ export function AgentDialog({
             labels: updatedLabels,
             ...(showSecurity && { considerContextUntrusted }),
             ...emailSettings,
+            ...llmSettings,
           },
         });
         savedAgentId = updated?.id ?? agent.id;
@@ -597,6 +848,7 @@ export function AgentDialog({
           labels: updatedLabels,
           ...(showSecurity && { considerContextUntrusted }),
           ...emailSettings,
+          ...llmSettings,
         });
         savedAgentId = created?.id ?? "";
 
@@ -645,6 +897,8 @@ export function AgentDialog({
     incomingEmailEnabled,
     incomingEmailSecurityMode,
     incomingEmailAllowedDomain,
+    llmApiKeyId,
+    llmModel,
     agentType,
     agent,
     isInternalAgent,
@@ -1056,6 +1310,58 @@ export function AgentDialog({
                   </div>
                 )}
               </div>
+            )}
+
+            {/* LLM Configuration (Agent only) */}
+            {isInternalAgent && (
+              <LlmConfigurationPills
+                llmModel={llmModel}
+                llmApiKeyId={llmApiKeyId}
+                modelsByProvider={modelsByProvider}
+                availableApiKeys={availableApiKeys}
+                onModelChange={(provider, modelId) => {
+                  setLlmModel(modelId);
+                  // Check if current API key is for a different provider
+                  const currentKeyProvider = availableApiKeys.find(
+                    (k) => k.id === llmApiKeyId,
+                  )?.provider;
+                  // Only auto-select API key if no key selected or key is for different provider
+                  if (!llmApiKeyId || currentKeyProvider !== provider) {
+                    const providerKeys = availableApiKeys.filter(
+                      (k) => k.provider === provider,
+                    );
+                    if (providerKeys.length > 0) {
+                      // Prefer personal > team > org_wide
+                      const keyToSelect =
+                        providerKeys.find((k) => k.scope === "personal") ||
+                        providerKeys.find((k) => k.scope === "team") ||
+                        providerKeys[0];
+                      setLlmApiKeyId(keyToSelect.id);
+                    }
+                  }
+                }}
+                onApiKeyChange={(provider, keyId) => {
+                  setLlmApiKeyId(keyId);
+                  // Find current model's provider
+                  let currentModelProvider: string | null = null;
+                  for (const [p, models] of Object.entries(modelsByProvider)) {
+                    if (models?.some((m) => m.id === llmModel)) {
+                      currentModelProvider = p;
+                      break;
+                    }
+                  }
+                  // Only auto-select model if no model selected or model is for different provider
+                  if (!llmModel || currentModelProvider !== provider) {
+                    const providerModels =
+                      modelsByProvider[provider as SupportedProvider] || [];
+                    if (providerModels.length > 0) {
+                      // Select first model from this provider
+                      const modelToSelect = providerModels[0];
+                      setLlmModel(modelToSelect.id);
+                    }
+                  }
+                }}
+              />
             )}
 
             {/* Team */}

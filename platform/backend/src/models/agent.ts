@@ -90,6 +90,7 @@ class AgentModel {
       tools: assignedTools.map((row) => row.tool),
       teams: teamDetails,
       labels: await AgentLabelModel.getLabelsForAgent(createdAgent.id),
+      resolvedLlmModel: await AgentModel.resolveLlmModel(createdAgent),
     };
   }
 
@@ -165,6 +166,7 @@ class AgentModel {
           tools: [],
           teams: [] as Array<{ id: string; name: string }>,
           labels: [],
+          resolvedLlmModel: null,
         });
       }
 
@@ -175,7 +177,7 @@ class AgentModel {
     }
 
     const agents = Array.from(agentsMap.values());
-    const agentIds = agents.map((agent) => agent.id);
+    const agentIds = agents.map((a) => a.id);
 
     // Populate teams and labels for all agents with bulk queries to avoid N+1
     const [teamsMap, labelsMap] = await Promise.all([
@@ -184,10 +186,13 @@ class AgentModel {
     ]);
 
     // Assign teams and labels to each agent
-    for (const agent of agents) {
-      agent.teams = teamsMap.get(agent.id) || [];
-      agent.labels = labelsMap.get(agent.id) || [];
+    for (const a of agents) {
+      a.teams = teamsMap.get(a.id) || [];
+      a.labels = labelsMap.get(a.id) || [];
     }
+
+    // Populate resolved LLM models
+    await AgentModel.populateResolvedLlmModels(agents);
 
     return agents;
   }
@@ -247,12 +252,18 @@ class AgentModel {
       toolsByAgent.set(row.agentId, existing);
     }
 
-    return agents.map((agent) => ({
+    const result = agents.map((agent) => ({
       ...agent,
       tools: toolsByAgent.get(agent.id) || [],
       teams: teamsMap.get(agent.id) || [],
       labels: labelsMap.get(agent.id) || [],
+      resolvedLlmModel: null as string | null,
     }));
+
+    // Populate resolved LLM models
+    await AgentModel.populateResolvedLlmModels(result);
+
+    return result;
   }
 
   /**
@@ -316,12 +327,18 @@ class AgentModel {
       toolsByAgent.set(row.agentId, existing);
     }
 
-    return agents.map((agent) => ({
+    const result = agents.map((agent) => ({
       ...agent,
       tools: toolsByAgent.get(agent.id) || [],
       teams: teamsMap.get(agent.id) || [],
       labels: labelsMap.get(agent.id) || [],
+      resolvedLlmModel: null as string | null,
     }));
+
+    // Populate resolved LLM models
+    await AgentModel.populateResolvedLlmModels(result);
+
+    return result;
   }
 
   /**
@@ -496,26 +513,27 @@ class AgentModel {
     const agentsMap = new Map<string, Agent>();
 
     for (const row of agentsData) {
-      const agent = row.agents;
+      const agentRow = row.agents;
       const tool = row.tools;
 
-      if (!agentsMap.has(agent.id)) {
-        agentsMap.set(agent.id, {
-          ...agent,
+      if (!agentsMap.has(agentRow.id)) {
+        agentsMap.set(agentRow.id, {
+          ...agentRow,
           tools: [],
           teams: [] as Array<{ id: string; name: string }>,
           labels: [],
+          resolvedLlmModel: null,
         });
       }
 
       // Add tool if it exists (leftJoin returns null for agents with no tools)
       if (tool) {
-        agentsMap.get(agent.id)?.tools.push(tool);
+        agentsMap.get(agentRow.id)?.tools.push(tool);
       }
     }
 
     const agents = Array.from(agentsMap.values());
-    const agentIds = agents.map((agent) => agent.id);
+    const agentIds = agents.map((a) => a.id);
 
     // Populate teams and labels for all agents with bulk queries to avoid N+1
     const [teamsMap, labelsMap] = await Promise.all([
@@ -524,10 +542,13 @@ class AgentModel {
     ]);
 
     // Assign teams and labels to each agent
-    for (const agent of agents) {
-      agent.teams = teamsMap.get(agent.id) || [];
-      agent.labels = labelsMap.get(agent.id) || [];
+    for (const a of agents) {
+      a.teams = teamsMap.get(a.id) || [];
+      a.labels = labelsMap.get(a.id) || [];
     }
+
+    // Populate resolved LLM models
+    await AgentModel.populateResolvedLlmModels(agents);
 
     return createPaginatedResult(agents, Number(totalResult), pagination);
   }
@@ -632,6 +653,7 @@ class AgentModel {
       tools,
       teams,
       labels,
+      resolvedLlmModel: await AgentModel.resolveLlmModel(agent),
     };
   }
 
@@ -693,6 +715,7 @@ class AgentModel {
       tools,
       teams: await AgentTeamModel.getTeamDetailsForAgent(agent.id),
       labels: await AgentLabelModel.getLabelsForAgent(agent.id),
+      resolvedLlmModel: await AgentModel.resolveLlmModel(agent),
     };
   }
 
@@ -732,6 +755,7 @@ class AgentModel {
         tools,
         teams: await AgentTeamModel.getTeamDetailsForAgent(agent.id),
         labels: await AgentLabelModel.getLabelsForAgent(agent.id),
+        resolvedLlmModel: await AgentModel.resolveLlmModel(agent),
       };
     }
 
@@ -758,10 +782,8 @@ class AgentModel {
 
   static async update(
     id: string,
-    { teams, labels, ...agent }: Partial<UpdateAgent>,
+    { teams, labels, ...agentData }: Partial<UpdateAgent>,
   ): Promise<Agent | null> {
-    let updatedAgent: Omit<Agent, "tools" | "teams" | "labels"> | undefined;
-
     // Fetch existing agent to check for name changes (needed for delegation tool sync)
     const [existingAgent] = await db
       .select()
@@ -773,7 +795,7 @@ class AgentModel {
     }
 
     // If setting isDefault to true, unset isDefault for other agents of the same type
-    if (agent.isDefault === true) {
+    if (agentData.isDefault === true) {
       await db
         .update(schema.agentsTable)
         .set({ isDefault: false })
@@ -785,11 +807,14 @@ class AgentModel {
         );
     }
 
+    // Determine the final agent data
+    let finalAgent = existingAgent;
+
     // Only update agent table if there are fields to update
-    if (Object.keys(agent).length > 0) {
-      [updatedAgent] = await db
+    if (Object.keys(agentData).length > 0) {
+      const [updatedAgent] = await db
         .update(schema.agentsTable)
-        .set(agent)
+        .set(agentData)
         .where(eq(schema.agentsTable.id, id))
         .returning();
 
@@ -797,9 +822,11 @@ class AgentModel {
         return null;
       }
 
+      finalAgent = updatedAgent;
+
       // If name changed, sync delegation tool names and invalidate parent caches
-      if (agent.name && agent.name !== existingAgent.name) {
-        await ToolModel.syncDelegationToolNames(id, agent.name);
+      if (agentData.name && agentData.name !== existingAgent.name) {
+        await ToolModel.syncDelegationToolNames(id, agentData.name);
 
         // Invalidate tool cache for all parent agents so they pick up the new tool name
         const parentAgentIds = await ToolModel.getParentAgentIds(id);
@@ -807,8 +834,6 @@ class AgentModel {
           clearChatMcpClient(parentAgentId);
         }
       }
-    } else {
-      updatedAgent = existingAgent;
     }
 
     // Sync team assignments if teams is provided
@@ -825,17 +850,18 @@ class AgentModel {
     const tools = await db
       .select()
       .from(schema.toolsTable)
-      .where(eq(schema.toolsTable.agentId, updatedAgent.id));
+      .where(eq(schema.toolsTable.agentId, finalAgent.id));
 
     // Fetch current teams and labels
     const currentTeams = await AgentTeamModel.getTeamDetailsForAgent(id);
     const currentLabels = await AgentLabelModel.getLabelsForAgent(id);
 
     return {
-      ...updatedAgent,
+      ...finalAgent,
       tools,
       teams: currentTeams,
       labels: currentLabels,
+      resolvedLlmModel: await AgentModel.resolveLlmModel(finalAgent),
     };
   }
 
@@ -967,6 +993,30 @@ class AgentModel {
       .delete(schema.agentsTable)
       .where(eq(schema.agentsTable.id, id));
     return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  /**
+   * Resolve the LLM model for an agent based on its LLM configuration.
+   * Returns the model ID that will be used for chat.
+   */
+  static resolveLlmModel(agent: { llmModel: string | null }): string | null {
+    return agent.llmModel;
+  }
+
+  /**
+   * Populate resolvedLlmModel for an array of agents.
+   * Modifies agents in place and returns them.
+   */
+  static populateResolvedLlmModels<
+    T extends {
+      llmModel: string | null;
+      resolvedLlmModel?: string | null;
+    },
+  >(agents: T[]): T[] {
+    for (const agent of agents) {
+      agent.resolvedLlmModel = AgentModel.resolveLlmModel(agent);
+    }
+    return agents;
   }
 }
 
