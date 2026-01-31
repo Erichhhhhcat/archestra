@@ -1,5 +1,10 @@
 "use client";
 import { SignedIn, SignedOut, UserButton } from "@daveyplate/better-auth-ui";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@radix-ui/react-collapsible";
 import { E2eTestId } from "@shared";
 import { requiredPagePermissionsMap } from "@shared/access-control";
 import {
@@ -7,13 +12,23 @@ import {
   Bot,
   Bug,
   Cable,
+  ChevronDown,
+  ChevronUp,
   DollarSign,
+  Folder,
   Github,
+  Grip,
+  History,
+  HomeIcon,
+  Info,
   LogIn,
+  Logs,
   type LucideIcon,
   MessageCircle,
+  MessageSquareText,
   MessagesSquare,
   Network,
+  Plus,
   Router,
   Settings,
   Shield,
@@ -26,6 +41,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChatSidebarSection } from "@/app/_parts/chat-sidebar-section";
 import { DefaultCredentialsWarning } from "@/components/default-credentials-warning";
+import Divider from "@/components/divider";
 import { WithPermissions } from "@/components/roles/with-permissions";
 import { SecurityEngineWarning } from "@/components/security-engine-warning";
 import { Badge } from "@/components/ui/badge";
@@ -34,10 +50,12 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupAction,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
@@ -46,6 +64,7 @@ import { usePermissionMap } from "@/lib/auth.query";
 import config from "@/lib/config";
 import { useGithubStars } from "@/lib/github.query";
 import { useOrgTheme } from "@/lib/theme.hook";
+import Home from "../page";
 
 interface MenuItem {
   title: string;
@@ -208,59 +227,457 @@ const MainSideBarSection = ({
     (item) => permissionMap?.[item.url] ?? true,
   );
 
-  return (
-    <>
-      <SidebarGroup className="px-4">
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {permittedItems.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={
-                    item.customIsActive?.(pathname, searchParams) ??
-                    pathname.startsWith(item.url)
-                  }
-                >
-                  <Link href={item.url}>
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
+  const option1 = (
+    <SidebarContent className="gap-1">
+      <Divider className="w-[calc(100%-30px)] mx-auto" />
+      <SidebarGroup>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link href="/chat">
+              <span>Chats</span>
+              <MessagesSquare />
+            </Link>
+          </SidebarMenuButton>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive>
+              <a href="#">
+                <span>New Chat</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              My Chats
+              <ChevronUp className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
       </SidebarGroup>
-      <WithPermissions
-        permissions={{ conversation: ["read"] }}
-        noPermissionHandle="tooltip"
-      >
-        {({ hasPermission }) => {
-          return hasPermission === undefined ? null : hasPermission ? (
-            <ChatSidebarSection />
-          ) : (
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <Badge variant="outline" className="text-xs mx-4">
-                  Recent chats are not shown
-                </Badge>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          );
-        }}
-      </WithPermissions>
-      {!config.enterpriseLicenseActivated && (
-        <CommunitySideBarSection starCount={starCount} />
-      )}
-    </>
+      <Divider className="w-[calc(100%-30px)] mx-auto" />
+      <SidebarGroup>
+        <SidebarMenuButton asChild>
+          <Link href="/agents">
+            <span>Agents</span>
+            <Bot />
+          </Link>
+        </SidebarMenuButton>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            isActive={false}
+            className="text-muted-foreground"
+          >
+            <span>About & Connect</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>My Agents</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>Agent Builder</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+      <Divider className="w-[calc(100%-30px)] mx-auto" />
+      <SidebarGroup>
+        <SidebarMenuButton asChild>
+          <Link href="/agents">
+            <span>LLM Proxies</span>
+            <Network />
+          </Link>
+        </SidebarMenuButton>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            isActive={false}
+            className="text-muted-foreground"
+          >
+            <span>About & Connect</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>My Proxies</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>Cost & Limits</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>Logs</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+      <Divider className="w-[calc(100%-30px)] mx-auto" />
+      <SidebarGroup>
+        <SidebarMenuButton asChild>
+          <Link href="/agents">
+            <span>MCP & Tools</span>
+            <Wrench />
+          </Link>
+        </SidebarMenuButton>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            isActive={false}
+            className="text-muted-foreground"
+          >
+            <span>About & Connect</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            isActive={false}
+            className="text-muted-foreground"
+          >
+            <span>My MCP Gateways</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>MCP Registry</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>Tool Policies</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+      <Divider className="w-[calc(100%-30px)] mx-auto" />
+      <SidebarGroup>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <Settings />
+              <span className="ml-1">Settings</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+    </SidebarContent>
   );
+
+  const option2 = (
+    <SidebarContent className="gap-1">
+      <Divider className="w-[calc(100%-30px)] mx-auto" />
+      <SidebarGroup>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link href="/chat">
+              <span>Chats</span>
+              <MessagesSquare />
+            </Link>
+          </SidebarMenuButton>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive>
+              <a href="#">
+                <span>New Chat</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              My Chats
+              <ChevronUp className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+      <Divider className="w-[calc(100%-30px)] mx-auto" />
+      <SidebarGroup>
+        <SidebarMenuButton asChild>
+          <Link href="/agents">
+            <span>Agents</span>
+            <Bot />
+          </Link>
+        </SidebarMenuButton>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>My Agents</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>Agent Builder</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+      <Divider className="w-[calc(100%-30px)] mx-auto" />
+      <SidebarGroup>
+        <SidebarMenuButton asChild>
+          <Link href="/agents">
+            <span>LLM Proxies</span>
+            <Network />
+          </Link>
+        </SidebarMenuButton>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>My Proxies</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>Cost & Limits</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>Logs</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+      <Divider className="w-[calc(100%-30px)] mx-auto" />
+      <SidebarGroup>
+        <SidebarMenuButton asChild>
+          <Link href="/agents">
+            <span>MCP & Tools</span>
+            <Wrench />
+          </Link>
+        </SidebarMenuButton>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            isActive={false}
+            className="text-muted-foreground"
+          >
+            <span>My MCP Gateways</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>MCP Registry</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <span>Tool Policies</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+      <Divider className="w-[calc(100%-30px)] mx-auto" />
+      <SidebarGroup>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <Cable />
+              <span className="ml-1">Connect</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className="text-muted-foreground">
+            <Link href="/chat">
+              <Settings />
+              <span className="ml-1">Settings</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+    </SidebarContent>
+  );
+
+  const menuBtnClassName = "opacity-99";
+  const sidebarGroupClassName = "pb-0";
+  const groupLabelClassName = "height-[28px]";
+  const dividerClassName =
+    "w-[calc(100%-10px)] mx-auto mt-[-4px] mb-[6px] opacity-90";
+  const option3 = (
+    <SidebarContent className="gap-1">
+      {/* <Divider className="w-[calc(100%-30px)] mx-auto" /> */}
+      <SidebarGroup className={sidebarGroupClassName}>
+        <SidebarGroupLabel className={groupLabelClassName}>
+          Chats
+        </SidebarGroupLabel>
+        <Divider className={dividerClassName} />
+        <SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive>
+              <a href="#">
+                <MessageSquareText />
+                <span>New Chat</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <MessagesSquare />
+              My Chats
+              <ChevronUp className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+      {/* <Divider className="w-[calc(100%-30px)] mx-auto" /> */}
+      <SidebarGroup className={sidebarGroupClassName}>
+        <SidebarGroupLabel className={groupLabelClassName}>
+          Agents
+        </SidebarGroupLabel>
+        <Divider className={dividerClassName} />
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <Bot />
+              <span>My Agents</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <Grip />
+              <span>Agent Builder</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+      {/* <Divider className="w-[calc(100%-30px)] mx-auto" /> */}
+      <SidebarGroup className={sidebarGroupClassName}>
+        <SidebarGroupLabel className={groupLabelClassName}>
+          LLM Proxies
+        </SidebarGroupLabel>
+        <Divider className={dividerClassName} />
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <Network />
+              <span>My Proxies</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <DollarSign />
+              <span>Cost & Limits</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <Logs />
+              <span>Logs</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+      {/* <Divider className="w-[calc(100%-30px)] mx-auto" /> */}
+      <SidebarGroup className={sidebarGroupClassName}>
+        <SidebarGroupLabel className={groupLabelClassName}>
+          MCP & Tools
+        </SidebarGroupLabel>
+        <Divider className={dividerClassName} />
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            isActive={false}
+            className={menuBtnClassName}
+          >
+            <span>
+              <Shield />
+              My MCP Gateways
+            </span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <Router />
+              <span>MCP Registry</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <Wrench />
+              <span>Tool Policies</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+      <SidebarGroup className={sidebarGroupClassName}>
+        <SidebarGroupLabel className={groupLabelClassName}>
+          Configure
+        </SidebarGroupLabel>
+        <Divider className={dividerClassName} />
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <Info />
+              <span className="ml-1">How it works</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <Cable />
+              <span className="ml-1">Connect</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <Settings />
+              <span className="ml-1">Settings</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarGroup>
+    </SidebarContent>
+  );
+
+  return option3;
 };
 
 const FooterSideBarSection = ({ pathname }: { pathname: string }) => (
   <SidebarFooter>
-    <SecurityEngineWarning />
-    <DefaultCredentialsWarning />
+    {/* <SecurityEngineWarning />
+    <DefaultCredentialsWarning /> */}
     <SignedIn>
       <SidebarGroup className="mt-auto">
         <SidebarGroupContent>
