@@ -433,8 +433,13 @@ class WebSocketService {
         subscription.userContext,
       );
 
+      let currentUrl: string | undefined;
       if (result.success) {
         await this.addNavigationBackMessageToConversation(conversationId);
+        currentUrl = await browserStreamFeature.getCurrentUrl(
+          subscription.agentId,
+          subscription.userContext,
+        );
       }
 
       this.sendToClient(ws, {
@@ -442,6 +447,7 @@ class WebSocketService {
         payload: {
           conversationId,
           success: result.success,
+          url: currentUrl,
           error: result.error,
         },
       });
@@ -488,11 +494,21 @@ class WebSocketService {
         x,
         y,
       );
+
+      let currentUrl: string | undefined;
+      if (result.success) {
+        currentUrl = await browserStreamFeature.getCurrentUrl(
+          subscription.agentId,
+          subscription.userContext,
+        );
+      }
+
       this.sendToClient(ws, {
         type: "browser_click_result",
         payload: {
           conversationId,
           success: result.success,
+          url: currentUrl,
           error: result.error,
         },
       });
@@ -585,11 +601,21 @@ class WebSocketService {
         subscription.userContext,
         key,
       );
+
+      let currentUrl: string | undefined;
+      if (result.success) {
+        currentUrl = await browserStreamFeature.getCurrentUrl(
+          subscription.agentId,
+          subscription.userContext,
+        );
+      }
+
       this.sendToClient(ws, {
         type: "browser_press_key_result",
         payload: {
           conversationId,
           success: result.success,
+          url: currentUrl,
           error: result.error,
         },
       });

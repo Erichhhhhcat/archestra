@@ -161,6 +161,7 @@ export type BrowserClickResultMessage = {
   payload: {
     conversationId: string;
     success: boolean;
+    url?: string;
     error?: string;
   };
 };
@@ -179,6 +180,7 @@ export type BrowserPressKeyResultMessage = {
   payload: {
     conversationId: string;
     success: boolean;
+    url?: string;
     error?: string;
   };
 };
@@ -206,6 +208,7 @@ export type BrowserNavigateBackResultMessage = {
   payload: {
     conversationId: string;
     success: boolean;
+    url?: string;
     error?: string;
   };
 };

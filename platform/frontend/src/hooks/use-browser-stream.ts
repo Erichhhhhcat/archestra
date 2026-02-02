@@ -142,6 +142,9 @@ export function useBrowserStream({
         if (message.payload.conversationId === conversationId) {
           setIsNavigating(false);
           if (message.payload.success && message.payload.url) {
+            if (!isEditingUrlRef.current) {
+              setUrlInput(message.payload.url);
+            }
             appendNavigationMessage(
               `[User manually navigated browser to: ${message.payload.url}]`,
             );
@@ -167,6 +170,9 @@ export function useBrowserStream({
       (message) => {
         if (message.payload.conversationId === conversationId) {
           setIsInteracting(false);
+          if (message.payload.url && !isEditingUrlRef.current) {
+            setUrlInput(message.payload.url);
+          }
           if (!message.payload.success && message.payload.error) {
             setError(message.payload.error);
           }
@@ -191,6 +197,9 @@ export function useBrowserStream({
       (message) => {
         if (message.payload.conversationId === conversationId) {
           setIsInteracting(false);
+          if (message.payload.url && !isEditingUrlRef.current) {
+            setUrlInput(message.payload.url);
+          }
           if (!message.payload.success && message.payload.error) {
             setError(message.payload.error);
           }
@@ -216,6 +225,9 @@ export function useBrowserStream({
         if (message.payload.conversationId === conversationId) {
           setIsNavigating(false);
           if (message.payload.success) {
+            if (message.payload.url && !isEditingUrlRef.current) {
+              setUrlInput(message.payload.url);
+            }
             appendNavigationMessage(
               "[User navigated browser back to previous page]",
             );
