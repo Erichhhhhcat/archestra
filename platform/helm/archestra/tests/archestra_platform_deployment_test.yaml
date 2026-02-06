@@ -261,6 +261,33 @@ tests:
           path: spec.template.spec.initContainers[0].command[2]
           pattern: ".*ARCHESTRA_DATABASE_URL.*"
 
+  - it: should wait for PostgreSQL in init container when waitForPostgres is enabled
+    documentIndex: 1
+    set:
+      archestra.initContainers.waitForPostgres.enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: wait-for-postgres
+      - matchRegex:
+          path: spec.template.spec.initContainers[0].command[2]
+          pattern: ".*nc -z.*"
+
+  - it: should skip PostgreSQL wait in init container when waitForPostgres is disabled
+    documentIndex: 1
+    set:
+      archestra.initContainers.waitForPostgres.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: wait-for-postgres
+      - matchRegex:
+          path: spec.template.spec.initContainers[0].command[2]
+          pattern: ".*Skipping PostgreSQL readiness check.*"
+      - notMatchRegex:
+          path: spec.template.spec.initContainers[0].command[2]
+          pattern: ".*nc -z.*"
+
   - it: should set ARCHESTRA_DATABASE_URL with postgres:// scheme
     documentIndex: 1
     set:

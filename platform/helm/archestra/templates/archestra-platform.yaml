@@ -83,6 +83,7 @@ spec:
             - sh
             - -c
             - |
+              {{- if .Values.archestra.initContainers.waitForPostgres.enabled }}
               # Parse host and port from ARCHESTRA_DATABASE_URL
               # Format: postgresql://user:pass@host:port/database
               DB_URL="${ARCHESTRA_DATABASE_URL#*@}"  # Remove prefix up to @
@@ -96,6 +97,9 @@ spec:
                 sleep 1
               done
               echo "PostgreSQL is up - continuing"
+              {{- else }}
+              echo "Skipping PostgreSQL readiness check"
+              {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "archestra-platform.image" . }}
