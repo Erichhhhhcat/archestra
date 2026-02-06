@@ -251,9 +251,11 @@ tests:
     documentIndex: 1
     asserts:
       # Init container should have ARCHESTRA_DATABASE_URL env var
-      - equal:
-          path: spec.template.spec.initContainers[0].env[0].name
-          value: ARCHESTRA_DATABASE_URL
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: ARCHESTRA_DATABASE_URL
+          any: true
       # Command should parse host/port from ARCHESTRA_DATABASE_URL at runtime
       - matchRegex:
           path: spec.template.spec.initContainers[0].command[2]
