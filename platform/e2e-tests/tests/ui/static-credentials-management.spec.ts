@@ -13,6 +13,7 @@ import {
   addCustomSelfHostedCatalogItem,
   assignEngineeringTeamToDefaultProfileViaApi,
   clickButton,
+  closeOpenDialogs,
   getVisibleCredentials,
   getVisibleStaticCredentials,
   goToMcpRegistryAndOpenManageToolsAndOpenTokenSelect,
@@ -43,7 +44,7 @@ test.describe("Custom Self-hosted MCP Server - installation and static credentia
       extractCookieHeaders,
       makeRandomString,
     }) => {
-      test.setTimeout(60_000); // 90 seconds - K8s pod startup can be slow
+      test.setTimeout(60_000); // 60 seconds - k8s pod startup can be slow
       const page = (() => {
         switch (user) {
           case "Admin":
@@ -78,11 +79,10 @@ test.describe("Custom Self-hosted MCP Server - installation and static credentia
         .getByTestId(`${E2eTestId.ConnectCatalogItemButton}-${catalogItemName}`)
         .click({ timeout: CONNECT_BUTTON_TIMEOUT });
       await page.waitForLoadState("networkidle");
-      // Personal credential type should be selected by default if vault is disabled
-      // otherwise team credential type should be selected
+      // Installation type dropdown should show "Myself" by default when vault is disabled
       await expect(
-        page.getByTestId(E2eTestId.SelectCredentialTypePersonal),
-      ).toBeChecked();
+        page.getByTestId(E2eTestId.SelectCredentialTypeTeamDropdown),
+      ).toContainText("Myself");
 
       // Install using personal credential
       await clickButton({ page, options: { name: "Install" } });
@@ -102,13 +102,11 @@ test.describe("Custom Self-hosted MCP Server - installation and static credentia
 
       // After adding a server, the install dialog opens automatically.
       // Close it so the calling test can control when to open it.
-      // Wait for the assignments dialog to appear and then close it by pressing Escape.
       await page
         .getByRole("dialog")
         .filter({ hasText: /Assignments/ })
         .waitFor({ state: "visible", timeout: 10000 });
-      await page.keyboard.press("Escape");
-      await page.waitForTimeout(500);
+      await closeOpenDialogs(page);
 
       // Then click connect again
       // Wait for the connect button to be visible and enabled before clicking
@@ -123,11 +121,11 @@ test.describe("Custom Self-hosted MCP Server - installation and static credentia
         timeout: CONNECT_BUTTON_TIMEOUT,
       });
       await connectButton.click({ timeout: CONNECT_BUTTON_TIMEOUT });
-      // And this time team credential type should be selected by default for everyone
+      // And this time a team should be auto-selected (since personal installation already exists)
       await expect(
-        page.getByTestId(E2eTestId.SelectCredentialTypeTeam),
-      ).toBeChecked();
-      // open teams dropdown
+        page.getByTestId(E2eTestId.SelectCredentialTypeTeamDropdown),
+      ).not.toContainText("Myself");
+      // open installation type dropdown to verify teams
       await page.getByRole("combobox").click();
       // Validate Admin sees all teams in dropdown, Editor and Member see only their own teams
       const expectedTeams = {
@@ -136,17 +134,10 @@ test.describe("Custom Self-hosted MCP Server - installation and static credentia
         Member: [MARKETING_TEAM_NAME],
       };
       for (const team of expectedTeams[user]) {
-        await expect(
-          page
-            .getByTestId(E2eTestId.SelectCredentialTypeTeamDropdown)
-            .getByText(team),
-        ).toBeVisible();
+        await expect(page.getByRole("option", { name: team })).toBeVisible();
       }
       // select first team from dropdown
-      await page
-        .getByTestId(E2eTestId.SelectCredentialTypeTeamDropdown)
-        .getByText(expectedTeams[user][0])
-        .click();
+      await page.getByRole("option", { name: expectedTeams[user][0] }).click();
 
       // Install credential for team
       await clickButton({ page, options: { name: "Install" } });
@@ -275,13 +266,11 @@ test("Verify Manage Credentials dialog shows correct other users credentials", a
 
     // After adding a server, the install dialog opens automatically.
     // Close it so the calling test can control when to open it.
-    // Wait for the assignments dialog to appear and then close it by pressing Escape.
     await page
       .getByRole("dialog")
       .filter({ hasText: /Assignments/ })
       .waitFor({ state: "visible", timeout: 10000 });
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(500);
+    await closeOpenDialogs(page);
 
     // Wait for dialog to close and button to be visible and enabled again
     const connectButton = page.getByTestId(

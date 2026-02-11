@@ -1,6 +1,10 @@
 "use client";
 
-import { ARCHESTRA_MCP_CATALOG_ID } from "@shared";
+import {
+  ARCHESTRA_MCP_CATALOG_ID,
+  MCP_CATALOG_INSTALL_QUERY_PARAM,
+  PLAYWRIGHT_MCP_CATALOG_ID,
+} from "@shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { Cable, Plus, Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -237,6 +241,33 @@ export function InternalMCPCatalog({
       sessionStorage.removeItem("oauth_installation_complete_catalog_id");
     }
   }, []);
+
+  // Deep-link: auto-open install dialog when ?install={catalogId} is present
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only trigger on searchParams/catalogItems changes, other deps are stable callbacks
+  useEffect(() => {
+    const installCatalogId = searchParams.get(MCP_CATALOG_INSTALL_QUERY_PARAM);
+    if (!installCatalogId || !catalogItems) return;
+
+    const catalogItem = catalogItems.find(
+      (item) => item.id === installCatalogId,
+    );
+    if (!catalogItem) return;
+
+    // Clear the install param from URL to prevent re-triggering on refresh
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(MCP_CATALOG_INSTALL_QUERY_PARAM);
+    const newUrl = params.toString()
+      ? `${pathname}?${params.toString()}`
+      : pathname;
+    router.replace(newUrl, { scroll: false });
+
+    // Trigger the appropriate install dialog
+    if (catalogItem.serverType === "local") {
+      handleInstallLocalServer(catalogItem);
+    } else {
+      handleInstallRemoteServer(catalogItem, false);
+    }
+  }, [searchParams, catalogItems]);
 
   const handleInstallRemoteServer = async (
     catalogItem: CatalogItem,
@@ -637,7 +668,11 @@ export function InternalMCPCatalog({
 
   const filteredCatalogItems = sortInstalledFirst(
     filterCatalogItems(catalogItems || [], searchQueryFromUrl),
-  ).filter((item) => item.id !== ARCHESTRA_MCP_CATALOG_ID);
+  ).filter(
+    (item) =>
+      item.id !== ARCHESTRA_MCP_CATALOG_ID &&
+      item.id !== PLAYWRIGHT_MCP_CATALOG_ID,
+  );
 
   const getInstalledServerInfo = (item: CatalogItem) => {
     const installedServer = getAggregatedInstallation(item.id);
@@ -667,14 +702,14 @@ export function InternalMCPCatalog({
   return (
     <div className="space-y-4">
       <div className="space-y-4">
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <Button
             onClick={() =>
               userIsMcpServerAdmin
                 ? openDialog("create")
                 : openDialog("custom-request")
             }
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+            className="bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
           >
             <Plus className="mr-0.5 h-4 w-4" />
             {userIsMcpServerAdmin
@@ -686,7 +721,7 @@ export function InternalMCPCatalog({
             onClick={() => {
               window.location.href = "/connection?tab=mcp";
             }}
-            className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 hover:from-green-500/20 hover:to-emerald-500/20 border-green-500/50 hover:border-green-500 transition-all duration-200 shadow-sm hover:shadow-md"
+            className="bg-linear-to-r from-green-500/10 to-emerald-500/10 hover:from-green-500/20 hover:to-emerald-500/20 border-green-500/50 hover:border-green-500 transition-all duration-200 shadow-sm hover:shadow-md whitespace-normal text-left h-auto"
           >
             <Cable className="mr-0.5 h-4 w-4" />
             Connect to the Unified MCP Gateway to access those servers

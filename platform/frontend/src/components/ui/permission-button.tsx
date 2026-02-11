@@ -7,7 +7,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useHasPermissions } from "@/lib/auth.query";
-import { permissionsToStrings } from "@/lib/auth.utils";
 
 type PermissionButtonProps = ButtonProps & {
   permissions: Permissions;
@@ -74,9 +73,7 @@ export function PermissionButton({
         </span>
       </TooltipTrigger>
       <TooltipContent className="max-w-60">
-        <p>
-          Required permissions: {permissionsToStrings(permissions).join(", ")}.
-        </p>
+        {tooltip || "You don't have permission to perform this action."}
       </TooltipContent>
     </Tooltip>
   );

@@ -3,7 +3,11 @@ import * as k8s from "@kubernetes/client-node";
 import { Attach } from "@kubernetes/client-node";
 import config from "@/config";
 import logger from "@/logging";
-import { InternalMcpCatalogModel, McpServerModel } from "@/models";
+import {
+  InternalMcpCatalogModel,
+  McpHttpSessionModel,
+  McpServerModel,
+} from "@/models";
 import { secretManager } from "@/secrets-manager";
 import type { McpServer } from "@/types";
 import K8sDeployment, { fetchPlatformPodNodeSelector } from "./k8s-deployment";
@@ -300,6 +304,38 @@ export class McpServerRuntimeManager {
         }
       }
 
+      // Merge non-prompted secrets from catalog
+      // These come from catalog.localConfigSecretId via expandSecrets()
+      // Critical for restarts/reinstalls after catalog was updated with new secrets
+      if (catalogItem?.localConfig?.environment) {
+        for (const envDef of catalogItem.localConfig.environment) {
+          if (
+            envDef.type === "secret" &&
+            !envDef.promptOnInstallation &&
+            envDef.value
+          ) {
+            // Add non-prompted secret from catalog if not already in secretData
+            if (!secretData) {
+              secretData = {};
+            }
+            if (!(envDef.key in secretData)) {
+              secretData[envDef.key] = envDef.value;
+              logger.info(
+                { mcpServerId: id, key: envDef.key },
+                "Adding non-prompted secret from catalog to secretData",
+              );
+            }
+            // Also add to effectiveEnvironmentValues for createContainerEnvFromConfig()
+            if (!effectiveEnvironmentValues) {
+              effectiveEnvironmentValues = {};
+            }
+            if (!(envDef.key in effectiveEnvironmentValues)) {
+              effectiveEnvironmentValues[envDef.key] = envDef.value;
+            }
+          }
+        }
+      }
+
       const k8sDeployment = new K8sDeployment(
         mcpServer,
         this.k8sApi,
@@ -420,6 +456,9 @@ export class McpServerRuntimeManager {
         catalogItem,
       );
 
+      // Resolve HTTP endpoint URL (for streamable-http servers started by another replica)
+      await k8sDeployment.resolveHttpEndpoint();
+
       this.mcpServerIdToDeploymentMap.set(mcpServerId, k8sDeployment);
       logger.info(
         `Lazy-loaded MCP server deployment ${mcpServerId} into memory`,
@@ -476,6 +515,11 @@ export class McpServerRuntimeManager {
         throw new Error(`MCP server with id ${mcpServerId} not found`);
       }
 
+      // Clean up stored HTTP session IDs before stopping the server.
+      // After a restart, existing session IDs become stale and would cause
+      // "Session not found" errors for in-flight conversations.
+      await McpHttpSessionModel.deleteByMcpServerId(mcpServerId);
+
       // Stop the deployment
       await this.stopServer(mcpServerId);
 
@@ -522,6 +566,20 @@ export class McpServerRuntimeManager {
   }
 
   /**
+   * Get a pod-pinned HTTP endpoint URL for streamable-http servers.
+   * This helps preserve MCP sessions when multiple MCP server replicas are running.
+   */
+  async getRunningPodHttpEndpoint(
+    mcpServerId: string,
+  ): Promise<{ endpointUrl: string; podName: string } | undefined> {
+    const k8sDeployment = await this.getOrLoadDeployment(mcpServerId);
+    if (!k8sDeployment) {
+      return undefined;
+    }
+    return k8sDeployment.getRunningPodHttpEndpoint();
+  }
+
+  /**
    * Get logs from an MCP server deployment
    */
   async getMcpServerLogs(
@@ -561,7 +619,8 @@ export class McpServerRuntimeManager {
     // Try to get from memory first, or lazy-load from database
     const k8sDeployment = await this.getOrLoadDeployment(mcpServerId);
     if (!k8sDeployment) {
-      throw new Error(`MCP server not found`);
+      this.writeLogsUnavailableMessage(responseStream, mcpServerId);
+      return;
     }
 
     await k8sDeployment.streamLogs(responseStream, lines, abortSignal);
@@ -657,6 +716,30 @@ export class McpServerRuntimeManager {
 
     await Promise.allSettled(stopPromises);
     logger.info("MCP Server Runtime shutdown complete");
+  }
+
+  private writeLogsUnavailableMessage(
+    responseStream: NodeJS.WritableStream,
+    mcpServerId: string,
+  ): void {
+    if ("destroyed" in responseStream && responseStream.destroyed) {
+      return;
+    }
+
+    const reason = this.k8sApi
+      ? "Deployment not loaded in runtime."
+      : "Kubernetes runtime is not configured on this instance.";
+    const command = this.getMcpServerDescribeCommand(mcpServerId);
+    const message = [
+      "Unable to stream logs for this MCP server.",
+      reason,
+      "Try running:",
+      command,
+      "",
+    ].join("\n");
+
+    responseStream.write(message);
+    responseStream.end();
   }
 }
 

@@ -1,11 +1,14 @@
 import {
   ADMIN_ROLE_NAME,
   ARCHESTRA_MCP_CATALOG_ID,
+  PLAYWRIGHT_MCP_CATALOG_ID,
+  PLAYWRIGHT_MCP_SERVER_NAME,
   type PredefinedRoleName,
   type SupportedProvider,
   testMcpServerCommand,
 } from "@shared";
 import { and, eq } from "drizzle-orm";
+import { isEqual } from "lodash-es";
 import { auth } from "@/auth/better-auth";
 import config from "@/config";
 import db, { schema } from "@/database";
@@ -16,6 +19,8 @@ import {
   ChatApiKeyModel,
   DualLlmConfigModel,
   InternalMcpCatalogModel,
+  McpHttpSessionModel,
+  McpServerModel,
   MemberModel,
   OrganizationModel,
   TeamModel,
@@ -178,6 +183,81 @@ async function seedChatAssistantAgent(): Promise<void> {
 async function seedArchestraCatalogAndTools(): Promise<void> {
   await ToolModel.seedArchestraTools(ARCHESTRA_MCP_CATALOG_ID);
   logger.info("Seeded Archestra catalog and tools");
+}
+
+/**
+ * Seeds Playwright browser preview MCP catalog.
+ * This is a globally available catalog - tools are auto-included for all agents in chat.
+ * Each user gets their own personal Playwright server instance when they click the Browser button.
+ */
+async function seedPlaywrightCatalog(): Promise<void> {
+  const playwrightLocalConfig = {
+    dockerImage: "mcr.microsoft.com/playwright/mcp",
+    transportType: "streamable-http" as const,
+    // The Docker image ENTRYPOINT is: node cli.js --headless --browser chromium --no-sandbox
+    // K8s args are appended to the ENTRYPOINT (CMD is None), so only specify extra flags here:
+    //   --host 0.0.0.0: bind to all interfaces so K8s Service can route traffic to the pod
+    //   --port 8080: enable HTTP transport mode (without --port, it runs in stdio mode and exits)
+    //   --allowed-hosts *: allow connections from K8s Service DNS (default only allows localhost)
+    //   --isolated: each Mcp-Session-Id gets its own browser context for session isolation
+    //
+    // Multi-replica support: The Mcp-Session-Id is stored in the database after the first
+    // connection and reused by all backend pods so they share the same Playwright browser context.
+    // See mcp-client.ts for session ID persistence logic.
+    arguments: [
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "8080",
+      "--allowed-hosts",
+      "*",
+      "--isolated",
+    ],
+    httpPort: 8080,
+  };
+
+  // Read current catalog config before upsert to detect changes
+  const existingCatalog = await InternalMcpCatalogModel.findById(
+    PLAYWRIGHT_MCP_CATALOG_ID,
+  );
+  const configChanged =
+    !existingCatalog ||
+    !isEqual(existingCatalog.localConfig, playwrightLocalConfig);
+
+  await db
+    .insert(schema.internalMcpCatalogTable)
+    .values({
+      id: PLAYWRIGHT_MCP_CATALOG_ID,
+      name: PLAYWRIGHT_MCP_SERVER_NAME,
+      description:
+        "Browser automation for chat - each user gets their own isolated browser session",
+      serverType: "local",
+      requiresAuth: false,
+      isGloballyAvailable: true,
+      localConfig: playwrightLocalConfig,
+    })
+    .onConflictDoUpdate({
+      target: schema.internalMcpCatalogTable.id,
+      set: { localConfig: playwrightLocalConfig },
+    });
+
+  // If config changed, mark all existing servers for reinstall
+  if (configChanged && existingCatalog) {
+    const servers = await McpServerModel.findByCatalogId(
+      PLAYWRIGHT_MCP_CATALOG_ID,
+    );
+    for (const server of servers) {
+      await McpServerModel.update(server.id, { reinstallRequired: true });
+    }
+    if (servers.length > 0) {
+      logger.info(
+        { serverCount: servers.length },
+        "Marked existing Playwright servers for reinstall after catalog config update",
+      );
+    }
+  }
+
+  logger.info("Seeded Playwright browser preview catalog");
 }
 
 /**
@@ -423,7 +503,10 @@ export async function seedRequiredStartingData(): Promise<void> {
   await seedDefaultTeam();
   await seedChatAssistantAgent();
   await seedArchestraCatalogAndTools();
+  await seedPlaywrightCatalog();
   await seedTestMcpServer();
   await seedTeamTokens();
   await seedChatApiKeysFromEnv();
+  // Clean up orphaned MCP HTTP sessions (older than 24h)
+  await McpHttpSessionModel.deleteExpired();
 }

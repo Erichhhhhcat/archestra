@@ -6262,6 +6262,7 @@ export type PostV1A2aByAgentIdResponses = {
         error?: {
             code: number;
             message: string;
+            data?: unknown;
         };
     };
 };
@@ -6377,6 +6378,8 @@ export type GetAgentsResponses = {
             incomingEmailEnabled: boolean;
             incomingEmailSecurityMode: 'private' | 'internal' | 'public';
             incomingEmailAllowedDomain: string | null;
+            llmApiKeyId: string | null;
+            llmModel: string | null;
             createdAt: string;
             updatedAt: string;
             tools: Array<{
@@ -6449,6 +6452,8 @@ export type CreateAgentData = {
         incomingEmailEnabled?: boolean;
         incomingEmailSecurityMode?: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain?: string | null;
+        llmApiKeyId?: string | null;
+        llmModel?: string | null;
         teams: Array<string>;
         labels?: Array<{
             key: string;
@@ -6546,6 +6551,8 @@ export type CreateAgentResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -6692,6 +6699,8 @@ export type GetAllAgentsResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -6829,6 +6838,8 @@ export type GetDefaultMcpGatewayResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -6966,6 +6977,8 @@ export type GetDefaultLlmProxyResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -7184,6 +7197,8 @@ export type GetAgentResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -7247,6 +7262,8 @@ export type UpdateAgentData = {
         incomingEmailEnabled?: boolean;
         incomingEmailSecurityMode?: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain?: string | null;
+        llmApiKeyId?: string | null;
+        llmModel?: string | null;
         teams?: Array<string>;
         labels?: Array<{
             key: string;
@@ -7346,6 +7363,8 @@ export type UpdateAgentResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -7486,6 +7505,8 @@ export type GetAgentVersionsResponses = {
             incomingEmailEnabled: boolean;
             incomingEmailSecurityMode: 'private' | 'internal' | 'public';
             incomingEmailAllowedDomain: string | null;
+            llmApiKeyId: string | null;
+            llmModel: string | null;
             createdAt: string;
             updatedAt: string;
             tools: Array<{
@@ -7637,6 +7658,8 @@ export type RollbackAgentResponses = {
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
+        llmApiKeyId: string | null;
+        llmModel: string | null;
         createdAt: string;
         updatedAt: string;
         tools: Array<{
@@ -9082,6 +9105,78 @@ export type PostApiAuthOrganizationRemoveMemberData = {
 };
 
 export type PostApiAuthOrganizationRemoveMemberResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
+export type GetOAuthClientInfoData = {
+    body?: never;
+    path?: never;
+    query: {
+        client_id: string;
+    };
+    url: '/api/auth/oauth2/client-info';
+};
+
+export type GetOAuthClientInfoResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        client_name: string | null;
+    };
+};
+
+export type GetOAuthClientInfoResponse = GetOAuthClientInfoResponses[keyof GetOAuthClientInfoResponses];
+
+export type PostApiAuthOauth2TokenData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/oauth2/token';
+};
+
+export type PostApiAuthOauth2TokenResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
+export type SubmitOAuthConsentData = {
+    body: {
+        accept: boolean;
+        scope: string;
+        oauth_query: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/auth/oauth2/consent';
+};
+
+export type SubmitOAuthConsentResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        redirectTo: string;
+    };
+};
+
+export type SubmitOAuthConsentResponse = SubmitOAuthConsentResponses[keyof SubmitOAuthConsentResponses];
+
+export type PostApiAuthOauth2RegisterData = {
+    body?: {
+        [key: string]: unknown;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/auth/oauth2/register';
+};
+
+export type PostApiAuthOauth2RegisterResponses = {
     /**
      * Default Response
      */
@@ -11958,6 +12053,8 @@ export type GetChatApiKeysResponses = {
         vaultSecretPath?: string | null;
         vaultSecretKey?: string | null;
         secretStorageType?: 'vault' | 'external_vault' | 'database' | 'none';
+        bestModelId?: string | null;
+        isAgentKey?: boolean;
     }>;
 };
 
@@ -12063,6 +12160,7 @@ export type GetAvailableChatApiKeysData = {
     path?: never;
     query?: {
         provider?: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        includeKeyId?: string;
     };
     url: '/api/chat-api-keys/available';
 };
@@ -12147,6 +12245,8 @@ export type GetAvailableChatApiKeysResponses = {
         vaultSecretPath?: string | null;
         vaultSecretKey?: string | null;
         secretStorageType?: 'vault' | 'external_vault' | 'database' | 'none';
+        bestModelId?: string | null;
+        isAgentKey?: boolean;
     }>;
 };
 
@@ -12320,6 +12420,8 @@ export type GetChatApiKeyResponses = {
         vaultSecretPath?: string | null;
         vaultSecretKey?: string | null;
         secretStorageType?: 'vault' | 'external_vault' | 'database' | 'none';
+        bestModelId?: string | null;
+        isAgentKey?: boolean;
     };
 };
 
@@ -12859,6 +12961,7 @@ export type GetChatConversationsResponses = {
             systemPrompt: string | null;
             userPrompt: string | null;
             agentType: 'profile' | 'mcp_gateway' | 'llm_proxy' | 'agent';
+            llmApiKeyId: string | null;
         };
         messages: Array<unknown>;
     }>;
@@ -12964,6 +13067,7 @@ export type CreateChatConversationResponses = {
             systemPrompt: string | null;
             userPrompt: string | null;
             agentType: 'profile' | 'mcp_gateway' | 'llm_proxy' | 'agent';
+            llmApiKeyId: string | null;
         };
         messages: Array<unknown>;
     };
@@ -13144,6 +13248,7 @@ export type GetChatConversationResponses = {
             systemPrompt: string | null;
             userPrompt: string | null;
             agentType: 'profile' | 'mcp_gateway' | 'llm_proxy' | 'agent';
+            llmApiKeyId: string | null;
         };
         messages: Array<unknown>;
     };
@@ -13252,6 +13357,7 @@ export type UpdateChatConversationResponses = {
             systemPrompt: string | null;
             userPrompt: string | null;
             agentType: 'profile' | 'mcp_gateway' | 'llm_proxy' | 'agent';
+            llmApiKeyId: string | null;
         };
         messages: Array<unknown>;
     };
@@ -13341,6 +13447,86 @@ export type GetChatAgentMcpToolsResponses = {
 };
 
 export type GetChatAgentMcpToolsResponse = GetChatAgentMcpToolsResponses[keyof GetChatAgentMcpToolsResponses];
+
+export type GetChatGlobalToolsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/chat/global-tools';
+};
+
+export type GetChatGlobalToolsErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type GetChatGlobalToolsError = GetChatGlobalToolsErrors[keyof GetChatGlobalToolsErrors];
+
+export type GetChatGlobalToolsResponses = {
+    /**
+     * Default Response
+     */
+    200: Array<{
+        id: string;
+        name: string;
+        description: string | null;
+        catalogId: string;
+    }>;
+};
+
+export type GetChatGlobalToolsResponse = GetChatGlobalToolsResponses[keyof GetChatGlobalToolsResponses];
 
 export type GenerateChatConversationTitleData = {
     body?: {
@@ -13441,6 +13627,7 @@ export type GenerateChatConversationTitleResponses = {
             systemPrompt: string | null;
             userPrompt: string | null;
             agentType: 'profile' | 'mcp_gateway' | 'llm_proxy' | 'agent';
+            llmApiKeyId: string | null;
         };
         messages: Array<unknown>;
     };
@@ -13546,6 +13733,7 @@ export type UpdateChatMessageResponses = {
             systemPrompt: string | null;
             userPrompt: string | null;
             agentType: 'profile' | 'mcp_gateway' | 'llm_proxy' | 'agent';
+            llmApiKeyId: string | null;
         };
         messages: Array<unknown>;
     };
@@ -17546,6 +17734,7 @@ export type GetInternalMcpCatalogResponses = {
         repository: string | null;
         installationCommand: string | null;
         requiresAuth: boolean;
+        isGloballyAvailable: boolean;
         authDescription: string | null;
         authFields: Array<{
             name: string;
@@ -17577,27 +17766,9 @@ export type GetInternalMcpCatalogResponses = {
             transportType?: 'stdio' | 'streamable-http';
             httpPort?: number;
             httpPath?: string;
-            advancedK8sConfig?: {
-                replicas?: number;
-                namespace?: string;
-                annotations?: {
-                    [key: string]: string;
-                };
-                labels?: {
-                    [key: string]: string;
-                };
-                resources?: {
-                    requests?: {
-                        memory?: string;
-                        cpu?: string;
-                    };
-                    limits?: {
-                        memory?: string;
-                        cpu?: string;
-                    };
-                };
-            };
+            nodePort?: number;
         } | null;
+        deploymentSpecYaml: string | null;
         userConfig: {
             [key: string]: {
                 type: 'string' | 'number' | 'boolean' | 'directory' | 'file';
@@ -17650,6 +17821,7 @@ export type CreateInternalMcpCatalogItemData = {
         repository?: string | null;
         installationCommand?: string | null;
         requiresAuth?: boolean;
+        isGloballyAvailable?: boolean;
         authDescription?: string | null;
         authFields?: Array<{
             name: string;
@@ -17680,28 +17852,10 @@ export type CreateInternalMcpCatalogItemData = {
             transportType?: 'stdio' | 'streamable-http';
             httpPort?: number;
             httpPath?: string;
+            nodePort?: number;
             serviceAccount?: string;
-            advancedK8sConfig?: {
-                replicas?: number;
-                namespace?: string;
-                annotations?: {
-                    [key: string]: string;
-                };
-                labels?: {
-                    [key: string]: string;
-                };
-                resources?: {
-                    requests?: {
-                        memory?: string;
-                        cpu?: string;
-                    };
-                    limits?: {
-                        memory?: string;
-                        cpu?: string;
-                    };
-                };
-            };
         } | null;
+        deploymentSpecYaml?: string | null;
         userConfig?: {
             [key: string]: {
                 type: 'string' | 'number' | 'boolean' | 'directory' | 'file';
@@ -17819,6 +17973,7 @@ export type CreateInternalMcpCatalogItemResponses = {
         repository: string | null;
         installationCommand: string | null;
         requiresAuth: boolean;
+        isGloballyAvailable: boolean;
         authDescription: string | null;
         authFields: Array<{
             name: string;
@@ -17850,27 +18005,9 @@ export type CreateInternalMcpCatalogItemResponses = {
             transportType?: 'stdio' | 'streamable-http';
             httpPort?: number;
             httpPath?: string;
-            advancedK8sConfig?: {
-                replicas?: number;
-                namespace?: string;
-                annotations?: {
-                    [key: string]: string;
-                };
-                labels?: {
-                    [key: string]: string;
-                };
-                resources?: {
-                    requests?: {
-                        memory?: string;
-                        cpu?: string;
-                    };
-                    limits?: {
-                        memory?: string;
-                        cpu?: string;
-                    };
-                };
-            };
+            nodePort?: number;
         } | null;
+        deploymentSpecYaml: string | null;
         userConfig: {
             [key: string]: {
                 type: 'string' | 'number' | 'boolean' | 'directory' | 'file';
@@ -18073,6 +18210,7 @@ export type GetInternalMcpCatalogItemResponses = {
         repository: string | null;
         installationCommand: string | null;
         requiresAuth: boolean;
+        isGloballyAvailable: boolean;
         authDescription: string | null;
         authFields: Array<{
             name: string;
@@ -18104,27 +18242,9 @@ export type GetInternalMcpCatalogItemResponses = {
             transportType?: 'stdio' | 'streamable-http';
             httpPort?: number;
             httpPath?: string;
-            advancedK8sConfig?: {
-                replicas?: number;
-                namespace?: string;
-                annotations?: {
-                    [key: string]: string;
-                };
-                labels?: {
-                    [key: string]: string;
-                };
-                resources?: {
-                    requests?: {
-                        memory?: string;
-                        cpu?: string;
-                    };
-                    limits?: {
-                        memory?: string;
-                        cpu?: string;
-                    };
-                };
-            };
+            nodePort?: number;
         } | null;
+        deploymentSpecYaml: string | null;
         userConfig: {
             [key: string]: {
                 type: 'string' | 'number' | 'boolean' | 'directory' | 'file';
@@ -18176,6 +18296,7 @@ export type UpdateInternalMcpCatalogItemData = {
         repository?: string | null;
         installationCommand?: string | null;
         requiresAuth?: boolean;
+        isGloballyAvailable?: boolean;
         authDescription?: string | null;
         authFields?: Array<{
             name: string;
@@ -18206,28 +18327,10 @@ export type UpdateInternalMcpCatalogItemData = {
             transportType?: 'stdio' | 'streamable-http';
             httpPort?: number;
             httpPath?: string;
+            nodePort?: number;
             serviceAccount?: string;
-            advancedK8sConfig?: {
-                replicas?: number;
-                namespace?: string;
-                annotations?: {
-                    [key: string]: string;
-                };
-                labels?: {
-                    [key: string]: string;
-                };
-                resources?: {
-                    requests?: {
-                        memory?: string;
-                        cpu?: string;
-                    };
-                    limits?: {
-                        memory?: string;
-                        cpu?: string;
-                    };
-                };
-            };
         } | null;
+        deploymentSpecYaml?: string | null;
         userConfig?: {
             [key: string]: {
                 type: 'string' | 'number' | 'boolean' | 'directory' | 'file';
@@ -18347,6 +18450,7 @@ export type UpdateInternalMcpCatalogItemResponses = {
         repository: string | null;
         installationCommand: string | null;
         requiresAuth: boolean;
+        isGloballyAvailable: boolean;
         authDescription: string | null;
         authFields: Array<{
             name: string;
@@ -18378,27 +18482,9 @@ export type UpdateInternalMcpCatalogItemResponses = {
             transportType?: 'stdio' | 'streamable-http';
             httpPort?: number;
             httpPath?: string;
-            advancedK8sConfig?: {
-                replicas?: number;
-                namespace?: string;
-                annotations?: {
-                    [key: string]: string;
-                };
-                labels?: {
-                    [key: string]: string;
-                };
-                resources?: {
-                    requests?: {
-                        memory?: string;
-                        cpu?: string;
-                    };
-                    limits?: {
-                        memory?: string;
-                        cpu?: string;
-                    };
-                };
-            };
+            nodePort?: number;
         } | null;
+        deploymentSpecYaml: string | null;
         userConfig: {
             [key: string]: {
                 type: 'string' | 'number' | 'boolean' | 'directory' | 'file';
@@ -18609,6 +18695,245 @@ export type DeleteInternalMcpCatalogItemByNameResponses = {
 };
 
 export type DeleteInternalMcpCatalogItemByNameResponse = DeleteInternalMcpCatalogItemByNameResponses[keyof DeleteInternalMcpCatalogItemByNameResponses];
+
+export type GetDeploymentYamlPreviewData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/internal_mcp_catalog/{id}/deployment-yaml-preview';
+};
+
+export type GetDeploymentYamlPreviewErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type GetDeploymentYamlPreviewError = GetDeploymentYamlPreviewErrors[keyof GetDeploymentYamlPreviewErrors];
+
+export type GetDeploymentYamlPreviewResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        yaml: string;
+    };
+};
+
+export type GetDeploymentYamlPreviewResponse = GetDeploymentYamlPreviewResponses[keyof GetDeploymentYamlPreviewResponses];
+
+export type ValidateDeploymentYamlData = {
+    body: {
+        yaml: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/internal_mcp_catalog/validate-deployment-yaml';
+};
+
+export type ValidateDeploymentYamlErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type ValidateDeploymentYamlError = ValidateDeploymentYamlErrors[keyof ValidateDeploymentYamlErrors];
+
+export type ValidateDeploymentYamlResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        valid: boolean;
+        errors: Array<string>;
+        warnings: Array<string>;
+    };
+};
+
+export type ValidateDeploymentYamlResponse = ValidateDeploymentYamlResponses[keyof ValidateDeploymentYamlResponses];
+
+export type ResetDeploymentYamlData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/internal_mcp_catalog/{id}/reset-deployment-yaml';
+};
+
+export type ResetDeploymentYamlErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type ResetDeploymentYamlError = ResetDeploymentYamlErrors[keyof ResetDeploymentYamlErrors];
+
+export type ResetDeploymentYamlResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        yaml: string;
+    };
+};
+
+export type ResetDeploymentYamlResponse = ResetDeploymentYamlResponses[keyof ResetDeploymentYamlResponses];
 
 export type CheckInvitationData = {
     body?: never;
@@ -19218,38 +19543,6 @@ export type PostV1McpByProfileIdResponses = {
     200: unknown;
 };
 
-export type DeleteV1McpCacheByProfileIdData = {
-    body?: never;
-    path: {
-        profileId: string;
-    };
-    query?: never;
-    url: '/v1/mcp/cache/{profileId}';
-};
-
-export type DeleteV1McpCacheByProfileIdErrors = {
-    /**
-     * Default Response
-     */
-    401: {
-        error: string;
-        message: string;
-    };
-};
-
-export type DeleteV1McpCacheByProfileIdError = DeleteV1McpCacheByProfileIdErrors[keyof DeleteV1McpCacheByProfileIdErrors];
-
-export type DeleteV1McpCacheByProfileIdResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        message: string;
-    };
-};
-
-export type DeleteV1McpCacheByProfileIdResponse = DeleteV1McpCacheByProfileIdResponses[keyof DeleteV1McpCacheByProfileIdResponses];
-
 export type GetMcpServerInstallationRequestsData = {
     body?: never;
     path?: never;
@@ -19387,27 +19680,8 @@ export type GetMcpServerInstallationRequestsResponses = {
                 transportType?: 'stdio' | 'streamable-http';
                 httpPort?: number;
                 httpPath?: string;
+                nodePort?: number;
                 serviceAccount?: string;
-                advancedK8sConfig?: {
-                    replicas?: number;
-                    namespace?: string;
-                    annotations?: {
-                        [key: string]: string;
-                    };
-                    labels?: {
-                        [key: string]: string;
-                    };
-                    resources?: {
-                        requests?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                        limits?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                    };
-                };
             };
         } | null;
         adminResponse: string | null;
@@ -19487,27 +19761,8 @@ export type CreateMcpServerInstallationRequestData = {
                 transportType?: 'stdio' | 'streamable-http';
                 httpPort?: number;
                 httpPath?: string;
+                nodePort?: number;
                 serviceAccount?: string;
-                advancedK8sConfig?: {
-                    replicas?: number;
-                    namespace?: string;
-                    annotations?: {
-                        [key: string]: string;
-                    };
-                    labels?: {
-                        [key: string]: string;
-                    };
-                    resources?: {
-                        requests?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                        limits?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                    };
-                };
             };
         } | null;
     };
@@ -19641,27 +19896,8 @@ export type CreateMcpServerInstallationRequestResponses = {
                 transportType?: 'stdio' | 'streamable-http';
                 httpPort?: number;
                 httpPath?: string;
+                nodePort?: number;
                 serviceAccount?: string;
-                advancedK8sConfig?: {
-                    replicas?: number;
-                    namespace?: string;
-                    annotations?: {
-                        [key: string]: string;
-                    };
-                    labels?: {
-                        [key: string]: string;
-                    };
-                    resources?: {
-                        requests?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                        limits?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                    };
-                };
             };
         } | null;
         adminResponse: string | null;
@@ -19894,27 +20130,8 @@ export type GetMcpServerInstallationRequestResponses = {
                 transportType?: 'stdio' | 'streamable-http';
                 httpPort?: number;
                 httpPath?: string;
+                nodePort?: number;
                 serviceAccount?: string;
-                advancedK8sConfig?: {
-                    replicas?: number;
-                    namespace?: string;
-                    annotations?: {
-                        [key: string]: string;
-                    };
-                    labels?: {
-                        [key: string]: string;
-                    };
-                    resources?: {
-                        requests?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                        limits?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                    };
-                };
             };
         } | null;
         adminResponse: string | null;
@@ -19994,27 +20211,8 @@ export type UpdateMcpServerInstallationRequestData = {
                 transportType?: 'stdio' | 'streamable-http';
                 httpPort?: number;
                 httpPath?: string;
+                nodePort?: number;
                 serviceAccount?: string;
-                advancedK8sConfig?: {
-                    replicas?: number;
-                    namespace?: string;
-                    annotations?: {
-                        [key: string]: string;
-                    };
-                    labels?: {
-                        [key: string]: string;
-                    };
-                    resources?: {
-                        requests?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                        limits?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                    };
-                };
             };
         } | null;
         adminResponse?: string | null;
@@ -20160,27 +20358,8 @@ export type UpdateMcpServerInstallationRequestResponses = {
                 transportType?: 'stdio' | 'streamable-http';
                 httpPort?: number;
                 httpPath?: string;
+                nodePort?: number;
                 serviceAccount?: string;
-                advancedK8sConfig?: {
-                    replicas?: number;
-                    namespace?: string;
-                    annotations?: {
-                        [key: string]: string;
-                    };
-                    labels?: {
-                        [key: string]: string;
-                    };
-                    resources?: {
-                        requests?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                        limits?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                    };
-                };
             };
         } | null;
         adminResponse: string | null;
@@ -20336,27 +20515,8 @@ export type ApproveMcpServerInstallationRequestResponses = {
                 transportType?: 'stdio' | 'streamable-http';
                 httpPort?: number;
                 httpPath?: string;
+                nodePort?: number;
                 serviceAccount?: string;
-                advancedK8sConfig?: {
-                    replicas?: number;
-                    namespace?: string;
-                    annotations?: {
-                        [key: string]: string;
-                    };
-                    labels?: {
-                        [key: string]: string;
-                    };
-                    resources?: {
-                        requests?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                        limits?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                    };
-                };
             };
         } | null;
         adminResponse: string | null;
@@ -20512,27 +20672,8 @@ export type DeclineMcpServerInstallationRequestResponses = {
                 transportType?: 'stdio' | 'streamable-http';
                 httpPort?: number;
                 httpPath?: string;
+                nodePort?: number;
                 serviceAccount?: string;
-                advancedK8sConfig?: {
-                    replicas?: number;
-                    namespace?: string;
-                    annotations?: {
-                        [key: string]: string;
-                    };
-                    labels?: {
-                        [key: string]: string;
-                    };
-                    resources?: {
-                        requests?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                        limits?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                    };
-                };
             };
         } | null;
         adminResponse: string | null;
@@ -20688,27 +20829,8 @@ export type AddMcpServerInstallationRequestNoteResponses = {
                 transportType?: 'stdio' | 'streamable-http';
                 httpPort?: number;
                 httpPath?: string;
+                nodePort?: number;
                 serviceAccount?: string;
-                advancedK8sConfig?: {
-                    replicas?: number;
-                    namespace?: string;
-                    annotations?: {
-                        [key: string]: string;
-                    };
-                    labels?: {
-                        [key: string]: string;
-                    };
-                    resources?: {
-                        requests?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                        limits?: {
-                            memory?: string;
-                            cpu?: string;
-                        };
-                    };
-                };
             };
         } | null;
         adminResponse: string | null;
@@ -21643,7 +21765,10 @@ export type GetMcpToolCallsResponses = {
                 };
             } | null;
             toolResult: unknown;
+            userId: string | null;
+            authMethod: 'oauth' | 'user_token' | 'org_token' | 'team_token';
             createdAt: string;
+            userName: string | null;
         }>;
         pagination: {
             currentPage: number;
@@ -21746,7 +21871,10 @@ export type GetMcpToolCallResponses = {
             };
         } | null;
         toolResult: unknown;
+        userId: string | null;
+        authMethod: 'oauth' | 'user_token' | 'org_token' | 'team_token';
         createdAt: string;
+        userName: string | null;
     };
 };
 
@@ -22090,6 +22218,56 @@ export type HandleOAuthCallbackResponses = {
 };
 
 export type HandleOAuthCallbackResponse = HandleOAuthCallbackResponses[keyof HandleOAuthCallbackResponses];
+
+export type GetWellKnownOauthProtectedResourceBy__Data = {
+    body?: never;
+    path: {
+        '*': string;
+    };
+    query?: never;
+    url: '/.well-known/oauth-protected-resource/{*}';
+};
+
+export type GetWellKnownOauthProtectedResourceBy__Responses = {
+    /**
+     * Default Response
+     */
+    200: {
+        resource: string;
+        authorization_servers: Array<string>;
+        scopes_supported: Array<string>;
+        bearer_methods_supported: Array<string>;
+    };
+};
+
+export type GetWellKnownOauthProtectedResourceBy__Response = GetWellKnownOauthProtectedResourceBy__Responses[keyof GetWellKnownOauthProtectedResourceBy__Responses];
+
+export type GetWellKnownOauthAuthorizationServerData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/.well-known/oauth-authorization-server';
+};
+
+export type GetWellKnownOauthAuthorizationServerResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        issuer: string;
+        authorization_endpoint: string;
+        token_endpoint: string;
+        registration_endpoint: string;
+        jwks_uri: string;
+        response_types_supported: Array<string>;
+        grant_types_supported: Array<string>;
+        token_endpoint_auth_methods_supported: Array<string>;
+        code_challenge_methods_supported: Array<string>;
+        scopes_supported: Array<string>;
+    };
+};
+
+export type GetWellKnownOauthAuthorizationServerResponse = GetWellKnownOauthAuthorizationServerResponses[keyof GetWellKnownOauthAuthorizationServerResponses];
 
 export type OllamaChatCompletionsWithDefaultAgentData = {
     body?: OllamaChatCompletionRequestInput;

@@ -19,13 +19,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@kubernetes/client-node": "^1.4.0",
     "@shared": "workspace:*",
     "dotenv": "^17.2.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.0",
-    "@types/node": "^25.0.9",
+    "@types/node": "^25.1.0",
     "knip": "^5.81.0"
   }
 }

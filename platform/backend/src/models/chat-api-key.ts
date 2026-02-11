@@ -1,4 +1,8 @@
-import { isVaultReference, parseVaultReference } from "@shared";
+import {
+  isVaultReference,
+  PROVIDERS_WITH_OPTIONAL_API_KEY,
+  parseVaultReference,
+} from "@shared";
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import db, { schema } from "@/database";
 import { computeSecretStorageType } from "@/secrets-manager/utils";
@@ -221,10 +225,13 @@ class ChatApiKeyModel {
       conditions.push(eq(schema.chatApiKeysTable.provider, provider));
     }
 
-    // Only return keys with configured secrets OR system keys (which don't need secrets)
+    // Only return keys with configured secrets, system keys, or providers with optional API keys
     const secretOrSystemCondition = or(
       sql`${schema.chatApiKeysTable.secretId} IS NOT NULL`,
       eq(schema.chatApiKeysTable.isSystem, true),
+      inArray(schema.chatApiKeysTable.provider, [
+        ...PROVIDERS_WITH_OPTIONAL_API_KEY,
+      ]),
     );
     if (secretOrSystemCondition) {
       conditions.push(secretOrSystemCondition);
@@ -290,14 +297,15 @@ class ChatApiKeyModel {
   }
 
   /**
-   * Resolve API key with priority: conversation > personal > team > org_wide
+   * Resolve API key with priority:
+   * 1. Conversation-specific key (if matches agentLlmApiKeyId, skip user access check)
+   * 2. Agent's configured key (if agentLlmApiKeyId provided, use directly without user permission check)
+   * 3. Personal key
+   * 4. Team key
+   * 5. Org-wide key
    *
-   * @param organizationId - The organization ID
-   * @param userId - The current user's ID
-   * @param userTeamIds - Team IDs the user belongs to
-   * @param provider - The LLM provider to find a key for
-   * @param conversationApiKeyId - Optional API key ID explicitly selected for the conversation
-   * @returns The resolved API key or null if none available
+   * Key principle: If an admin configured an API key on the agent, any user with access
+   * to that agent can use the key. Permission flows through agent access, not direct API key access.
    */
   static async getCurrentApiKey({
     organizationId,
@@ -305,12 +313,14 @@ class ChatApiKeyModel {
     userTeamIds,
     provider,
     conversationId,
+    agentLlmApiKeyId,
   }: {
     organizationId: string;
     userId: string;
     userTeamIds: string[];
     provider: SupportedChatProvider;
     conversationId: string | null;
+    agentLlmApiKeyId?: string | null;
   }): Promise<ChatApiKey | null> {
     const conversation = conversationId
       ? await ConversationModel.findById({
@@ -320,7 +330,7 @@ class ChatApiKeyModel {
         })
       : null;
 
-    // 1. If conversation has an explicit API key set, use it (if user has access and it matches provider)
+    // 1. If conversation has an explicit API key set, use it
     if (conversation?.chatApiKeyId) {
       const conversationKey = await ChatApiKeyModel.findById(
         conversation.chatApiKeyId,
@@ -328,10 +338,34 @@ class ChatApiKeyModel {
       if (
         conversationKey &&
         conversationKey.provider === provider &&
-        conversationKey.secretId &&
-        ChatApiKeyModel.userHasAccessToKey(conversationKey, userId, userTeamIds)
+        conversationKey.secretId
       ) {
-        return conversationKey;
+        // If conversation's key matches agent's configured key, skip user access check
+        if (
+          agentLlmApiKeyId &&
+          conversation.chatApiKeyId === agentLlmApiKeyId
+        ) {
+          return conversationKey;
+        }
+        // Otherwise, check user access
+        if (
+          ChatApiKeyModel.userHasAccessToKey(
+            conversationKey,
+            userId,
+            userTeamIds,
+          )
+        ) {
+          return conversationKey;
+        }
+      }
+    }
+
+    // 2. If agent has a configured API key and it matches the provider, use it directly
+    //    (no user permission check — permission flows through agent access)
+    if (agentLlmApiKeyId) {
+      const agentKey = await ChatApiKeyModel.findById(agentLlmApiKeyId);
+      if (agentKey && agentKey.provider === provider && agentKey.secretId) {
+        return agentKey;
       }
     }
 

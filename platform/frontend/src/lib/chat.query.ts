@@ -1,16 +1,21 @@
 import {
   archestraApiSdk,
-  isBrowserMcpTool,
+  PLAYWRIGHT_MCP_CATALOG_ID,
+  PLAYWRIGHT_MCP_SERVER_NAME,
   type SupportedProvider,
 } from "@shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { authClient } from "./clients/auth/auth-client";
+import { useMcpServers } from "./mcp-server.query";
 import { handleApiError } from "./utils";
 
 const {
   getChatConversations,
   getChatConversation,
   getChatAgentMcpTools,
+  getChatGlobalTools,
   createChatConversation,
   updateChatConversation,
   deleteChatConversation,
@@ -19,6 +24,9 @@ const {
   updateConversationEnabledTools,
   deleteConversationEnabledTools,
   getAgentTools,
+  installMcpServer,
+  reinstallMcpServer,
+  getMcpServer,
 } = archestraApiSdk;
 
 export function useConversation(conversationId?: string) {
@@ -382,13 +390,157 @@ export function useAgentDelegationTools(agentId: string | undefined) {
   });
 }
 
+/**
+ * Get globally available tools with IDs for the current user.
+ * These are tools from catalogs marked as isGloballyAvailable where the user
+ * has a personal server installed (e.g., Playwright browser tools).
+ */
+export function useGlobalChatTools() {
+  return useQuery({
+    queryKey: ["chat", "global-tools"],
+    queryFn: async () => {
+      const { data, error } = await getChatGlobalTools();
+      if (error) {
+        handleApiError(error);
+        return [];
+      }
+      return data ?? [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000,
+  });
+}
+
+/**
+ * Install browser preview (Playwright) for the current user with polling for completion.
+ * Creates a personal Playwright server if one doesn't exist.
+ * Polls for installation status since local servers are deployed asynchronously to K8s.
+ */
+export function useBrowserInstallation() {
+  const [installingServerId, setInstallingServerId] = useState<string | null>(
+    null,
+  );
+  const queryClient = useQueryClient();
+
+  const installMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await installMcpServer({
+        body: {
+          name: PLAYWRIGHT_MCP_SERVER_NAME,
+          catalogId: PLAYWRIGHT_MCP_CATALOG_ID,
+        },
+      });
+      if (error) {
+        handleApiError(error);
+        return null;
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data?.id) {
+        setInstallingServerId(data.id);
+      }
+    },
+  });
+
+  const reinstallMutation = useMutation({
+    mutationFn: async (serverId: string) => {
+      const { data, error } = await reinstallMcpServer({
+        path: { id: serverId },
+        body: {},
+      });
+      if (error) {
+        handleApiError(error);
+        return null;
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data?.id) {
+        setInstallingServerId(data.id);
+      }
+    },
+  });
+
+  // Poll for installation status
+  const statusQuery = useQuery({
+    queryKey: ["browser-installation-status", installingServerId],
+    queryFn: async () => {
+      if (!installingServerId) return null;
+      const response = await getMcpServer({
+        path: { id: installingServerId },
+      });
+      return response.data?.localInstallationStatus ?? null;
+    },
+    refetchInterval: (query) => {
+      const status = query.state.data;
+      return status === "pending" || status === "discovering-tools"
+        ? 2000
+        : false;
+    },
+    enabled: !!installingServerId,
+  });
+
+  // When installation completes, invalidate queries
+  useEffect(() => {
+    if (statusQuery.data === "success") {
+      setInstallingServerId(null);
+      queryClient.invalidateQueries({ queryKey: ["chat", "global-tools"] });
+      queryClient.invalidateQueries({ queryKey: ["chat", "agents"] });
+      queryClient.invalidateQueries({ queryKey: ["mcp-servers"] });
+      toast.success("Browser installed successfully");
+    }
+    if (statusQuery.data === "error") {
+      setInstallingServerId(null);
+      toast.error("Failed to install browser");
+    }
+  }, [statusQuery.data, queryClient]);
+
+  return {
+    isInstalling:
+      installMutation.isPending ||
+      reinstallMutation.isPending ||
+      (!!installingServerId &&
+        statusQuery.data !== "success" &&
+        statusQuery.data !== "error"),
+    installBrowser: installMutation.mutateAsync,
+    reinstallBrowser: reinstallMutation.mutateAsync,
+    installationStatus: statusQuery.data,
+  };
+}
+
 export function useHasPlaywrightMcpTools(agentId: string | undefined) {
   const toolsQuery = useChatProfileMcpTools(agentId);
+  const globalToolsQuery = useGlobalChatTools();
+  const browserInstall = useBrowserInstallation();
 
-  return (
-    toolsQuery.data?.some((tool) => {
-      const toolName = tool.name;
-      return typeof toolName === "string" && isBrowserMcpTool(toolName);
-    }) ?? false
+  // Fetch user's Playwright server to check reinstallRequired
+  const playwrightServersQuery = useMcpServers({
+    catalogId: PLAYWRIGHT_MCP_CATALOG_ID,
+  });
+  const { data: session } = authClient.useSession();
+  const currentUserId = session?.user?.id;
+  // Find the server owned by the current user (admins see all servers)
+  const playwrightServer = playwrightServersQuery.data?.find(
+    (s) => s.ownerId === currentUserId,
   );
+
+  // Only check global tools with PLAYWRIGHT_MCP_CATALOG_ID
+  // Profile tools (e.g., microsoft__playwright-mcp) should NOT enable browser preview
+  // Those tools work as regular MCP tools but without the integrated preview feature
+  const hasPlaywrightMcp =
+    globalToolsQuery.data?.some(
+      (tool) => tool.catalogId === PLAYWRIGHT_MCP_CATALOG_ID,
+    ) ?? false;
+
+  return {
+    hasPlaywrightMcp,
+    reinstallRequired: playwrightServer?.reinstallRequired ?? false,
+    installationFailed: playwrightServer?.localInstallationStatus === "error",
+    playwrightServerId: playwrightServer?.id,
+    isLoading: toolsQuery.isLoading || globalToolsQuery.isLoading,
+    isInstalling: browserInstall.isInstalling,
+    installBrowser: browserInstall.installBrowser,
+    reinstallBrowser: browserInstall.reinstallBrowser,
+  };
 }

@@ -3,6 +3,7 @@
 import { type archestraApiTypes, E2eTestId } from "@shared";
 import {
   AlertTriangle,
+  Code,
   FileText,
   Info,
   MoreVertical,
@@ -46,6 +47,7 @@ import { McpAssignmentsDialog } from "./mcp-assignments-dialog";
 import { McpLogsDialog } from "./mcp-logs-dialog";
 import { TransportBadges } from "./transport-badges";
 import { UninstallServerDialog } from "./uninstall-server-dialog";
+import { YamlConfigDialog } from "./yaml-config-dialog";
 
 export type CatalogItem =
   archestraApiTypes.GetInternalMcpCatalogResponses["200"][number];
@@ -161,6 +163,7 @@ export function McpServerCard({
   const [isToolsDialogOpen, setIsToolsDialogOpen] = useState(false);
   const [isManageUsersDialogOpen, setIsManageUsersDialogOpen] = useState(false);
   const [isLogsDialogOpen, setIsLogsDialogOpen] = useState(false);
+  const [isYamlConfigDialogOpen, setIsYamlConfigDialogOpen] = useState(false);
   const [uninstallingServer, setUninstallingServer] = useState<{
     id: string;
     name: string;
@@ -277,27 +280,24 @@ export function McpServerCard({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="flex-1">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full h-8 text-xs"
-                onClick={() => setIsLogsDialogOpen(true)}
-                disabled={!isLogsAvailable}
-              >
-                <FileText className="h-3 w-3 mr-1" />
-                Logs
-              </Button>
-            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 h-8 text-xs"
+              onClick={() => setIsLogsDialogOpen(true)}
+              disabled={!isLogsAvailable}
+            >
+              <FileText className="h-3 w-3 mr-1" />
+              Logs
+            </Button>
           </TooltipTrigger>
           <TooltipContent>
             <p>
               {variant !== "local"
-                ? "Local servers only"
+                ? "Available for local servers only"
                 : !hasLocalInstallations
                   ? "Connect first"
                   : "View container logs"}
@@ -321,6 +321,12 @@ export function McpServerCard({
             <Info className="mr-2 h-4 w-4" />
             About
           </DropdownMenuItem>
+          {variant === "local" && (
+            <DropdownMenuItem onClick={() => setIsYamlConfigDialogOpen(true)}>
+              <Code className="mr-2 h-4 w-4" />
+              Edit K8S Deployment Yaml
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={onDelete} className="text-destructive">
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
@@ -474,9 +480,11 @@ export function McpServerCard({
     </>
   );
 
+  const shouldShowErrorBanner = hasError;
+
   // Show error banner with links to logs and edit dialog (hide during reinstall)
   const errorBanner = isCurrentUserAuthenticated &&
-    hasError &&
+    shouldShowErrorBanner &&
     errorMessage &&
     !isInstalling && (
       <div
@@ -488,6 +496,7 @@ export function McpServerCard({
           type="button"
           onClick={() => setIsLogsDialogOpen(true)}
           className="text-primary hover:underline cursor-pointer"
+          data-testid={`${E2eTestId.McpLogsViewButton}-${item.name}`}
         >
           view the logs
         </button>{" "}
@@ -496,6 +505,7 @@ export function McpServerCard({
           type="button"
           onClick={onEdit}
           className="text-primary hover:underline cursor-pointer"
+          data-testid={`${E2eTestId.McpLogsEditConfigButton}-${item.name}`}
         >
           edit your config
         </button>
@@ -680,7 +690,7 @@ export function McpServerCard({
 
       <ManageUsersDialog
         catalogId={item.id}
-        isOpen={isManageUsersDialogOpen && !isInstalling}
+        isOpen={isManageUsersDialogOpen}
         onClose={() => setIsManageUsersDialogOpen(false)}
         label={item.label || item.name}
       />
@@ -690,6 +700,11 @@ export function McpServerCard({
         onClose={() => setUninstallingServer(null)}
         isCancelingInstallation={isInstalling}
         onCancelInstallation={onCancelInstallation}
+      />
+
+      <YamlConfigDialog
+        item={isYamlConfigDialogOpen ? item : null}
+        onClose={() => setIsYamlConfigDialogOpen(false)}
       />
     </>
   );

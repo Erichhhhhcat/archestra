@@ -27,6 +27,7 @@ import {
   resolveProviderApiKey,
 } from "@/clients/llm-client";
 import config from "@/config";
+import { browserStreamFeature } from "@/features/browser-stream/services/browser-stream.feature";
 import { extractAndIngestDocuments } from "@/knowledge-graph/chat-document-extractor";
 import logger from "@/logging";
 import {
@@ -34,12 +35,14 @@ import {
   ChatApiKeyModel,
   ConversationEnabledToolModel,
   ConversationModel,
+  InternalMcpCatalogModel,
+  McpServerModel,
   MessageModel,
   TeamModel,
+  ToolModel,
 } from "@/models";
 import { getExternalAgentId } from "@/routes/proxy/utils/external-agent-id";
 import { getSecretValueForLlmProviderApiKey } from "@/secrets-manager";
-import { browserStreamFeature } from "@/services/browser-stream-feature";
 import {
   ApiError,
   constructResponseSchema,
@@ -53,7 +56,7 @@ import {
   UuidIdSchema,
 } from "@/types";
 import { estimateMessagesSize } from "@/utils/message-size";
-import { mapProviderError } from "./errors";
+import { mapProviderError, ProviderError } from "./errors";
 import {
   stripImagesFromMessages,
   type UiMessage,
@@ -256,6 +259,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       // Create LLM model using shared service
       // Pass conversationId as sessionId to group all requests in this chat session
+      // Pass agent's llmApiKeyId so it can be used without user access check
       const { model } = await createLLMModelForAgent({
         organizationId,
         userId: user.id,
@@ -265,6 +269,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         conversationId,
         externalAgentId,
         sessionId: conversationId,
+        agentLlmApiKeyId: conversation.agent.llmApiKeyId,
       });
 
       // Strip images and large browser tool results from messages before sending to LLM
@@ -283,7 +288,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         model,
         messages: modelMessages,
         tools: mcpTools,
-        stopWhen: stepCountIs(20),
+        stopWhen: stepCountIs(500),
         onFinish: async ({ usage, finishReason }) => {
           logger.info(
             {
@@ -341,11 +346,12 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
                     "Chat stream error occurred",
                   );
 
-                  // Map provider error to user-friendly ChatErrorResponse
-                  const mappedError: ChatErrorResponse = mapProviderError(
-                    error,
-                    provider,
-                  );
+                  // Use pre-built error from subagent if available (preserves correct provider),
+                  // otherwise map the error with the current provider
+                  const mappedError: ChatErrorResponse =
+                    error instanceof ProviderError
+                      ? error.chatErrorResponse
+                      : mapProviderError(error, provider);
 
                   logger.info(
                     {
@@ -563,7 +569,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         ),
       },
     },
-    async ({ params: { agentId }, user, headers }, reply) => {
+    async ({ params: { agentId }, user, organizationId, headers }, reply) => {
       // Check if user is an agent admin
       const { success: isAgentAdmin } = await hasPermission(
         { profile: ["admin"] },
@@ -582,6 +588,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         agentName: agent.name,
         agentId,
         userId: user.id,
+        organizationId,
         userIsProfileAdmin: isAgentAdmin,
         // No conversation context here as this is just fetching available tools
       });
@@ -594,6 +601,75 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
           (tool.inputSchema as { jsonSchema?: Record<string, unknown> })
             ?.jsonSchema || null,
       }));
+
+      return reply.send(tools);
+    },
+  );
+
+  /**
+   * Get globally available tools with their IDs for the current user.
+   * These are tools from catalogs marked as isGloballyAvailable where the user
+   * has a personal server installed. Returns tool IDs needed for enable/disable.
+   */
+  fastify.get(
+    "/api/chat/global-tools",
+    {
+      schema: {
+        operationId: RouteId.GetChatGlobalTools,
+        description:
+          "Get globally available tools with IDs for the current user",
+        tags: ["Chat"],
+        response: constructResponseSchema(
+          z.array(
+            z.object({
+              id: z.string().uuid(),
+              name: z.string(),
+              description: z.string().nullable(),
+              catalogId: z.string().uuid(),
+            }),
+          ),
+        ),
+      },
+    },
+    async ({ user }, reply) => {
+      // Get all globally available catalogs
+      const globalCatalogs =
+        await InternalMcpCatalogModel.getGloballyAvailableCatalogs();
+
+      if (globalCatalogs.length === 0) {
+        return reply.send([]);
+      }
+
+      const tools: Array<{
+        id: string;
+        name: string;
+        description: string | null;
+        catalogId: string;
+      }> = [];
+
+      for (const catalog of globalCatalogs) {
+        // Check if user has a personal server installed for this catalog
+        const userServer = await McpServerModel.getUserPersonalServerForCatalog(
+          user.id,
+          catalog.id,
+        );
+
+        if (!userServer) {
+          continue;
+        }
+
+        // Get tools for this catalog with their IDs
+        const catalogTools = await ToolModel.findByCatalogId(catalog.id);
+
+        for (const tool of catalogTools) {
+          tools.push({
+            id: tool.id,
+            name: tool.name,
+            description: tool.description,
+            catalogId: catalog.id,
+          });
+        }
+      }
 
       return reply.send(tools);
     },
@@ -646,7 +722,8 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       }
 
       // Validate chatApiKeyId if provided
-      if (chatApiKeyId) {
+      // Skip validation if it matches the agent's configured key (permission flows through agent access)
+      if (chatApiKeyId && chatApiKeyId !== agent.llmApiKeyId) {
         await validateChatApiKeyAccess(chatApiKeyId, user.id, organizationId);
       }
 
@@ -714,12 +791,24 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
     },
     async ({ params: { id }, body, user, organizationId, headers }, reply) => {
       // Validate chatApiKeyId if provided
+      // Skip validation if it matches the agent's configured key (permission flows through agent access)
       if (body.chatApiKeyId) {
-        await validateChatApiKeyAccess(
-          body.chatApiKeyId,
-          user.id,
+        const currentConversation = await ConversationModel.findById({
+          id,
+          userId: user.id,
           organizationId,
-        );
+        });
+
+        if (
+          !currentConversation ||
+          body.chatApiKeyId !== currentConversation.agent.llmApiKeyId
+        ) {
+          await validateChatApiKeyAccess(
+            body.chatApiKeyId,
+            user.id,
+            organizationId,
+          );
+        }
       }
 
       // Validate agentId if provided
@@ -778,6 +867,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         try {
           await browserStreamFeature.closeTab(conversation.agentId, id, {
             userId: user.id,
+            organizationId,
             userIsProfileAdmin: false,
           });
         } catch (error) {

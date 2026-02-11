@@ -1,12 +1,12 @@
 import type { IncomingHttpHeaders } from "node:http";
-import { RouteId } from "@shared";
+import { PROVIDERS_WITH_OPTIONAL_API_KEY, RouteId } from "@shared";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { capitalize } from "lodash-es";
 import { z } from "zod";
 import { hasPermission } from "@/auth";
 import { isVertexAiEnabled } from "@/clients/gemini-client";
 import logger from "@/logging";
-import { ChatApiKeyModel, TeamModel } from "@/models";
+import { ApiKeyModelModel, ChatApiKeyModel, TeamModel } from "@/models";
 import { testProviderApiKey } from "@/routes/chat/routes.models";
 import {
   assertByosEnabled,
@@ -71,6 +71,8 @@ const chatApiKeysRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tags: ["Chat API Keys"],
         querystring: z.object({
           provider: SupportedChatProviderSchema.optional(),
+          /** Include a specific key by ID even if user doesn't have direct access (e.g. agent's configured key) */
+          includeKeyId: z.string().uuid().optional(),
         }),
         response: constructResponseSchema(
           z.array(ChatApiKeyWithScopeInfoSchema),
@@ -86,7 +88,35 @@ const chatApiKeysRoutes: FastifyPluginAsyncZod = async (fastify) => {
         userTeamIds,
         query.provider,
       );
-      return reply.send(apiKeys);
+
+      // If includeKeyId is provided and not already in results, fetch it separately
+      if (
+        query.includeKeyId &&
+        !apiKeys.some((k) => k.id === query.includeKeyId)
+      ) {
+        const agentKey = await ChatApiKeyModel.findById(query.includeKeyId);
+        if (agentKey && agentKey.organizationId === organizationId) {
+          apiKeys.push({
+            ...agentKey,
+            teamName: null,
+            userName: null,
+            isAgentKey: true,
+          });
+        }
+      }
+
+      // Compute bestModelId for each key
+      const apiKeysWithBestModel = await Promise.all(
+        apiKeys.map(async (key) => {
+          const bestModel = await ApiKeyModelModel.getBestModel(key.id);
+          return {
+            ...key,
+            bestModelId: bestModel?.modelId ?? null,
+          };
+        }),
+      );
+
+      return reply.send(apiKeysWithBestModel);
     },
   );
 
@@ -112,7 +142,8 @@ const chatApiKeysRoutes: FastifyPluginAsyncZod = async (fastify) => {
             (data) =>
               isByosEnabled()
                 ? data.vaultSecretPath && data.vaultSecretKey
-                : data.apiKey,
+                : PROVIDERS_WITH_OPTIONAL_API_KEY.has(data.provider) ||
+                  data.apiKey,
             {
               message:
                 "Either apiKey or both vaultSecretPath and vaultSecretKey must be provided",
@@ -194,7 +225,7 @@ const chatApiKeysRoutes: FastifyPluginAsyncZod = async (fastify) => {
         );
       }
 
-      if (!secret) {
+      if (!secret && !PROVIDERS_WITH_OPTIONAL_API_KEY.has(body.provider)) {
         throw new ApiError(
           400,
           "Secret creation failed, cannot create API key",
@@ -206,7 +237,7 @@ const chatApiKeysRoutes: FastifyPluginAsyncZod = async (fastify) => {
         organizationId,
         name: body.name,
         provider: body.provider,
-        secretId: secret.id,
+        secretId: secret?.id ?? null,
         scope: body.scope,
         userId: body.scope === "personal" ? user.id : null,
         teamId: body.scope === "team" ? body.teamId : null,
