@@ -46,10 +46,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChatSidebarSection } from "@/app/_parts/chat-sidebar-section";
-import { DefaultCredentialsWarning } from "@/components/default-credentials-warning";
 import Divider from "@/components/divider";
 import { WithPermissions } from "@/components/roles/with-permissions";
-import { SecurityEngineWarning } from "@/components/security-engine-warning";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
@@ -705,8 +703,6 @@ const MainSideBarSection = ({
 
 const FooterSideBarSection = ({ pathname }: { pathname: string }) => (
   <SidebarFooter>
-    <SecurityEngineWarning />
-    <DefaultCredentialsWarning />
     <SignedIn>
       <SidebarGroup className="mt-auto">
         <SidebarGroupContent>

@@ -2,7 +2,9 @@
 
 import { usePathname } from "next/navigation";
 import { ConversationSearchProvider } from "@/components/conversation-search-provider";
+import { DefaultCredentialsWarning } from "@/components/default-credentials-warning";
 import { OnboardingDialogWrapper } from "@/components/onboarding-dialog-wrapper";
+import { SecurityEngineWarning } from "@/components/security-engine-warning";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { Version } from "@/components/version";
@@ -35,6 +37,8 @@ export function AppShell({ children }: AppShellProps) {
           <SidebarTrigger className="cursor-pointer hover:bg-accent transition-colors rounded-md p-2 -ml-2" />
         </header>
         <div className="flex-1 min-w-0 flex flex-col">
+          <SecurityEngineWarning />
+          <DefaultCredentialsWarning />
           <div className="flex-1 flex flex-col">{children}</div>
           <Version />
         </div>

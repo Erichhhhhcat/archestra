@@ -1,7 +1,7 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useFeatures } from "@/lib/features.query";
 
 export function SecurityEngineWarning() {
@@ -19,20 +19,15 @@ export function SecurityEngineWarning() {
   }
 
   return (
-    <div className="px-2 pb-1">
-      <Alert variant="destructive" className="text-xs">
-        <AlertTitle className="text-xs font-semibold">
-          Security Engine Disabled
-        </AlertTitle>
-        <AlertDescription className="text-xs mt-1">
-          <p>Agents can perform dangerous actions without supervision.</p>
-          <p className="mt-1">
-            <Link href="/tools" className="inline-flex items-center underline">
-              Go to Tools Settings
-            </Link>
-          </p>
-        </AlertDescription>
-      </Alert>
+    <div className="flex items-center gap-2 px-4 py-1.5 bg-destructive/10 text-destructive text-xs border-b border-destructive/20">
+      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+      <span className="font-semibold">Security Engine Disabled</span>
+      <span className="text-destructive/80">
+        — Agents can perform dangerous actions without supervision.
+      </span>
+      <Link href="/tools" className="underline ml-auto shrink-0">
+        Go to Tools Settings
+      </Link>
     </div>
   );
 }

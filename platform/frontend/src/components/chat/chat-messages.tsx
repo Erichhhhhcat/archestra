@@ -186,7 +186,7 @@ export function ChatMessages({
     pathD: "M 350 340 Q 300 340 250 340 L 100 340 Q 60 340 60 300 L 60 5",
     visible: false,
     left: 248,
-    top: 85,
+    top: 105,
   });
 
   const updateArrowDimensions = useCallback(() => {
