@@ -16,10 +16,23 @@ const config: KnipConfig = {
     "postcss",
     // Used via dynamic import in use-layout-nodes.ts (Knip doesn't detect the pattern)
     "elkjs",
+    // Required by Next.js at runtime
+    "react-dom",
+    // Used by @tailwindcss/postcss
+    "tailwindcss",
+    // Used by test setup
+    "@testing-library/dom",
+    // Type definitions for react-dom
+    "@types/react-dom",
   ],
   ignoreBinaries: [
     // biome is in root package.json
     "biome",
+    // provided by root/workspace packages
+    "next",
+    "tsc",
+    "vitest",
+    "knip",
   ],
   rules: {
     // shadcn/ui components export all variants for completeness - intentional pattern

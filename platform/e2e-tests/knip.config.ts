@@ -12,6 +12,9 @@ const config: KnipConfig = {
     "biome",
     // tsc is in root package.json (typescript)
     "tsc",
+    // provided by root/workspace packages
+    "playwright",
+    "knip",
   ],
 };
 

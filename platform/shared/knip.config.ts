@@ -7,6 +7,11 @@ const config: KnipConfig = {
   ignoreBinaries: [
     // biome is in root package.json
     "biome",
+    // provided by root/workspace packages
+    "tsc",
+    "vitest",
+    "tsx",
+    "knip",
   ],
 };
 
