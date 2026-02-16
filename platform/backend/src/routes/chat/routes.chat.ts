@@ -54,8 +54,8 @@ import {
   UpdateConversationSchema,
   UuidIdSchema,
 } from "@/types";
-import { estimateMessagesSize } from "@/utils/message-size";
 import { mapProviderError, ProviderError } from "./errors";
+import { mapStepContentToUIMessageParts } from "./map-step-to-ui-parts";
 import {
   stripImagesFromMessages,
   type UiMessage,
@@ -147,7 +147,6 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         body: z.object({
           id: UuidIdSchema, // Chat ID from useChat
           messages: z.array(z.unknown()), // UIMessage[]
-          trigger: z.enum(["submit-message", "regenerate-message"]).optional(),
         }),
         // Streaming responses don't have a schema
         response: ErrorResponsesSchema,
@@ -311,18 +310,120 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         ? stripImagesFromMessages(messages as UiMessage[])
         : (messages as UiMessage[]);
 
+      // Count existing messages before streaming to determine which incoming messages are new.
+      // Used by onStepFinish to save new user messages on the first step.
+      const existingMessages =
+        await MessageModel.findByConversation(conversationId);
+      const preSaveExistingCount = existingMessages.length;
+      const incomingMessages = messages as UIMessage[];
+
       // Stream with AI SDK
       // Build streamText config conditionally
       // Cast to UIMessage[] - UiMessage is structurally compatible at runtime
       const modelMessages = await convertToModelMessages(
         strippedMessagesForLLM as unknown as Omit<UIMessage, "id">[],
       );
+      // Progressive save: accumulate assistant content across agentic steps
+      // and persist after each step, so progress survives if onFinish never fires.
+      let draftAssistantMessageId: string | null = null;
+      // biome-ignore lint/suspicious/noExplicitAny: UIMessage parts are dynamic
+      const accumulatedParts: any[] = [];
+      let userMessagesSaved = false;
+
       const streamTextConfig: Parameters<typeof streamText>[0] = {
         model,
         messages: modelMessages,
         tools: mcpTools,
         stopWhen: stepCountIs(500),
         abortSignal: chatAbortController.signal,
+        onStepFinish: async (stepResult) => {
+          if (!conversationId) return;
+
+          const contentTypes = stepResult.content.map((p) => p.type);
+          logger.debug(
+            {
+              conversationId,
+              contentTypes,
+              partCount: stepResult.content.length,
+              hasDraft: !!draftAssistantMessageId,
+              accumulatedPartCount: accumulatedParts.length,
+              userMessagesSaved,
+            },
+            "[Chat] onStepFinish fired",
+          );
+
+          try {
+            // On first step, save any new user messages from the incoming request.
+            // Uses preSaveExistingCount (computed before streaming) to determine which are new.
+            if (!userMessagesSaved) {
+              userMessagesSaved = true;
+              const newIncomingMessages =
+                incomingMessages.slice(preSaveExistingCount);
+              const newUserMessages = newIncomingMessages.filter(
+                (m) => m.role === "user",
+              );
+              if (newUserMessages.length > 0) {
+                await MessageModel.bulkCreate(
+                  newUserMessages.map((msg) => ({
+                    conversationId,
+                    role: "user" as const,
+                    content: msg,
+                  })),
+                );
+                logger.info(
+                  { conversationId, count: newUserMessages.length },
+                  "[Chat] Saved user messages on first step",
+                );
+              }
+            }
+
+            // Map step content to UIMessage-compatible parts.
+            // Uses the same format as AI SDK's toUIMessageStream (tool-{toolName}, input/output, step-start).
+            mapStepContentToUIMessageParts(
+              stepResult.content,
+              accumulatedParts,
+            );
+
+            // Build UIMessage-like object for DB storage
+            const assistantContent = {
+              id: draftAssistantMessageId || crypto.randomUUID(),
+              role: "assistant",
+              parts: [...accumulatedParts],
+              createdAt: new Date().toISOString(),
+            };
+
+            if (!draftAssistantMessageId) {
+              const created = await MessageModel.create({
+                conversationId,
+                role: "assistant",
+                content: assistantContent,
+              });
+              draftAssistantMessageId = created.id;
+              logger.debug(
+                { conversationId, draftId: draftAssistantMessageId },
+                "[Chat] onStepFinish: created draft assistant message",
+              );
+            } else {
+              await MessageModel.updateContent(
+                draftAssistantMessageId,
+                assistantContent,
+              );
+              logger.debug(
+                {
+                  conversationId,
+                  draftId: draftAssistantMessageId,
+                  partCount: accumulatedParts.length,
+                },
+                "[Chat] onStepFinish: updated draft assistant message",
+              );
+            }
+          } catch (error) {
+            logger.error(
+              { error, conversationId },
+              "[Chat] Failed to save step progress",
+            );
+          }
+        },
         onFinish: async ({ usage, finishReason }) => {
           removeAbortListeners();
           logger.info(
@@ -376,6 +477,15 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
               result.toUIMessageStream({
                 originalMessages: messages as UIMessage[],
                 onError: (error) => {
+                  logger.debug(
+                    {
+                      conversationId,
+                      hasDraft: !!draftAssistantMessageId,
+                      userMessagesSaved,
+                      accumulatedPartCount: accumulatedParts.length,
+                    },
+                    "[Chat] onError fired",
+                  );
                   logger.error(
                     { error, conversationId, agentId: conversation.agentId },
                     "Chat stream error occurred",
@@ -418,64 +528,109 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
                   removeAbortListeners();
                   if (!conversationId) return;
 
-                  // Get existing messages count to know how many are new
-                  const existingMessages =
-                    await MessageModel.findByConversation(conversationId);
-                  const existingCount = existingMessages.length;
+                  logger.debug(
+                    {
+                      conversationId,
+                      finalMessageCount: finalMessages.length,
+                      hasDraft: !!draftAssistantMessageId,
+                      draftId: draftAssistantMessageId,
+                      userMessagesSaved,
+                      accumulatedPartCount: accumulatedParts.length,
+                    },
+                    "[Chat] onFinish fired",
+                  );
 
-                  // Only save new messages (avoid re-saving existing ones)
-                  const newMessages = finalMessages.slice(existingCount);
+                  if (draftAssistantMessageId) {
+                    // Atomically update the draft with the proper UIMessage content.
+                    // No delete-then-create — a single UPDATE preserves the row if the pod crashes.
+                    const lastAssistant = [...finalMessages]
+                      .reverse()
+                      .find((m) => m.role === "assistant");
 
-                  if (newMessages.length > 0) {
-                    // Check if last message has empty parts and strip it if so
-                    let messagesToSave = newMessages;
-                    if (
-                      newMessages.length > 0 &&
-                      newMessages[newMessages.length - 1].parts.length === 0
-                    ) {
-                      messagesToSave = newMessages.slice(0, -1);
-                    }
-
-                    if (messagesToSave.length > 0) {
-                      let messagesToStore = messagesToSave as UiMessage[];
+                    if (lastAssistant) {
+                      let messageToStore = lastAssistant as UiMessage;
 
                       if (config.features.browserStreamingEnabled) {
-                        // Strip base64 images and large browser tool results before storing
-                        const beforeSize = estimateMessagesSize(messagesToSave);
-                        messagesToStore = stripImagesFromMessages(
-                          messagesToSave as UiMessage[],
-                        );
-                        const afterSize = estimateMessagesSize(messagesToStore);
-
-                        logger.info(
-                          {
-                            messageCount: messagesToSave.length,
-                            beforeSizeKB: Math.round(beforeSize.length / 1024),
-                            afterSizeKB: Math.round(afterSize.length / 1024),
-                            savedKB: Math.round(
-                              (beforeSize.length - afterSize.length) / 1024,
-                            ),
-                            sizeEstimateReliable:
-                              !beforeSize.isEstimated && !afterSize.isEstimated,
-                          },
-                          "[Chat] Stripped messages before saving to DB",
-                        );
+                        const stripped = stripImagesFromMessages([
+                          messageToStore,
+                        ]);
+                        messageToStore = stripped[0];
                       }
 
-                      // Append only new messages with timestamps
-                      const now = Date.now();
-                      const messageData = messagesToStore.map((msg, index) => ({
-                        conversationId,
-                        role: msg.role ?? "assistant",
-                        content: msg, // Store entire UIMessage (with images stripped)
-                        createdAt: new Date(now + index), // Preserve order
-                      }));
-
-                      await MessageModel.bulkCreate(messageData);
+                      await MessageModel.updateContent(
+                        draftAssistantMessageId,
+                        messageToStore,
+                      );
 
                       logger.info(
-                        `Appended ${messagesToSave.length} new messages to conversation ${conversationId} (total: ${existingCount + messagesToSave.length})`,
+                        {
+                          conversationId,
+                          draftId: draftAssistantMessageId,
+                        },
+                        "[Chat] Updated draft assistant message with final content",
                       );
+                    }
+
+                    draftAssistantMessageId = null;
+
+                    // Edge case: save user messages if onStepFinish never fired
+                    if (!userMessagesSaved) {
+                      userMessagesSaved = true;
+                      const newIncomingMessages =
+                        incomingMessages.slice(preSaveExistingCount);
+                      const newUserMessages = newIncomingMessages.filter(
+                        (m) => m.role === "user",
+                      );
+                      if (newUserMessages.length > 0) {
+                        await MessageModel.bulkCreate(
+                          newUserMessages.map((msg) => ({
+                            conversationId,
+                            role: "user" as const,
+                            content: msg,
+                          })),
+                        );
+                      }
+                    }
+                  } else {
+                    // No steps completed — fall back to count-based dedup
+                    logger.debug(
+                      { conversationId },
+                      "[Chat] onFinish: no draft exists, using count-based dedup fallback",
+                    );
+                    const existingMessages =
+                      await MessageModel.findByConversation(conversationId);
+                    const existingCount = existingMessages.length;
+                    const newMessages = finalMessages.slice(existingCount);
+
+                    if (newMessages.length > 0) {
+                      let messagesToSave = newMessages;
+                      if (
+                        newMessages[newMessages.length - 1].parts.length === 0
+                      ) {
+                        messagesToSave = newMessages.slice(0, -1);
+                      }
+
+                      if (messagesToSave.length > 0) {
+                        let messagesToStore = messagesToSave as UiMessage[];
+
+                        if (config.features.browserStreamingEnabled) {
+                          messagesToStore = stripImagesFromMessages(
+                            messagesToSave as UiMessage[],
+                          );
+                        }
+
+                        await MessageModel.bulkCreate(
+                          messagesToStore.map((msg) => ({
+                            conversationId,
+                            role: msg.role ?? "assistant",
+                            content: msg,
+                          })),
+                        );
+
+                        logger.info(
+                          `Appended ${messagesToSave.length} new messages to conversation ${conversationId} (total: ${existingCount + messagesToSave.length})`,
+                        );
+                      }
                     }
                   }
                 },

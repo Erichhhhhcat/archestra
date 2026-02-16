@@ -66,6 +66,16 @@ class MessageModel {
       .where(eq(schema.messagesTable.conversationId, conversationId));
   }
 
+  static async updateContent(
+    messageId: string,
+    content: unknown,
+  ): Promise<void> {
+    await db
+      .update(schema.messagesTable)
+      .set({ content, updatedAt: new Date() })
+      .where(eq(schema.messagesTable.id, messageId));
+  }
+
   static async findById(messageId: string): Promise<Message | null> {
     const [message] = await db
       .select()
