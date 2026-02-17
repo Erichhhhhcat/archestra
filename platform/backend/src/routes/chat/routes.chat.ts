@@ -40,6 +40,7 @@ import {
   MessageModel,
   TeamModel,
 } from "@/models";
+import ApiKeyModelModel from "@/models/api-key-model";
 import { getExternalAgentId } from "@/routes/proxy/utils/external-agent-id";
 import { getSecretValueForLlmProviderApiKey } from "@/secrets-manager";
 import {
@@ -925,7 +926,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         : detectProviderFromModel(conversation.selectedModel);
 
       // Resolve API key using the centralized function (handles all providers)
-      const { apiKey } = await resolveProviderApiKey({
+      const { apiKey, chatApiKeyId } = await resolveProviderApiKey({
         organizationId,
         userId: user.id,
         provider,
@@ -943,6 +944,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       const generatedTitle = await generateConversationTitle({
         provider,
         apiKey,
+        chatApiKeyId,
         firstUserMessage,
         firstAssistantMessage,
       });
@@ -1243,6 +1245,7 @@ The title should capture the main topic or theme of the conversation. Respond wi
 export interface GenerateTitleParams {
   provider: SupportedChatProvider;
   apiKey: string | undefined;
+  chatApiKeyId?: string;
   firstUserMessage: string;
   firstAssistantMessage: string;
 }
@@ -1254,13 +1257,21 @@ export interface GenerateTitleParams {
 export async function generateConversationTitle(
   params: GenerateTitleParams,
 ): Promise<string | null> {
-  const { provider, apiKey, firstUserMessage, firstAssistantMessage } = params;
+  const {
+    provider,
+    apiKey,
+    chatApiKeyId,
+    firstUserMessage,
+    firstAssistantMessage,
+  } = params;
+
+  const modelName = await resolveFastModelName(provider, chatApiKeyId);
 
   // Create model for title generation (direct call, not through LLM Proxy)
   const model = createDirectLLMModel({
     provider,
     apiKey,
-    modelName: FAST_MODELS[provider],
+    modelName,
   });
 
   const titlePrompt = buildTitlePrompt(firstUserMessage, firstAssistantMessage);
@@ -1469,6 +1480,33 @@ async function validateChatApiKeyAccess(
   if (!canAccessKey) {
     throw new ApiError(403, "You do not have access to this API key");
   }
+}
+
+/**
+ * Resolves the fast model name for title generation.
+ * Tries the database lookup first, falls back to the hardcoded FAST_MODELS map.
+ */
+async function resolveFastModelName(
+  provider: SupportedChatProvider,
+  chatApiKeyId: string | undefined,
+): Promise<string> {
+  if (!chatApiKeyId) {
+    return FAST_MODELS[provider];
+  }
+
+  try {
+    const fastestModel = await ApiKeyModelModel.getFastestModel(chatApiKeyId);
+    if (fastestModel) {
+      return fastestModel.modelId;
+    }
+  } catch (error) {
+    logger.warn(
+      { error, chatApiKeyId },
+      "Failed to resolve fastest model from DB, falling back to hardcoded model",
+    );
+  }
+
+  return FAST_MODELS[provider];
 }
 
 export default chatRoutes;
