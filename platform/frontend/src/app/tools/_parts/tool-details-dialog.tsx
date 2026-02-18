@@ -1,8 +1,8 @@
 "use client";
 
+import { parseFullToolName } from "@shared";
 import { ChevronDown, ChevronRight, Layers, User } from "lucide-react";
 import { useState } from "react";
-import { parseFullToolName } from "@shared";
 import { TruncatedText } from "@/components/truncated-text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

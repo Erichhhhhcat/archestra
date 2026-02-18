@@ -762,7 +762,6 @@ export function AgentDialog({
     onOpenChange(false);
   }, [onOpenChange]);
 
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -1016,9 +1015,7 @@ export function AgentDialog({
             {/* Agent Trigger Rules (Agent only) */}
             {isInternalAgent && (
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold">
-                  Agent Trigger Rules
-                </h3>
+                <h3 className="text-sm font-semibold">Agent Trigger Rules</h3>
 
                 {/* ChatOps */}
                 <div className="space-y-3">

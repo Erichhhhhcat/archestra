@@ -6,8 +6,8 @@ import {
   Eye,
   Lock,
   Network,
-  Server,
   Route,
+  Server,
 } from "lucide-react";
 import { useState } from "react";
 import { A2AConnectionInstructions } from "@/components/a2a-connection-instructions";
