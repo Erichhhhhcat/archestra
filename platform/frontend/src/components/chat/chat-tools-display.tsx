@@ -6,7 +6,7 @@ import {
   isAgentTool,
   parseFullToolName,
 } from "@shared";
-import { Loader2, Plus, X } from "lucide-react";
+import { Key, Loader2, Plus, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PromptInputButton } from "@/components/ai-elements/prompt-input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,11 +16,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAllProfileTools } from "@/lib/agent-tools.query";
 import {
   useConversationEnabledTools,
-  useProfileToolsWithIds,
   useUpdateConversationEnabledTools,
 } from "@/lib/chat.query";
+import { useMcpServersGroupedByCatalog } from "@/lib/mcp-server.query";
 import {
   addPendingAction,
   applyPendingActions,
@@ -53,8 +54,29 @@ export function ChatToolsDisplay({
   className,
   readOnly = false,
 }: ChatToolsDisplayProps) {
-  const { data: profileTools = [], isLoading } =
-    useProfileToolsWithIds(agentId);
+  // Use useAllProfileTools to get credential source info along with tools
+  const { data: agentToolsData, isLoading } = useAllProfileTools({
+    filters: { agentId },
+    skipPagination: true,
+  });
+
+  // Fetch all MCP servers to look up credential names
+  const allCredentials = useMcpServersGroupedByCatalog();
+
+  // Map tool data for easy access
+  const profileTools = useMemo(
+    () =>
+      (agentToolsData?.data ?? []).map((at) => ({
+        id: at.tool.id,
+        name: at.tool.name,
+        description: at.tool.description,
+        catalogId: at.tool.catalogId ?? at.tool.mcpServerCatalogId,
+        credentialSourceMcpServerId: at.credentialSourceMcpServerId,
+        executionSourceMcpServerId: at.executionSourceMcpServerId,
+        useDynamicTeamCredential: at.useDynamicTeamCredential,
+      })),
+    [agentToolsData],
+  );
 
   // State for tooltip open state per server
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
@@ -172,12 +194,36 @@ export function ChatToolsDisplay({
     id: string;
     name: string;
     description: string | null;
+    catalogId: string | null;
+    credentialSourceMcpServerId: string | null;
+    executionSourceMcpServerId: string | null;
+    useDynamicTeamCredential: boolean;
   };
 
   // Use useMemo to prevent recalculating on every render
   const allTools: ToolItem[] = useMemo(() => {
     return profileTools.filter((tool) => !isAgentTool(tool.name));
   }, [profileTools]);
+
+  // Get credential display info for a catalog
+  const getCredentialInfo = (tool: ToolItem): string | null => {
+    if (tool.useDynamicTeamCredential) {
+      return null; // Will show dynamic indicator
+    }
+
+    const sourceId =
+      tool.credentialSourceMcpServerId ?? tool.executionSourceMcpServerId;
+    if (!sourceId || !tool.catalogId) return null;
+
+    const catalogCredentials = allCredentials?.[tool.catalogId];
+    if (!catalogCredentials) return null;
+
+    const credential = catalogCredentials.find((c) => c.id === sourceId);
+    if (!credential) return null;
+
+    // Return team name or owner email
+    return credential.teamDetails?.name ?? credential.ownerEmail ?? null;
+  };
 
   // Group ALL tools by MCP server name (don't filter by enabled status)
   const groupedTools: Record<string, ToolItem[]> = {};
@@ -351,6 +397,16 @@ export function ChatToolsDisplay({
     const totalToolsCount = allServerTools.length;
     const isOpen = openTooltip === serverName;
 
+    // Get credential info from the first tool (all tools in a server share the same credential)
+    const firstTool = allServerTools[0];
+    const credentialName = firstTool ? getCredentialInfo(firstTool) : null;
+    const usesDynamicCredential = firstTool?.useDynamicTeamCredential ?? false;
+    // Only show credential section for tools that have catalog (non-builtin MCP servers)
+    const showCredential =
+      firstTool?.catalogId &&
+      serverName !== ARCHESTRA_MCP_SERVER_NAME &&
+      (credentialName || usesDynamicCredential);
+
     return (
       <Tooltip key={serverName} open={isOpen} onOpenChange={() => {}}>
         <TooltipTrigger asChild>
@@ -386,6 +442,24 @@ export function ChatToolsDisplay({
             e.preventDefault();
           }}
         >
+          {/* Credential/Key section */}
+          {showCredential && (
+            <div className="px-3 py-2 border-b bg-muted/30">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                {usesDynamicCredential ? (
+                  <>
+                    <Zap className="h-3 w-3 text-amber-500" />
+                    <span>Resolve at call time</span>
+                  </>
+                ) : (
+                  <>
+                    <Key className="h-3 w-3" />
+                    <span>{credentialName}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
           <ScrollArea className="max-h-96">
             {/* Enabled section */}
             {enabledTools.length > 0 && (
