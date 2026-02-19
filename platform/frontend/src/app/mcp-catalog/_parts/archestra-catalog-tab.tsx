@@ -271,10 +271,27 @@ export function ArchestraCatalogTab({
         const serviceAccount = (
           server.server as typeof server.server & { service_account?: string }
         ).service_account;
+
+        // Detect streamable-http transport from catalog data:
+        // 1. Check if server args contain "--transport streamable-http"
+        // 2. Fall back to oauth_config.streamable_http_port
+        const hasTransportArg =
+          server.server.args?.includes("--transport") &&
+          server.server.args?.includes("streamable-http");
+        const streamableHttpPort =
+          server.oauth_config?.streamable_http_port;
+        const isStreamableHttp = hasTransportArg || !!streamableHttpPort;
+
         localConfig = {
           command: server.server.command,
           arguments: server.server.args,
           dockerImage: server.server.docker_image,
+          transportType: isStreamableHttp
+            ? "streamable-http"
+            : undefined,
+          httpPort: isStreamableHttp
+            ? (streamableHttpPort ?? 8000)
+            : undefined,
           serviceAccount: serviceAccount
             ? serviceAccount.replace(
                 /\{\{ARCHESTRA_RELEASE_NAME\}\}/g,
