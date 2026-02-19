@@ -211,21 +211,23 @@ export async function handleLLMProxy<
       `[${providerName}Proxy] Limit check passed`,
     );
 
-    // Persist tools declared by client
-    const tools = requestAdapter.getTools();
-    if (tools.length > 0) {
-      logger.debug(
-        { toolCount: tools.length },
-        `[${providerName}Proxy] Processing tools from request`,
-      );
-      await utils.tools.persistTools(
-        tools.map((t) => ({
-          toolName: t.name,
-          toolParameters: t.inputSchema,
-          toolDescription: t.description,
-        })),
-        resolvedAgentId,
-      );
+    // Persist tools declared by client (only for llm_proxy agents)
+    if (resolvedAgent.agentType === "llm_proxy") {
+      const tools = requestAdapter.getTools();
+      if (tools.length > 0) {
+        logger.debug(
+          { toolCount: tools.length },
+          `[${providerName}Proxy] Processing tools from request`,
+        );
+        await utils.tools.persistTools(
+          tools.map((t) => ({
+            toolName: t.name,
+            toolParameters: t.inputSchema,
+            toolDescription: t.description,
+          })),
+          resolvedAgentId,
+        );
+      }
     }
 
     // Cost optimization - potentially switch to cheaper model
