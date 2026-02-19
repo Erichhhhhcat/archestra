@@ -135,6 +135,11 @@ export const DEFAULT_ARCHESTRA_TOOL_NAMES = [
   TOOL_QUERY_KNOWLEDGE_GRAPH_FULL_NAME,
 ];
 
+/**
+ * Default HTTP port for MCP servers using streamable-http transport.
+ */
+export const DEFAULT_MCP_HTTP_PORT = 8080;
+
 export const MCP_CATALOG_API_BASE_URL =
   process.env.ARCHESTRA_MCP_CATALOG_API_BASE_URL ||
   "https://archestra.ai/mcp-catalog/api";

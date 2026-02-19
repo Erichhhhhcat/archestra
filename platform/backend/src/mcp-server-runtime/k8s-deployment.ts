@@ -2,6 +2,7 @@ import { PassThrough } from "node:stream";
 import type * as k8s from "@kubernetes/client-node";
 import type { Attach } from "@kubernetes/client-node";
 import {
+  DEFAULT_MCP_HTTP_PORT,
   type LocalConfigSchema,
   MCP_ORCHESTRATOR_DEFAULTS,
   TimeInMs,
@@ -1143,7 +1144,8 @@ export default class K8sDeployment {
     }
 
     const catalogItem = await this.getCatalogItem();
-    const httpPort = catalogItem?.localConfig?.httpPort || 8080;
+    const httpPort =
+      catalogItem?.localConfig?.httpPort || DEFAULT_MCP_HTTP_PORT;
     const httpPath = catalogItem?.localConfig?.httpPath || "/mcp";
     const configuredNodePort = catalogItem?.localConfig?.nodePort;
 
@@ -1298,7 +1300,8 @@ export default class K8sDeployment {
 
       // Check if HTTP port is needed
       const needsHttp = await this.needsHttpPort();
-      const httpPort = catalogItem.localConfig.httpPort || 8080;
+      const httpPort =
+        catalogItem.localConfig.httpPort || DEFAULT_MCP_HTTP_PORT;
 
       // Normalize localConfig to ensure fields have defaults
       const normalizedLocalConfig = {
@@ -1766,7 +1769,8 @@ export default class K8sDeployment {
     const needsHttp = await this.needsHttpPort();
     if (needsHttp && pod.status?.podIP) {
       const catalogItem = await this.getCatalogItem();
-      const httpPort = catalogItem?.localConfig?.httpPort || 8080;
+      const httpPort =
+        catalogItem?.localConfig?.httpPort || DEFAULT_MCP_HTTP_PORT;
       // Use the container port directly with pod IP
       this.assignedHttpPort = httpPort;
       logger.info(
@@ -2184,7 +2188,8 @@ export default class K8sDeployment {
     }
 
     const catalogItem = await this.getCatalogItem();
-    const httpPort = catalogItem?.localConfig?.httpPort || 8080;
+    const httpPort =
+      catalogItem?.localConfig?.httpPort || DEFAULT_MCP_HTTP_PORT;
     const httpPath = catalogItem?.localConfig?.httpPath || "/mcp";
 
     return {

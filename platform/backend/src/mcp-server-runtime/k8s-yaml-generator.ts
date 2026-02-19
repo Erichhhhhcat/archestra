@@ -1,5 +1,6 @@
 import type * as k8s from "@kubernetes/client-node";
 import {
+  DEFAULT_MCP_HTTP_PORT,
   type EnvironmentVariableSchema,
   MCP_ORCHESTRATOR_DEFAULTS,
 } from "@shared";
@@ -23,7 +24,7 @@ export interface DeploymentYamlContext {
   serviceAccount?: string;
   /** Transport type: "stdio" (default) or "streamable-http" */
   transportType?: "stdio" | "streamable-http";
-  /** HTTP port for streamable-http transport (default: 8080) */
+  /** HTTP port for streamable-http transport (default: DEFAULT_MCP_HTTP_PORT) */
   httpPort?: number;
 }
 
@@ -79,7 +80,7 @@ export function generateDeploymentYamlTemplate(
   const {
     environment = [],
     transportType = "stdio",
-    httpPort = 8080,
+    httpPort = DEFAULT_MCP_HTTP_PORT,
   } = context;
   const needsHttp = transportType === "streamable-http";
 

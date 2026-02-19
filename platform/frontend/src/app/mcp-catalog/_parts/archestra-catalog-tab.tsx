@@ -3,6 +3,7 @@
 import {
   type archestraApiTypes,
   type archestraCatalogTypes,
+  DEFAULT_MCP_HTTP_PORT,
   E2eTestId,
 } from "@shared";
 
@@ -273,11 +274,12 @@ export function ArchestraCatalogTab({
         ).service_account;
 
         // Detect streamable-http transport from catalog data:
-        // 1. Check if server args contain "--transport streamable-http"
+        // 1. Check if server args contain "--transport streamable-http" (adjacency check)
         // 2. Fall back to oauth_config.streamable_http_port
+        const transportIdx = server.server.args?.indexOf("--transport") ?? -1;
         const hasTransportArg =
-          server.server.args?.includes("--transport") &&
-          server.server.args?.includes("streamable-http");
+          transportIdx !== -1 &&
+          server.server.args?.[transportIdx + 1] === "streamable-http";
         const streamableHttpPort = server.oauth_config?.streamable_http_port;
         const isStreamableHttp = hasTransportArg || !!streamableHttpPort;
 
@@ -286,7 +288,9 @@ export function ArchestraCatalogTab({
           arguments: server.server.args,
           dockerImage: server.server.docker_image,
           transportType: isStreamableHttp ? "streamable-http" : undefined,
-          httpPort: isStreamableHttp ? (streamableHttpPort ?? 8000) : undefined,
+          httpPort: isStreamableHttp
+            ? (streamableHttpPort ?? DEFAULT_MCP_HTTP_PORT)
+            : undefined,
           serviceAccount: serviceAccount
             ? serviceAccount.replace(
                 /\{\{ARCHESTRA_RELEASE_NAME\}\}/g,
