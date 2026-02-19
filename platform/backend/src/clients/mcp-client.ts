@@ -1542,6 +1542,21 @@ class McpClient {
       } catch (error) {
         lastError = error instanceof Error ? error : new Error("Unknown error");
 
+        // For OAuth servers, auth errors (401) during discovery are expected when the
+        // user hasn't completed the OAuth flow yet. Return empty tools so the installation
+        // succeeds — tools will be discovered after the user clicks "Connect" and completes OAuth.
+        const isAuthError =
+          error instanceof UnauthorizedError ||
+          (error instanceof StreamableHTTPError && error.code === 401);
+
+        if (isAuthError && catalogItem.oauthConfig) {
+          logger.info(
+            { mcpServerId, catalogName: catalogItem.name },
+            `OAuth server ${catalogItem.name} returned 401 during tool discovery (OAuth flow not yet completed). Skipping tool discovery — tools will be fetched after OAuth connection.`,
+          );
+          return [];
+        }
+
         // If this is not the last attempt, log and retry
         if (attempt < maxRetries) {
           logger.warn(

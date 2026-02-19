@@ -1830,4 +1830,218 @@ describe("McpClient", () => {
       });
     });
   });
+
+  describe("connectAndGetTools", () => {
+    describe("OAuth server auth error handling", () => {
+      test("returns empty tools when OAuth server returns 401 (no token yet)", async () => {
+        const { StreamableHTTPError } = await import(
+          "@modelcontextprotocol/sdk/client/streamableHttp.js"
+        );
+
+        // Create catalog entry for a local OAuth server
+        const oauthCatalog = await InternalMcpCatalogModel.create({
+          name: "google-workspace-mcp",
+          serverType: "local",
+          localConfig: {
+            command: "uvx",
+            arguments: ["workspace-mcp", "--transport", "streamable-http"],
+            transportType: "streamable-http",
+            httpPort: 8000,
+          },
+          oauthConfig: {
+            name: "Google OAuth",
+            server_url: "https://accounts.google.com",
+            client_id: "test-client-id",
+            client_secret: "test-client-secret",
+            redirect_uris: ["http://localhost:8080/oauth/callback"],
+            scopes: ["openid", "email"],
+            default_scopes: ["openid"],
+            supports_resource_metadata: false,
+            requires_proxy: true,
+          },
+        });
+
+        const oauthMcpServer = await McpServerModel.create({
+          name: "google-workspace-mcp",
+          catalogId: oauthCatalog.id,
+          serverType: "local",
+        });
+
+        // Mock transport detection: streamable-http
+        mockUsesStreamableHttp.mockResolvedValue(true);
+        mockGetHttpEndpointUrl.mockReturnValue("http://localhost:30456/mcp");
+
+        // Mock connect to throw a 401 (server requires OAuth token)
+        mockConnect.mockRejectedValue(
+          new StreamableHTTPError(401, "Unauthorized"),
+        );
+
+        const tools = await mcpClient.connectAndGetTools({
+          catalogItem: oauthCatalog,
+          mcpServerId: oauthMcpServer.id,
+          secrets: {},
+        });
+
+        // Should return empty tools (not throw) for OAuth servers with 401
+        expect(tools).toEqual([]);
+
+        // Should NOT retry — auth errors won't be fixed by retrying
+        expect(mockConnect).toHaveBeenCalledTimes(1);
+      });
+
+      test("returns empty tools when OAuth server returns UnauthorizedError", async () => {
+        const { UnauthorizedError } = await import(
+          "@modelcontextprotocol/sdk/client/auth.js"
+        );
+
+        // Create catalog entry for a local OAuth server
+        const oauthCatalog = await InternalMcpCatalogModel.create({
+          name: "oauth-mcp-server",
+          serverType: "local",
+          localConfig: {
+            command: "node",
+            arguments: ["server.js"],
+            transportType: "streamable-http",
+            httpPort: 3000,
+          },
+          oauthConfig: {
+            name: "Test OAuth",
+            server_url: "https://auth.example.com",
+            client_id: "test-id",
+            redirect_uris: ["http://localhost/callback"],
+            scopes: ["read"],
+            default_scopes: ["read"],
+            supports_resource_metadata: false,
+          },
+        });
+
+        const oauthMcpServer = await McpServerModel.create({
+          name: "oauth-mcp-server",
+          catalogId: oauthCatalog.id,
+          serverType: "local",
+        });
+
+        // Mock transport detection: streamable-http
+        mockUsesStreamableHttp.mockResolvedValue(true);
+        mockGetHttpEndpointUrl.mockReturnValue("http://localhost:30789/mcp");
+
+        // Mock connect to throw UnauthorizedError
+        mockConnect.mockRejectedValue(new UnauthorizedError());
+
+        const tools = await mcpClient.connectAndGetTools({
+          catalogItem: oauthCatalog,
+          mcpServerId: oauthMcpServer.id,
+          secrets: {},
+        });
+
+        expect(tools).toEqual([]);
+        expect(mockConnect).toHaveBeenCalledTimes(1);
+      });
+
+      test("throws error for 401 on non-OAuth servers (no oauthConfig)", async () => {
+        const { StreamableHTTPError } = await import(
+          "@modelcontextprotocol/sdk/client/streamableHttp.js"
+        );
+
+        // Create catalog entry WITHOUT oauthConfig
+        const nonOauthCatalog = await InternalMcpCatalogModel.create({
+          name: "plain-http-server",
+          serverType: "local",
+          localConfig: {
+            command: "node",
+            arguments: ["server.js"],
+            transportType: "streamable-http",
+            httpPort: 3000,
+          },
+        });
+
+        const plainMcpServer = await McpServerModel.create({
+          name: "plain-http-server",
+          catalogId: nonOauthCatalog.id,
+          serverType: "local",
+        });
+
+        // Mock transport detection: streamable-http
+        mockUsesStreamableHttp.mockResolvedValue(true);
+        mockGetHttpEndpointUrl.mockReturnValue("http://localhost:30999/mcp");
+
+        // Mock connect to throw 401
+        mockConnect.mockRejectedValue(
+          new StreamableHTTPError(401, "Unauthorized"),
+        );
+
+        // Should throw for non-OAuth servers (401 is a real error, not expected)
+        await expect(
+          mcpClient.connectAndGetTools({
+            catalogItem: nonOauthCatalog,
+            mcpServerId: plainMcpServer.id,
+            secrets: {},
+          }),
+        ).rejects.toThrow("Failed to connect to MCP server");
+
+        // Should still retry for local servers (3 attempts)
+        expect(mockConnect).toHaveBeenCalledTimes(3);
+      });
+
+      test("succeeds normally when OAuth server allows unauthenticated discovery", async () => {
+        // Create catalog entry for a local OAuth server
+        const oauthCatalog = await InternalMcpCatalogModel.create({
+          name: "permissive-oauth-server",
+          serverType: "local",
+          localConfig: {
+            command: "node",
+            arguments: ["server.js"],
+            transportType: "streamable-http",
+            httpPort: 3000,
+          },
+          oauthConfig: {
+            name: "Test OAuth",
+            server_url: "https://auth.example.com",
+            client_id: "test-id",
+            redirect_uris: ["http://localhost/callback"],
+            scopes: ["read"],
+            default_scopes: ["read"],
+            supports_resource_metadata: false,
+          },
+        });
+
+        const oauthMcpServer = await McpServerModel.create({
+          name: "permissive-oauth-server",
+          catalogId: oauthCatalog.id,
+          serverType: "local",
+        });
+
+        // Mock transport detection: streamable-http
+        mockUsesStreamableHttp.mockResolvedValue(true);
+        mockGetHttpEndpointUrl.mockReturnValue("http://localhost:31000/mcp");
+
+        // Mock successful connect and listTools (server allows unauthenticated discovery)
+        mockConnect.mockResolvedValue(undefined);
+        mockListTools.mockResolvedValue({
+          tools: [
+            {
+              name: "list_events",
+              description: "List calendar events",
+              inputSchema: { type: "object" },
+            },
+          ],
+        });
+
+        const tools = await mcpClient.connectAndGetTools({
+          catalogItem: oauthCatalog,
+          mcpServerId: oauthMcpServer.id,
+          secrets: {},
+        });
+
+        // Should return the tools normally
+        expect(tools).toEqual([
+          {
+            name: "list_events",
+            description: "List calendar events",
+            inputSchema: { type: "object" },
+          },
+        ]);
+      });
+    });
+  });
 });
