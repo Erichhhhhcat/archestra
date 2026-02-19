@@ -278,20 +278,15 @@ export function ArchestraCatalogTab({
         const hasTransportArg =
           server.server.args?.includes("--transport") &&
           server.server.args?.includes("streamable-http");
-        const streamableHttpPort =
-          server.oauth_config?.streamable_http_port;
+        const streamableHttpPort = server.oauth_config?.streamable_http_port;
         const isStreamableHttp = hasTransportArg || !!streamableHttpPort;
 
         localConfig = {
           command: server.server.command,
           arguments: server.server.args,
           dockerImage: server.server.docker_image,
-          transportType: isStreamableHttp
-            ? "streamable-http"
-            : undefined,
-          httpPort: isStreamableHttp
-            ? (streamableHttpPort ?? 8000)
-            : undefined,
+          transportType: isStreamableHttp ? "streamable-http" : undefined,
+          httpPort: isStreamableHttp ? (streamableHttpPort ?? 8000) : undefined,
           serviceAccount: serviceAccount
             ? serviceAccount.replace(
                 /\{\{ARCHESTRA_RELEASE_NAME\}\}/g,
