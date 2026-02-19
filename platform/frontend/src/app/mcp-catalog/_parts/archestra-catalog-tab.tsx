@@ -220,9 +220,11 @@ export function ArchestraCatalogTab({
     }>,
   ) => {
     // Rewrite redirect URIs to prefer platform callback (port 3000)
-    const rewrittenOauth =
-      server.oauth_config && !server.oauth_config.requires_proxy
-        ? {
+    // For requires_proxy servers, pass oauthConfig as-is (redirect rewriting is handled server-side)
+    const rewrittenOauth = server.oauth_config
+      ? server.oauth_config.requires_proxy
+        ? server.oauth_config
+        : {
             ...server.oauth_config,
             redirect_uris: server.oauth_config.redirect_uris?.map((u) =>
               u === "http://localhost:8080/oauth/callback"
@@ -230,7 +232,7 @@ export function ArchestraCatalogTab({
                 : u,
             ),
           }
-        : undefined;
+      : undefined;
 
     let localConfig:
       | archestraApiTypes.CreateInternalMcpCatalogItemData["body"]["localConfig"]

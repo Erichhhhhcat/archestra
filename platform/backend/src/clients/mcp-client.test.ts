@@ -1938,7 +1938,7 @@ describe("McpClient", () => {
         expect(mockConnect).toHaveBeenCalledTimes(1);
       });
 
-      test("throws error for 401 on non-OAuth servers (no oauthConfig)", async () => {
+      test("returns empty tools for 401 even without oauthConfig", async () => {
         const { StreamableHTTPError } = await import(
           "@modelcontextprotocol/sdk/client/streamableHttp.js"
         );
@@ -1970,17 +1970,16 @@ describe("McpClient", () => {
           new StreamableHTTPError(401, "Unauthorized"),
         );
 
-        // Should throw for non-OAuth servers (401 is a real error, not expected)
-        await expect(
-          mcpClient.connectAndGetTools({
-            catalogItem: nonOauthCatalog,
-            mcpServerId: plainMcpServer.id,
-            secrets: {},
-          }),
-        ).rejects.toThrow("Failed to connect to MCP server");
+        // Should return empty tools (401 = auth required, don't fail installation)
+        const tools = await mcpClient.connectAndGetTools({
+          catalogItem: nonOauthCatalog,
+          mcpServerId: plainMcpServer.id,
+          secrets: {},
+        });
 
-        // Should still retry for local servers (3 attempts)
-        expect(mockConnect).toHaveBeenCalledTimes(3);
+        expect(tools).toEqual([]);
+        // Should NOT retry — auth errors won't be fixed by retrying
+        expect(mockConnect).toHaveBeenCalledTimes(1);
       });
 
       test("succeeds normally when OAuth server allows unauthenticated discovery", async () => {
