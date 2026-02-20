@@ -1257,7 +1257,8 @@ function restToSdkGenerateContentParams(
           ? (Behavior as Record<string, Behavior>)[fd.behavior]
           : undefined;
         return {
-          name: fd.name,
+          // Gemini enforces a 64-char max on function names
+          name: fd.name.substring(0, 64),
           description: fd.description,
           behavior: mappedBehavior,
           parameters: fd.parameters,
