@@ -184,10 +184,11 @@ describe("ChatSidebarSection", () => {
     mockConversations = [];
   });
 
-  it("renders nothing when no conversations exist", () => {
+  it("does not show Recent Chats section when no conversations exist", () => {
     mockConversations = [];
     const { container } = render(<ChatSidebarSection />);
     expect(container.innerHTML).toBe("");
+    expect(screen.queryByText("Recent Chats")).not.toBeInTheDocument();
   });
 
   it("shows 3 recent chats when no chats are pinned", () => {
@@ -200,6 +201,8 @@ describe("ChatSidebarSection", () => {
     ];
 
     render(<ChatSidebarSection />);
+
+    expect(screen.getByText("Recent Chats")).toBeInTheDocument();
 
     // Should show first 3 recent (conversations come pre-sorted from API)
     expect(screen.getByText("Chat One")).toBeInTheDocument();

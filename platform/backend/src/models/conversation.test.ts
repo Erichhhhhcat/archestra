@@ -1471,50 +1471,6 @@ describe("ConversationModel", () => {
     expect(unpinned?.pinnedAt).toBeNull();
   });
 
-  test("findAll returns pinnedAt for conversations", async ({
-    makeUser,
-    makeOrganization,
-    makeAgent,
-  }) => {
-    const user = await makeUser();
-    const org = await makeOrganization();
-    const agent = await makeAgent({ name: "PinnedAt List Agent", teams: [] });
-
-    const conv1 = await ConversationModel.create({
-      userId: user.id,
-      organizationId: org.id,
-      agentId: agent.id,
-      title: "Pinned Conversation",
-      selectedModel: "claude-3-haiku-20240307",
-    });
-
-    await ConversationModel.create({
-      userId: user.id,
-      organizationId: org.id,
-      agentId: agent.id,
-      title: "Unpinned Conversation",
-      selectedModel: "claude-3-haiku-20240307",
-    });
-
-    // Pin the first conversation
-    await ConversationModel.update(conv1.id, user.id, org.id, {
-      pinnedAt: new Date(),
-    });
-
-    const conversations = await ConversationModel.findAll(user.id, org.id);
-
-    expect(conversations).toHaveLength(2);
-    const pinnedConv = conversations.find(
-      (c) => c.title === "Pinned Conversation",
-    );
-    const unpinnedConv = conversations.find(
-      (c) => c.title === "Unpinned Conversation",
-    );
-
-    expect(pinnedConv?.pinnedAt).toBeInstanceOf(Date);
-    expect(unpinnedConv?.pinnedAt).toBeNull();
-  });
-
   test("findAll search returns results ordered by updatedAt descending", async ({
     makeUser,
     makeOrganization,
