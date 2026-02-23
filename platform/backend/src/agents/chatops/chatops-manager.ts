@@ -63,7 +63,6 @@ export class ChatOpsManager {
    * cannot be resolved (access check still happens at message processing time).
    */
   async getAccessibleChatopsAgents(params: {
-    provider: ChatOpsProviderType;
     senderEmail?: string;
   }): Promise<{ id: string; name: string }[]> {
     const agents = await AgentModel.findAllInternalAgents();
@@ -330,7 +329,6 @@ export class ChatOpsManager {
       await this.resolveInlineAgentMention({
         messageText: message.text,
         defaultAgent: agent,
-        provider,
       });
 
     // Security: Validate user has access to the agent
@@ -417,7 +415,6 @@ export class ChatOpsManager {
   private async resolveInlineAgentMention(params: {
     messageText: string;
     defaultAgent: { id: string; name: string };
-    provider: ChatOpsProvider;
   }): Promise<{
     agentToUse: { id: string; name: string };
     cleanedMessageText: string;

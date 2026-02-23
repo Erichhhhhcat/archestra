@@ -577,7 +577,6 @@ describe("ChatOpsManager.getAccessibleChatopsAgents", () => {
 
     const manager = new ChatOpsManager();
     const agents = await manager.getAccessibleChatopsAgents({
-      provider: "ms-teams",
       senderEmail: "teamuser@example.com",
     });
 
@@ -603,9 +602,7 @@ describe("ChatOpsManager.getAccessibleChatopsAgents", () => {
     await AgentTeamModel.assignTeamsToAgent(agent.id, [team.id]);
 
     const manager = new ChatOpsManager();
-    const agents = await manager.getAccessibleChatopsAgents({
-      provider: "ms-teams",
-    });
+    const agents = await manager.getAccessibleChatopsAgents({});
 
     expect(agents.length).toBeGreaterThanOrEqual(1);
     expect(agents.some((a) => a.id === agent.id)).toBe(true);
@@ -629,7 +626,6 @@ describe("ChatOpsManager.getAccessibleChatopsAgents", () => {
 
     const manager = new ChatOpsManager();
     const agents = await manager.getAccessibleChatopsAgents({
-      provider: "ms-teams",
       senderEmail: "nonexistent@example.com",
     });
 
@@ -662,7 +658,6 @@ describe("ChatOpsManager.getAccessibleChatopsAgents", () => {
 
     const manager = new ChatOpsManager();
     const agents = await manager.getAccessibleChatopsAgents({
-      provider: "ms-teams",
       senderEmail: "fulladmin@example.com",
     });
 

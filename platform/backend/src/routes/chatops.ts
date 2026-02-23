@@ -432,13 +432,16 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
                 const resolvedNames = await resolveTeamsNames(
                   context,
                   message.channelId,
-                ).catch(
-                  () =>
-                    ({}) as {
-                      channelName?: string;
-                      workspaceName?: string;
-                    },
-                );
+                ).catch((error) => {
+                  logger.warn(
+                    { error, channelId: message.channelId },
+                    "[ChatOps] Failed to resolve Teams names for early binding",
+                  );
+                  return {} as {
+                    channelName?: string;
+                    workspaceName?: string;
+                  };
+                });
                 const organizationId = await getDefaultOrganizationId();
                 await ChatOpsChannelBindingModel.upsertByChannel({
                   organizationId,
@@ -664,7 +667,7 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
           if (!binding || !binding.agentId) {
             // Create binding early (without agent) so the DM/channel appears in the UI
             if (!binding) {
-              const isSlackDm = message.channelId.startsWith("D");
+              const isSlackDm = message.metadata?.channelType === "im";
               const organizationId = await getDefaultOrganizationId();
               await ChatOpsChannelBindingModel.upsertByChannel({
                 organizationId,
@@ -1411,7 +1414,6 @@ async function sendAgentSelectionCard(params: {
   providerContext?: unknown;
 }): Promise<void> {
   const agents = await chatOpsManager.getAccessibleChatopsAgents({
-    provider: params.provider.providerId,
     senderEmail: params.message.senderEmail,
   });
 
