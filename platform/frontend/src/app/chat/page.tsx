@@ -1175,51 +1175,46 @@ export default function ChatPage() {
           <StreamTimeoutWarning status={status} messages={messages} />
 
           <div className="sticky top-0 z-10 bg-background border-b p-2">
-            <div className="flex items-start justify-between gap-2">
-              {/* Left side - agent selector stays fixed, tools wrap internally */}
-              <div className="flex items-start gap-2 min-w-0 flex-1">
-                {/* Agent/Profile selector - fixed width */}
-                <div className="flex-shrink-0 flex items-center gap-2">
-                  {conversationId ? (
-                    <AgentSelector
-                      currentPromptId={
-                        conversation?.agent?.agentType === "agent"
-                          ? (conversation?.agentId ?? null)
-                          : null
-                      }
-                      currentAgentId={conversation?.agentId ?? ""}
-                      currentModel={conversation?.selectedModel ?? ""}
-                    />
-                  ) : (
-                    <InitialAgentSelector
-                      currentAgentId={initialAgentId}
-                      onAgentChange={handleInitialAgentChange}
-                    />
-                  )}
-                  {/* Edit agent button */}
-                  {(conversationId
-                    ? conversation?.agentId
-                    : initialAgentId) && (
-                    <PermissionButton
-                      permissions={{ agent: ["update"] }}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openDialog("edit-agent")}
-                      title="Edit agent, tools, sub-agents"
-                      className="h-8 px-2"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </PermissionButton>
-                  )}
-                </div>
+            <div className="relative flex items-center justify-between gap-2">
+              {/* Left side - agent selector */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {conversationId ? (
+                  <AgentSelector
+                    currentPromptId={
+                      conversation?.agent?.agentType === "agent"
+                        ? (conversation?.agentId ?? null)
+                        : null
+                    }
+                    currentAgentId={conversation?.agentId ?? ""}
+                    currentModel={conversation?.selectedModel ?? ""}
+                  />
+                ) : (
+                  <InitialAgentSelector
+                    currentAgentId={initialAgentId}
+                    onAgentChange={handleInitialAgentChange}
+                  />
+                )}
+                {/* Edit agent button */}
+                {(conversationId ? conversation?.agentId : initialAgentId) && (
+                  <PermissionButton
+                    permissions={{ agent: ["update"] }}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openDialog("edit-agent")}
+                    title="Edit agent, tools, sub-agents"
+                    className="h-8 px-2"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </PermissionButton>
+                )}
               </div>
-              {/* Center - conversation title (only shown for active conversations) */}
+              {/* Center - conversation title (absolutely positioned for true centering) */}
               {conversationId && conversation && (
-                <div className="flex-1 min-w-0 flex justify-center px-2">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="text-sm text-muted-foreground truncate max-w-[300px] cursor-default">
+                        <span className="text-sm text-muted-foreground truncate max-w-[300px] cursor-default pointer-events-auto">
                           {getConversationDisplayTitle(
                             conversation.title,
                             conversation.messages,

@@ -3,7 +3,6 @@
 import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD } from "@shared";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import { CopyButton } from "@/components/copy-button";
 import {
   Accordion,
   AccordionContent,
@@ -44,7 +43,7 @@ export function SidebarWarningsAccordion() {
 
   return (
     <div className="px-2 pb-1">
-      <Accordion type="single" collapsible>
+      <Accordion type="single" collapsible defaultValue="warnings">
         <AccordionItem value="warnings" className="border-b-0">
           <AccordionTrigger className="py-2 text-xs font-medium text-destructive hover:no-underline">
             <span className="flex items-center gap-1.5">
@@ -81,26 +80,12 @@ export function SidebarWarningsAccordion() {
                 </AlertTitle>
                 <AlertDescription className="text-xs mt-1">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <code className="break-all">- {DEFAULT_ADMIN_EMAIL}</code>
-                      <CopyButton
-                        text={DEFAULT_ADMIN_EMAIL}
-                        className="h-4 w-4 hover:bg-transparent"
-                        size={10}
-                        behavior="text"
-                      />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <code className="break-all">
-                        - {DEFAULT_ADMIN_PASSWORD}
-                      </code>
-                      <CopyButton
-                        text={DEFAULT_ADMIN_PASSWORD}
-                        className="h-4 w-4 hover:bg-transparent"
-                        size={10}
-                        behavior="text"
-                      />
-                    </div>
+                    <code className="break-all block">
+                      - {DEFAULT_ADMIN_EMAIL}
+                    </code>
+                    <code className="break-all block">
+                      - {DEFAULT_ADMIN_PASSWORD}
+                    </code>
                   </div>
                   <p className="mt-1">
                     <a

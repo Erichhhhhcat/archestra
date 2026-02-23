@@ -1,13 +1,10 @@
 "use client";
 
 import {
-  ChevronDown,
-  ChevronRight,
   MoreHorizontal,
   Pencil,
   Pin,
   PinOff,
-  Search,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -34,7 +31,6 @@ import {
 import { Input } from "@/components/ui/input";
 import {
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
@@ -62,9 +58,7 @@ import { getConversationDisplayTitle } from "@/lib/chat-utils";
 import { cn } from "@/lib/utils";
 
 const CONVERSATION_QUERY_PARAM = "conversation";
-const MAX_PINNED_CHATS = 3;
-const RECENT_UNPINNED_COUNT = 3;
-const VISIBLE_CHAT_COUNT = 10;
+const SIDEBAR_CHAT_SLOTS = 3;
 const MAX_TITLE_LENGTH = 30;
 
 function AISparkleIcon({ isAnimating = false }: { isAnimating?: boolean }) {
@@ -89,7 +83,6 @@ export function ChatSidebarSection() {
   const generateTitleMutation = useGenerateConversationTitle();
   const pinConversationMutation = usePinConversation();
 
-  const [showAllChats, setShowAllChats] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -111,67 +104,27 @@ export function ChatSidebarSection() {
     ? searchParams.get(CONVERSATION_QUERY_PARAM)
     : null;
 
-  // Split conversations into pinned and unpinned
-  const { pinnedChats, recentUnpinnedChats, allUnpinnedChats } = useMemo(() => {
+  // Split conversations into pinned and unpinned.
+  // Default view shows exactly SIDEBAR_CHAT_SLOTS items:
+  // pinned chats first (most recently active), then recent unpinned to fill remaining slots.
+  const { pinnedChats, recentUnpinnedChats } = useMemo(() => {
     const pinned = conversations
       .filter((c) => c.pinnedAt)
       .sort(
         (a, b) =>
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
       )
-      .slice(0, MAX_PINNED_CHATS);
+      .slice(0, SIDEBAR_CHAT_SLOTS);
 
     const pinnedIds = new Set(pinned.map((c) => c.id));
     const unpinned = conversations.filter((c) => !pinnedIds.has(c.id));
+    const remainingSlots = Math.max(0, SIDEBAR_CHAT_SLOTS - pinned.length);
 
     return {
       pinnedChats: pinned,
-      recentUnpinnedChats: unpinned.slice(0, RECENT_UNPINNED_COUNT),
-      allUnpinnedChats: unpinned,
+      recentUnpinnedChats: unpinned.slice(0, remainingSlots),
     };
   }, [conversations]);
-
-  // Stabilize the "all chats" view order
-  const stableOrderRef = useRef<string[] | null>(null);
-  const stableUnpinnedChats = useMemo(() => {
-    if (allUnpinnedChats.length === 0) {
-      stableOrderRef.current = null;
-      return allUnpinnedChats;
-    }
-
-    const currentIds = new Set(allUnpinnedChats.map((c) => c.id));
-    const conversationMap = new Map(allUnpinnedChats.map((c) => [c.id, c]));
-
-    if (stableOrderRef.current === null) {
-      stableOrderRef.current = allUnpinnedChats.map((c) => c.id);
-      return allUnpinnedChats;
-    }
-
-    const prevIds = new Set(stableOrderRef.current);
-    const newIds = allUnpinnedChats
-      .filter((c) => !prevIds.has(c.id))
-      .map((c) => c.id);
-    const keptIds = stableOrderRef.current.filter((id) => currentIds.has(id));
-    const orderedIds = [...newIds, ...keptIds];
-
-    stableOrderRef.current = orderedIds;
-    return orderedIds
-      .map((id) => conversationMap.get(id))
-      .filter((c): c is NonNullable<typeof c> => c != null);
-  }, [allUnpinnedChats]);
-
-  const visibleUnpinnedChats = showAllChats
-    ? stableUnpinnedChats
-    : stableUnpinnedChats.slice(0, VISIBLE_CHAT_COUNT);
-  const hiddenChatsCount = Math.max(
-    0,
-    stableUnpinnedChats.length - VISIBLE_CHAT_COUNT,
-  );
-
-  // Determine which chats to show in the sidebar
-  // When collapsed: show pinned (up to 3) + recent unpinned (up to 3)
-  // When expanded: show pinned + all unpinned
-  const showExpandedView = showAllChats;
 
   useEffect(() => {
     if (editingId && inputRef.current) {
@@ -243,7 +196,11 @@ export function ChatSidebarSection() {
   };
 
   const openConversationSearch = () => {
-    window.dispatchEvent(new CustomEvent("open-conversation-search"));
+    window.dispatchEvent(
+      new CustomEvent("open-conversation-search", {
+        detail: { recentChatsView: true },
+      }),
+    );
   };
 
   const renderConversationItem = (
@@ -424,27 +381,13 @@ export function ChatSidebarSection() {
     );
   };
 
+  if (!isLoading && conversations.length === 0) {
+    return null;
+  }
+
   return (
-    <SidebarGroup className="px-4 py-0 group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel className="w-full justify-between pr-0">
-        Recent Chats
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <SidebarGroupAction
-                onClick={openConversationSearch}
-                className="relative top-auto right-auto transform-none h-6 w-6 text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-              >
-                <Search className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span className="sr-only">Search conversations</span>
-              </SidebarGroupAction>
-            </TooltipTrigger>
-            <TooltipContent side="right" align="center">
-              Search conversations
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </SidebarGroupLabel>
+    <SidebarGroup className="px-4 -mt-3 py-0 group-data-[collapsible=icon]:hidden">
+      <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
 
       <SidebarGroupContent>
         <SidebarMenu>
@@ -457,59 +400,21 @@ export function ChatSidebarSection() {
                 </span>
               </div>
             </SidebarMenuItem>
-          ) : conversations.length === 0 ? (
-            <SidebarMenuItem>
-              <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                No chats yet
-              </div>
-            </SidebarMenuItem>
-          ) : showExpandedView ? (
-            <>
-              {/* Expanded view: pinned chats + all unpinned with show more */}
-              {pinnedChats.length > 0 && (
-                <>
-                  {pinnedChats.map((conv) =>
-                    renderConversationItem(conv, true),
-                  )}
-                  {visibleUnpinnedChats.length > 0 && (
-                    <div className="my-1 border-t border-border/50" />
-                  )}
-                </>
-              )}
-              {visibleUnpinnedChats.map((conv) => renderConversationItem(conv))}
-              {hiddenChatsCount > 0 && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => setShowAllChats(!showAllChats)}
-                    className="cursor-pointer text-xs text-muted-foreground justify-start"
-                  >
-                    <ChevronDown className="h-3 w-3" />
-                    <span>Show less</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-            </>
           ) : (
             <>
-              {/* Default view: pinned (up to 3) + recent unpinned (up to 3) */}
               {pinnedChats.map((conv) => renderConversationItem(conv, true))}
-              {pinnedChats.length > 0 && recentUnpinnedChats.length > 0 && (
-                <div className="my-1 border-t border-border/50" />
-              )}
               {recentUnpinnedChats.map((conv) => renderConversationItem(conv))}
-              {allUnpinnedChats.length > RECENT_UNPINNED_COUNT && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => setShowAllChats(true)}
-                    className="cursor-pointer text-xs text-muted-foreground justify-start"
+              {conversations.length >
+                pinnedChats.length + recentUnpinnedChats.length && (
+                <li className="px-2 py-0">
+                  <button
+                    type="button"
+                    onClick={openConversationSearch}
+                    className="cursor-pointer text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
                   >
-                    <ChevronRight className="h-3 w-3" />
-                    <span>
-                      Show {allUnpinnedChats.length - RECENT_UNPINNED_COUNT}{" "}
-                      more
-                    </span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                    View more
+                  </button>
+                </li>
               )}
             </>
           )}

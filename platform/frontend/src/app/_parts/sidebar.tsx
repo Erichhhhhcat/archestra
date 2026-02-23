@@ -9,7 +9,6 @@ import {
   Cable,
   DollarSign,
   Github,
-  History,
   Key,
   LogIn,
   type LucideIcon,
@@ -27,6 +26,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import React from "react";
+import { ChatSidebarSection } from "@/app/_parts/chat-sidebar-section";
 import { SidebarWarningsAccordion } from "@/components/sidebar-warnings-accordion";
 import {
   Sidebar,
@@ -75,19 +76,6 @@ const getNavigationGroups = (isAuthenticated: boolean): MenuGroup[] => {
           icon: MessageCircle,
           customIsActive: (pathname: string, searchParams: URLSearchParams) =>
             pathname === "/chat" && !searchParams.get("conversation"),
-        },
-        {
-          title: "Recent Chats",
-          url: "/chat",
-          icon: History,
-          onClick: () => {
-            window.dispatchEvent(
-              new CustomEvent("open-conversation-search", {
-                detail: { recentChatsView: true },
-              }),
-            );
-          },
-          customIsActive: () => false,
         },
       ],
     },
@@ -278,46 +266,46 @@ const MainSideBarSection = ({
         if (permittedItems.length === 0) return null;
 
         return (
-          <SidebarGroup
-            key={group.label ?? `group-${groupIndex}`}
-            className="px-4 py-1"
-          >
-            {group.label && (
-              <SidebarGroupLabel className="text-xs text-muted-foreground uppercase tracking-wider">
-                {group.label}
-              </SidebarGroupLabel>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {permittedItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    {item.onClick ? (
-                      <SidebarMenuButton
-                        onClick={item.onClick}
-                        isActive={false}
-                      >
-                        <item.icon className={item.iconClassName} />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    ) : (
-                      <SidebarMenuButton
-                        asChild
-                        isActive={
-                          item.customIsActive?.(pathname, searchParams) ??
-                          pathname.startsWith(item.url)
-                        }
-                      >
-                        <Link href={item.url}>
+          <React.Fragment key={group.label ?? `group-${groupIndex}`}>
+            <SidebarGroup className="px-4 py-0.5">
+              {group.label && (
+                <SidebarGroupLabel className="text-xs text-muted-foreground uppercase tracking-wider">
+                  {group.label}
+                </SidebarGroupLabel>
+              )}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {permittedItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      {item.onClick ? (
+                        <SidebarMenuButton
+                          onClick={item.onClick}
+                          isActive={false}
+                        >
                           <item.icon className={item.iconClassName} />
                           <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    )}
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                        </SidebarMenuButton>
+                      ) : (
+                        <SidebarMenuButton
+                          asChild
+                          isActive={
+                            item.customIsActive?.(pathname, searchParams) ??
+                            pathname.startsWith(item.url)
+                          }
+                        >
+                          <Link href={item.url}>
+                            <item.icon className={item.iconClassName} />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      )}
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            {group.label === "Chat" && <ChatSidebarSection />}
+          </React.Fragment>
         );
       })}
       {!config.enterpriseLicenseActivated && (

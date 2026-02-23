@@ -624,7 +624,7 @@ export function ConversationSearchPalette({
             <kbd className="inline-flex h-5 min-w-[20px] items-center justify-center rounded bg-muted px-1.5 font-sans text-[10px] font-medium text-muted-foreground border border-border/50">
               {SHORTCUT_PIN.label}
             </kbd>
-            <span className="text-muted-foreground/70">Pin</span>
+            <span className="text-muted-foreground/70">Pin / Unpin Chat</span>
           </div>
           <div className="flex items-center gap-2">
             <kbd className="inline-flex h-5 min-w-[20px] items-center justify-center rounded bg-muted px-1.5 font-sans text-[10px] font-medium text-muted-foreground border border-border/50">
