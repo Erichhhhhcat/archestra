@@ -311,7 +311,7 @@ function StepBotSettings({
               3
             </span>
             <span className="pt-0.5 flex-1">
-              Copy the <strong>Microsoft App ID</strong> and paste it here
+              Copy the <strong>Microsoft App ID</strong>
               <Input
                 value={appId}
                 onChange={(e) => onAppIdChange(e.target.value)}
@@ -342,8 +342,7 @@ function StepBotSettings({
             </span>
             <span className="pt-0.5 flex-1">
               Click <strong>Manage Password</strong> →{" "}
-              <strong>New client secret</strong> → copy the secret value and
-              paste it here
+              <strong>New client secret</strong> → copy the secret value
               <Input
                 type="password"
                 value={appSecret}

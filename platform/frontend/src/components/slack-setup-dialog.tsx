@@ -263,7 +263,7 @@ function StepInstall({
               <code className="bg-muted px-1 py-0.5 rounded text-xs">
                 xoxb-
               </code>
-              ) and paste it here
+              )
               <Input
                 type="password"
                 value={botToken}
@@ -450,7 +450,7 @@ function StepManifest({
             </span>
             <span className="pt-0.5 flex-1">
               From <strong>Basic Information &rarr; App Credentials</strong>,
-              copy the <strong>App ID</strong> and paste it here
+              copy the <strong>App ID</strong>
               <Input
                 value={appId}
                 onChange={(e) => onAppIdChange(e.target.value)}
@@ -465,7 +465,7 @@ function StepManifest({
             </span>
             <span className="pt-0.5 flex-1">
               From <strong>Basic Information &rarr; App Credentials</strong>,
-              copy the <strong>Signing Secret</strong> and paste it here
+              copy the <strong>Signing Secret</strong>
               <Input
                 type="password"
                 value={signingSecret}
