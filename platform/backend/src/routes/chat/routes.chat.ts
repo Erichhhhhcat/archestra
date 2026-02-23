@@ -245,10 +245,12 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         );
       }
 
+      const { agentId, agent } = conversation;
+
       // Use agent ID as external agent ID if available, otherwise use header value
       // This allows agent names to be displayed in LLM proxy logs
       const headerExternalAgentId = getExternalAgentId(request.headers);
-      const externalAgentId = conversation.agentId ?? headerExternalAgentId;
+      const externalAgentId = agentId ?? headerExternalAgentId;
 
       // Fetch enabled tool IDs and custom selection status in parallel
       const [enabledToolIds, hasCustomSelection] = await Promise.all([
@@ -260,8 +262,8 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       // Pass undefined if no custom selection (use all tools)
       // Pass the actual array (even if empty) if there is custom selection
       const mcpTools = await getChatMcpTools({
-        agentName: conversation.agent.name,
-        agentId: conversation.agentId,
+        agentName: agent.name,
+        agentId,
         userId: user.id,
         userIsAgentAdmin,
         enabledToolIds: hasCustomSelection ? enabledToolIds : undefined,
@@ -270,7 +272,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         // Pass conversationId as sessionId to group all chat requests (including delegated agents) together
         sessionId: conversation.id,
         // Pass agentId as initial delegation chain (will be extended by delegated agents)
-        delegationChain: conversation.agentId,
+        delegationChain: agentId,
         abortSignal: chatAbortController.signal,
         user: { id: user.id, email: user.email, name: user.name },
       });
@@ -281,11 +283,11 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       const userPromptParts: string[] = [];
 
       // Collect system and user prompts from the agent
-      if (conversation.agent.systemPrompt) {
-        systemPromptParts.push(conversation.agent.systemPrompt);
+      if (agent.systemPrompt) {
+        systemPromptParts.push(agent.systemPrompt);
       }
-      if (conversation.agent.userPrompt) {
-        userPromptParts.push(conversation.agent.userPrompt);
+      if (agent.userPrompt) {
+        userPromptParts.push(agent.userPrompt);
       }
 
       // Add instruction about tool approval denials
@@ -309,7 +311,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       logger.info(
         {
           conversationId,
-          agentId: conversation.agentId,
+          agentId,
           userId: user.id,
           orgId: organizationId,
           toolCount: Object.keys(mcpTools).length,
@@ -329,8 +331,8 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       // Wrap the entire chat turn in a parent span so LLM calls (via proxy)
       // and MCP tool executions appear as children of a single trace.
       return startActiveChatSpan({
-        agentName: conversation.agent.name,
-        agentId: conversation.agentId,
+        agentName: agent.name,
+        agentId,
         sessionId: conversationId,
         user: { id: user.id, email: user.email, name: user.name },
         callback: async () => {
@@ -340,13 +342,13 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
           const { model } = await createLLMModelForAgent({
             organizationId,
             userId: user.id,
-            agentId: conversation.agentId,
+            agentId,
             model: conversation.selectedModel,
             provider,
             conversationId,
             externalAgentId,
             sessionId: conversationId,
-            agentLlmApiKeyId: conversation.agent.llmApiKeyId,
+            agentLlmApiKeyId: agent.llmApiKeyId,
           });
 
           // Strip images and large browser tool results from messages before sending to LLM
@@ -437,7 +439,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
                           {
                             error,
                             conversationId,
-                            agentId: conversation.agentId,
+                            agentId,
                           },
                           "Chat stream error occurred",
                         );
@@ -833,7 +835,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
         if (
           !currentConversation ||
-          body.chatApiKeyId !== currentConversation.agent.llmApiKeyId
+          body.chatApiKeyId !== currentConversation.agent?.llmApiKeyId
         ) {
           await validateChatApiKeyAccess(
             body.chatApiKeyId,
