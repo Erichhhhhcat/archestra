@@ -1,6 +1,5 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Info } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -48,7 +47,6 @@ const slackProviderConfig: ProviderConfig = {
 
 export default function SlackPage() {
   const publicBaseUrl = usePublicBaseUrl();
-  const queryClient = useQueryClient();
   const [slackSetupOpen, setSlackSetupOpen] = useState(false);
   const [ngrokDialogOpen, setNgrokDialogOpen] = useState(false);
 
@@ -142,14 +140,7 @@ export default function SlackPage() {
 
       <Divider />
 
-      <ChannelTilesSection
-        providerConfig={slackProviderConfig}
-        onRefreshSuccess={() =>
-          queryClient.invalidateQueries({
-            queryKey: ["chatops", "bindings"],
-          })
-        }
-      />
+      <ChannelTilesSection providerConfig={slackProviderConfig} />
 
       <SlackSetupDialog
         open={slackSetupOpen}

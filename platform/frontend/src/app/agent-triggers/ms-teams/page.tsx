@@ -1,6 +1,5 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Info } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -12,7 +11,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -56,7 +54,6 @@ export default function MsTeamsPage() {
   const publicBaseUrl = usePublicBaseUrl();
   const [msTeamsSetupOpen, setMsTeamsSetupOpen] = useState(false);
   const [ngrokDialogOpen, setNgrokDialogOpen] = useState(false);
-  const [refreshDialogOpen, setRefreshDialogOpen] = useState(false);
 
   const { data: features, isLoading: featuresLoading } = useFeatures();
   const { data: chatOpsProviders, isLoading: statusLoading } =
@@ -154,10 +151,7 @@ export default function MsTeamsPage() {
 
       <Divider />
 
-      <ChannelTilesSection
-        providerConfig={msTeamsProviderConfig}
-        onRefreshSuccess={() => setRefreshDialogOpen(true)}
-      />
+      <ChannelTilesSection providerConfig={msTeamsProviderConfig} />
 
       <MsTeamsSetupDialog
         open={msTeamsSetupOpen}
@@ -167,47 +161,7 @@ export default function MsTeamsPage() {
         open={ngrokDialogOpen}
         onOpenChange={setNgrokDialogOpen}
       />
-      <RefreshChannelsDialog
-        open={refreshDialogOpen}
-        onOpenChange={setRefreshDialogOpen}
-      />
     </div>
-  );
-}
-
-function RefreshChannelsDialog({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const queryClient = useQueryClient();
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Channel discovery</DialogTitle>
-          <DialogDescription>
-            In order to finish the channel discovery process, you need to send a
-            message to the bot in MS Teams.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button
-            onClick={() => {
-              queryClient.invalidateQueries({
-                queryKey: ["chatops", "bindings"],
-              });
-              onOpenChange(false);
-            }}
-          >
-            Done
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
 

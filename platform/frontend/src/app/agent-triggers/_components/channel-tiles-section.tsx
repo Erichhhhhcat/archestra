@@ -17,10 +17,8 @@ import type { ProviderConfig } from "./types";
 
 export function ChannelTilesSection({
   providerConfig,
-  onRefreshSuccess,
 }: {
   providerConfig: ProviderConfig;
-  onRefreshSuccess?: () => void;
 }) {
   const { data: bindings, isLoading } = useChatOpsBindings();
   const { data: agents } = useProfiles({ filters: { agentType: "agent" } });
@@ -100,7 +98,11 @@ export function ChannelTilesSection({
           })}
         </div>
       ) : (
-        <ChannelTilesEmptyState />
+        <ChannelTilesEmptyState
+          onRefresh={() => refreshMutation.mutate(providerConfig.provider)}
+          isRefreshing={refreshMutation.isPending}
+          provider={providerConfig.provider}
+        />
       )}
 
       {/* Stats + refresh */}
@@ -120,11 +122,7 @@ export function ChannelTilesSection({
               <Button
                 variant="link"
                 className="h-auto p-0 text-xs"
-                onClick={() =>
-                  refreshMutation.mutate(providerConfig.provider, {
-                    onSuccess: () => onRefreshSuccess?.(),
-                  })
-                }
+                onClick={() => refreshMutation.mutate(providerConfig.provider)}
               >
                 Click here
               </Button>
