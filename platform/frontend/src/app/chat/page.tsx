@@ -1077,8 +1077,8 @@ export default function ChatPage() {
     return <NoApiKeySetup />;
   }
 
-  // If no agents exist, show empty state
-  if (internalAgents.length === 0) {
+  // If no agents exist and we're not viewing a conversation with a deleted agent, show empty state
+  if (internalAgents.length === 0 && !isAgentDeleted) {
     return (
       <Empty className="h-full">
         <EmptyHeader>
@@ -1154,7 +1154,7 @@ export default function ChatPage() {
               <div className="flex items-start gap-2 min-w-0 flex-1">
                 {/* Agent/Profile selector - fixed width */}
                 <div className="flex-shrink-0 flex items-center gap-2">
-                  {conversationId ? (
+                  {isAgentDeleted ? null : conversationId ? (
                     <AgentSelector
                       currentPromptId={
                         conversation?.agent?.agentType === "agent"
@@ -1171,20 +1171,21 @@ export default function ChatPage() {
                     />
                   )}
                   {/* Edit agent button */}
-                  {(conversationId
-                    ? conversation?.agentId
-                    : initialAgentId) && (
-                    <PermissionButton
-                      permissions={{ agent: ["update"] }}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openDialog("edit-agent")}
-                      title="Edit agent, tools, sub-agents"
-                      className="h-8 px-2"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </PermissionButton>
-                  )}
+                  {!isAgentDeleted &&
+                    (conversationId
+                      ? conversation?.agentId
+                      : initialAgentId) && (
+                      <PermissionButton
+                        permissions={{ agent: ["update"] }}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openDialog("edit-agent")}
+                        title="Edit agent, tools, sub-agents"
+                        className="h-8 px-2"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </PermissionButton>
+                    )}
                 </div>
               </div>
               {/* Right side - show/hide controls */}
