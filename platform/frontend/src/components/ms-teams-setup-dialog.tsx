@@ -94,7 +94,7 @@ export function MsTeamsSetupDialog({
         />
       );
     });
-  }, [sharedAppId, sharedAppSecret, sharedTenantId, creds]);
+  }, [sharedAppId, sharedAppSecret, sharedTenantId]);
 
   const lastStepAction = {
     label: saving ? "Connecting..." : "Connect",
@@ -377,7 +377,6 @@ function StepInstallAndConnect({
   stepNumber: number;
   video?: string;
 }) {
-
   return (
     <div
       className="grid flex-1 gap-6"

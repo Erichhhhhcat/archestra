@@ -424,7 +424,37 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
             });
 
             if (!binding || !binding.agentId) {
-              // No binding — show agent selection
+              // Create binding early (without agent) so the DM/channel appears in the UI
+              if (!binding) {
+                const isTeamsDm =
+                  context.activity.conversation?.conversationType ===
+                  "personal";
+                const resolvedNames = await resolveTeamsNames(
+                  context,
+                  message.channelId,
+                ).catch(
+                  () =>
+                    ({}) as {
+                      channelName?: string;
+                      workspaceName?: string;
+                    },
+                );
+                const organizationId = await getDefaultOrganizationId();
+                await ChatOpsChannelBindingModel.upsertByChannel({
+                  organizationId,
+                  provider: "ms-teams",
+                  channelId: message.channelId,
+                  workspaceId: message.workspaceId,
+                  workspaceName: resolvedNames.workspaceName,
+                  channelName: isTeamsDm
+                    ? `Direct Message - ${message.senderEmail}`
+                    : resolvedNames.channelName,
+                  isDm: isTeamsDm,
+                  dmOwnerEmail: isTeamsDm ? message.senderEmail : undefined,
+                });
+              }
+
+              // Discover channels + show agent selection
               await awaitDiscovery(provider, context);
               await sendAgentSelectionCard({
                 provider,
@@ -632,7 +662,25 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
           });
 
           if (!binding || !binding.agentId) {
-            // No binding — show agent selection
+            // Create binding early (without agent) so the DM/channel appears in the UI
+            if (!binding) {
+              const isSlackDm = message.channelId.startsWith("D");
+              const organizationId = await getDefaultOrganizationId();
+              await ChatOpsChannelBindingModel.upsertByChannel({
+                organizationId,
+                provider: "slack",
+                channelId: message.channelId,
+                workspaceId: message.workspaceId,
+                workspaceName: provider.getWorkspaceName() ?? undefined,
+                channelName: isSlackDm
+                  ? `Direct Message - ${message.senderEmail}`
+                  : undefined,
+                isDm: isSlackDm,
+                dmOwnerEmail: isSlackDm ? message.senderEmail : undefined,
+              });
+            }
+
+            // Show agent selection
             await sendAgentSelectionCard({
               provider,
               message,

@@ -1,8 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
 import { useProfiles } from "@/lib/agent.query";
 import {
   useChatOpsBindings,
@@ -13,6 +11,7 @@ import {
 import { ChannelTile } from "./channel-tile";
 import { ChannelTilesEmptyState } from "./channel-tiles-empty-state";
 import { ChannelTilesLoading } from "./channel-tiles-loading";
+import { StartDmTile } from "./start-dm-tile";
 import type { ProviderConfig } from "./types";
 
 export function ChannelTilesSection({
@@ -53,6 +52,13 @@ export function ChannelTilesSection({
     [agents],
   );
 
+  // Show "Start DM" tile when no DM binding exists and we can build a deep link
+  const hasDmBinding = providerBindings.some((b) => b.isDm);
+  const dmDeepLink =
+    !hasDmBinding && providerStatus
+      ? (providerConfig.getDmDeepLink?.(providerStatus, "") ?? null)
+      : null;
+
   // Stats
   const totalCount = providerBindings.length;
   const assignedCount = providerBindings.filter((b) => b.agentId).length;
@@ -79,6 +85,12 @@ export function ChannelTilesSection({
         <ChannelTilesLoading />
       ) : sortedBindings.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {dmDeepLink && (
+            <StartDmTile
+              providerConfig={providerConfig}
+              deepLink={dmDeepLink}
+            />
+          )}
           {sortedBindings.map((binding) => {
             const assignedAgent = binding.agentId
               ? agentList.find((a) => a.id === binding.agentId)
@@ -112,22 +124,8 @@ export function ChannelTilesSection({
             {assignedCount} of {totalCount} channels assigned.
           </p>
           <p className="text-xs text-muted-foreground">
-            Channels are discovered every 5 minutes.{" "}
-            {refreshMutation.isPending ? (
-              <span className="inline-flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Refreshing…
-              </span>
-            ) : (
-              <Button
-                variant="link"
-                className="h-auto p-0 text-xs"
-                onClick={() => refreshMutation.mutate(providerConfig.provider)}
-              >
-                Click here
-              </Button>
-            )}{" "}
-            to refresh them now.
+            New channels appear after adding the bot to a channel and the first
+            interaction with it.
           </p>
         </div>
       )}

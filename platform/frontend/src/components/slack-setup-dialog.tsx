@@ -75,10 +75,7 @@ export function SlackSetupDialog({
         onBotTokenChange={setSharedBotToken}
       />,
       // Step 3: Customize App Appearance and connect Archestra
-      <StepAppearanceAndConnect
-        key="appearance-and-connect"
-        stepNumber={3}
-      />,
+      <StepAppearanceAndConnect key="appearance-and-connect" stepNumber={3} />,
     ];
 
     return slides;
@@ -86,7 +83,6 @@ export function SlackSetupDialog({
     sharedBotToken,
     sharedSigningSecret,
     sharedAppId,
-    creds,
     webhookUrl,
     interactiveUrl,
     slashCommandUrl,
@@ -146,12 +142,7 @@ export function SlackSetupDialog({
   );
 }
 
-function StepAppearanceAndConnect({
-  stepNumber,
-}: {
-  stepNumber: number;
-}) {
-
+function StepAppearanceAndConnect({ stepNumber }: { stepNumber: number }) {
   return (
     <div
       className="grid flex-1 gap-6"

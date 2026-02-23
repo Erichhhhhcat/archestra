@@ -3,7 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChatOpsProvider } from "./types";
+import type { ChatOpsProvider } from "./types";
 
 export function ChannelTilesEmptyState({
   onRefresh,
@@ -14,7 +14,10 @@ export function ChannelTilesEmptyState({
   isRefreshing: boolean;
   provider: ChatOpsProvider;
 }) {
-  const message = provider === "slack" ? "Add bot to channel, send a message, wait for reply" : "Send a message to the bot, wait for reply";
+  const message =
+    provider === "slack"
+      ? "Add bot to channel, send a message, wait for reply"
+      : "Send a message to the bot, wait for reply";
   return (
     <Card>
       <CardContent className="py-12 flex flex-col items-center gap-4">

@@ -188,7 +188,7 @@ export function ChannelTile({
                 width={14}
                 height={14}
               />
-              Open
+              {binding.isDm ? "Send DM" : "Open"}
             </a>
           </Button>
         )}
