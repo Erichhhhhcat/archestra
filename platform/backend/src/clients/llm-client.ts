@@ -211,7 +211,7 @@ export function isApiKeyRequired(
  * This map serves as a fallback when no database result is available.
  */
 export const FAST_MODELS: Record<SupportedChatProvider, string> = {
-  anthropic: "claude-3-5-haiku-20241022",
+  anthropic: "claude-haiku-4-5-20251001",
   openai: "gpt-4o-mini",
   gemini: "gemini-2.0-flash-001",
   cerebras: "llama-3.3-70b", // Cerebras focuses on speed, all their models are fast
@@ -252,9 +252,14 @@ const directModelCreators: Record<SupportedChatProvider, DirectModelCreator> = {
         "Anthropic API key is required. Please configure ANTHROPIC_API_KEY.",
       );
     }
+    const anthropicBaseUrl = baseUrl ?? config.llm.anthropic.baseUrl;
     const client = createAnthropic({
       apiKey,
-      baseURL: baseUrl ?? config.llm.anthropic.baseUrl,
+      // @ai-sdk/anthropic expects baseURL to include /v1 (e.g. https://api.anthropic.com/v1)
+      // Append /v1 if not already present to match the SDK's expectation
+      baseURL: anthropicBaseUrl.endsWith("/v1")
+        ? anthropicBaseUrl
+        : `${anthropicBaseUrl}/v1`,
     });
     return client(modelName);
   },
