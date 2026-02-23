@@ -8668,7 +8668,7 @@ export type GetAllAgentToolsData = {
         search?: string;
         agentId?: string;
         /**
-         * Can be 'llm-proxy' or a catalogId
+         * A catalogId to filter by
          */
         origin?: string;
         /**
@@ -9156,9 +9156,7 @@ export type GetAgentToolsData = {
     path: {
         agentId: string;
     };
-    query?: {
-        excludeLlmProxyOrigin?: boolean;
-    };
+    query?: never;
     url: '/api/agents/{agentId}/tools';
 };
 
