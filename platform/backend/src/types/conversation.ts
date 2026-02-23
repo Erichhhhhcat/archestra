@@ -54,14 +54,20 @@ export const InsertConversationSchema = createInsertSchema(
 export const UpdateConversationSchema = createUpdateSchema(
   schema.conversationsTable,
   insertUpdateExtendedFields,
-).pick({
-  title: true,
-  selectedModel: true,
-  selectedProvider: true,
-  chatApiKeyId: true,
-  agentId: true,
-  artifact: true,
-});
+)
+  .pick({
+    title: true,
+    selectedModel: true,
+    selectedProvider: true,
+    chatApiKeyId: true,
+    agentId: true,
+    artifact: true,
+  })
+  .extend({
+    // Prevent explicit nullification of agentId via API
+    // (null is only set by ON DELETE SET NULL when the agent is deleted)
+    agentId: z.string().uuid().optional(),
+  });
 
 export type Conversation = z.infer<typeof SelectConversationSchema>;
 export type InsertConversation = z.infer<typeof InsertConversationSchema>;
