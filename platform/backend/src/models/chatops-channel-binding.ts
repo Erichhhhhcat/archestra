@@ -299,21 +299,54 @@ class ChatOpsChannelBindingModel {
 
   /**
    * Set workspaceName on all bindings for a provider where it is currently null.
-   * Used to backfill workspace names on DMs and older bindings.
+   * If an explicit workspaceName is provided, uses that directly.
+   * Otherwise, infers the name from sibling bindings that already have one
+   * (useful for MS Teams DMs that lack workspace context).
    */
   static async backfillWorkspaceName(params: {
     provider: ChatOpsProviderType;
-    workspaceName: string;
+    workspaceName?: string;
   }): Promise<void> {
-    await db
-      .update(schema.chatopsChannelBindingsTable)
-      .set({ workspaceName: params.workspaceName, updatedAt: new Date() })
+    if (params.workspaceName) {
+      await db
+        .update(schema.chatopsChannelBindingsTable)
+        .set({ workspaceName: params.workspaceName, updatedAt: new Date() })
+        .where(
+          and(
+            eq(schema.chatopsChannelBindingsTable.provider, params.provider),
+            isNull(schema.chatopsChannelBindingsTable.workspaceName),
+          ),
+        );
+      return;
+    }
+
+    // Infer from sibling bindings: pick the most common workspace name for this provider
+    const [result] = await db
+      .select({
+        workspaceName: schema.chatopsChannelBindingsTable.workspaceName,
+      })
+      .from(schema.chatopsChannelBindingsTable)
       .where(
         and(
           eq(schema.chatopsChannelBindingsTable.provider, params.provider),
-          isNull(schema.chatopsChannelBindingsTable.workspaceName),
+          sql`${schema.chatopsChannelBindingsTable.workspaceName} IS NOT NULL`,
         ),
-      );
+      )
+      .groupBy(schema.chatopsChannelBindingsTable.workspaceName)
+      .orderBy(sql`count(*) DESC`)
+      .limit(1);
+
+    if (result?.workspaceName) {
+      await db
+        .update(schema.chatopsChannelBindingsTable)
+        .set({ workspaceName: result.workspaceName, updatedAt: new Date() })
+        .where(
+          and(
+            eq(schema.chatopsChannelBindingsTable.provider, params.provider),
+            isNull(schema.chatopsChannelBindingsTable.workspaceName),
+          ),
+        );
+    }
   }
 
   /**

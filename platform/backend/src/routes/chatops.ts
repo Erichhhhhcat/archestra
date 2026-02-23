@@ -1266,14 +1266,11 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
         });
       }
 
-      // Backfill workspace name on bindings that are missing it
-      const workspaceName = provider?.getWorkspaceName();
-      if (workspaceName) {
-        await ChatOpsChannelBindingModel.backfillWorkspaceName({
-          provider: providerType,
-          workspaceName,
-        });
-      }
+      // Backfill workspace name on bindings that are missing it (e.g. DMs)
+      await ChatOpsChannelBindingModel.backfillWorkspaceName({
+        provider: providerType,
+        workspaceName: provider?.getWorkspaceName() ?? undefined,
+      });
 
       return reply.send({ success: true });
     },
