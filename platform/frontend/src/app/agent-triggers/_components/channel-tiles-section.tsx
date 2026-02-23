@@ -56,7 +56,7 @@ export function ChannelTilesSection({
   const hasDmBinding = providerBindings.some((b) => b.isDm);
   const dmDeepLink =
     !hasDmBinding && providerStatus
-      ? (providerConfig.getDmDeepLink?.(providerStatus, "") ?? null)
+      ? (providerConfig.getDmDeepLink?.(providerStatus) ?? null)
       : null;
 
   // Stats
