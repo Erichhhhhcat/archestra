@@ -693,6 +693,10 @@ export const requiredPagePermissionsMap: Record<string, Permissions> = {
     policy: ["read"],
   },
 
+  "/mcp-rate-limits": {
+    limit: ["read"],
+  },
+
   "/mcp-catalog": {
     internalMcpCatalog: ["read"],
   },

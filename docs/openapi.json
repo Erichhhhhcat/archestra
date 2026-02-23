@@ -48417,6 +48417,11 @@
                         "nullable": true,
                         "type": "string"
                       },
+                      "pinnedAt": {
+                        "nullable": true,
+                        "type": "string",
+                        "format": "date-time"
+                      },
                       "createdAt": {
                         "type": "string",
                         "format": "date-time"
@@ -48483,6 +48488,7 @@
                       "hasCustomToolSelection",
                       "todoList",
                       "artifact",
+                      "pinnedAt",
                       "createdAt",
                       "updatedAt",
                       "agent",
@@ -48855,6 +48861,11 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "pinnedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -48921,6 +48932,7 @@
                     "hasCustomToolSelection",
                     "todoList",
                     "artifact",
+                    "pinnedAt",
                     "createdAt",
                     "updatedAt",
                     "agent",
@@ -49257,6 +49269,11 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "pinnedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -49323,6 +49340,7 @@
                     "hasCustomToolSelection",
                     "todoList",
                     "artifact",
+                    "pinnedAt",
                     "createdAt",
                     "updatedAt",
                     "agent",
@@ -49594,6 +49612,9 @@
                   "artifact": {
                     "nullable": true,
                     "type": "string"
+                  },
+                  "pinnedAt": {
+                    "nullable": true
                   }
                 }
               }
@@ -49706,6 +49727,11 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "pinnedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -49772,6 +49798,7 @@
                     "hasCustomToolSelection",
                     "todoList",
                     "artifact",
+                    "pinnedAt",
                     "createdAt",
                     "updatedAt",
                     "agent",
@@ -50638,6 +50665,11 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "pinnedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -50704,6 +50736,7 @@
                     "hasCustomToolSelection",
                     "todoList",
                     "artifact",
+                    "pinnedAt",
                     "createdAt",
                     "updatedAt",
                     "agent",
@@ -51068,6 +51101,11 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "pinnedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -51134,6 +51172,7 @@
                     "hasCustomToolSelection",
                     "todoList",
                     "artifact",
+                    "pinnedAt",
                     "createdAt",
                     "updatedAt",
                     "agent",
@@ -73950,6 +73989,12 @@
                         "type": "string",
                         "maxLength": 255
                       },
+                      "windowMs": {
+                        "nullable": true,
+                        "type": "integer",
+                        "minimum": -2147483648,
+                        "maximum": 2147483647
+                      },
                       "model": {
                         "nullable": true,
                         "type": "array",
@@ -73996,6 +74041,9 @@
                           ],
                           "additionalProperties": false
                         }
+                      },
+                      "mcpUsage": {
+                        "type": "number"
                       }
                     },
                     "required": [
@@ -74006,6 +74054,7 @@
                       "limitValue",
                       "mcpServerName",
                       "toolName",
+                      "windowMs",
                       "lastCleanup",
                       "createdAt",
                       "updatedAt"
@@ -74274,6 +74323,12 @@
                     "type": "string",
                     "maxLength": 255
                   },
+                  "windowMs": {
+                    "nullable": true,
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647
+                  },
                   "model": {
                     "nullable": true,
                     "type": "array",
@@ -74343,6 +74398,12 @@
                       "type": "string",
                       "maxLength": 255
                     },
+                    "windowMs": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -2147483648,
+                      "maximum": 2147483647
+                    },
                     "model": {
                       "nullable": true,
                       "type": "array",
@@ -74372,6 +74433,7 @@
                     "limitValue",
                     "mcpServerName",
                     "toolName",
+                    "windowMs",
                     "lastCleanup",
                     "createdAt",
                     "updatedAt"
@@ -74660,6 +74722,12 @@
                       "type": "string",
                       "maxLength": 255
                     },
+                    "windowMs": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -2147483648,
+                      "maximum": 2147483647
+                    },
                     "model": {
                       "nullable": true,
                       "type": "array",
@@ -74689,6 +74757,7 @@
                     "limitValue",
                     "mcpServerName",
                     "toolName",
+                    "windowMs",
                     "lastCleanup",
                     "createdAt",
                     "updatedAt"
@@ -74956,6 +75025,12 @@
                     "type": "string",
                     "maxLength": 255
                   },
+                  "windowMs": {
+                    "nullable": true,
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647
+                  },
                   "model": {
                     "nullable": true,
                     "type": "array",
@@ -75030,6 +75105,12 @@
                       "type": "string",
                       "maxLength": 255
                     },
+                    "windowMs": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -2147483648,
+                      "maximum": 2147483647
+                    },
                     "model": {
                       "nullable": true,
                       "type": "array",
@@ -75059,6 +75140,7 @@
                     "limitValue",
                     "mcpServerName",
                     "toolName",
+                    "windowMs",
                     "lastCleanup",
                     "createdAt",
                     "updatedAt"

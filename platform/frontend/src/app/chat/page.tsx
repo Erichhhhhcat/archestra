@@ -61,6 +61,12 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { PermissionButton } from "@/components/ui/permission-button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Version } from "@/components/version";
 import { useChatSession } from "@/contexts/global-chat-context";
 import { useInternalAgents } from "@/lib/agent.query";
@@ -79,7 +85,10 @@ import {
   useChatApiKeys,
   useCreateChatApiKey,
 } from "@/lib/chat-settings.query";
-import { conversationStorageKeys } from "@/lib/chat-utils";
+import {
+  conversationStorageKeys,
+  getConversationDisplayTitle,
+} from "@/lib/chat-utils";
 import { useFeatures } from "@/lib/config.query";
 import { useDialogs } from "@/lib/dialog.hook";
 import { useFeatureFlag } from "@/lib/features.hook";
@@ -1204,6 +1213,30 @@ export default function ChatPage() {
                   )}
                 </div>
               </div>
+              {/* Center - conversation title (only shown for active conversations) */}
+              {conversationId && conversation && (
+                <div className="flex-1 min-w-0 flex justify-center px-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-sm text-muted-foreground truncate max-w-[300px] cursor-default">
+                          {getConversationDisplayTitle(
+                            conversation.title,
+                            conversation.messages,
+                          )}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {getConversationDisplayTitle(
+                          conversation.title,
+                          conversation.messages,
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
+
               {/* Right side - show/hide controls */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Button

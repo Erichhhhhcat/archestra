@@ -34,6 +34,7 @@ import type {
 import { deriveAuthMethod } from "@/utils/auth-method";
 import { previewToolResultContent } from "@/utils/tool-result-preview";
 import { K8sAttachTransport } from "./k8s-attach-transport";
+import { checkMcpRateLimits } from "./mcp-rate-limit";
 
 /**
  * Thrown when a stored HTTP session ID is no longer valid (e.g. pod restarted).
@@ -243,6 +244,23 @@ class McpClient {
       return targetMcpServerIdResult.error;
     }
     const { targetMcpServerId, mcpServerName } = targetMcpServerIdResult;
+
+    // Check MCP rate limits before execution
+    const rateLimitError = await checkMcpRateLimits({
+      agentId,
+      mcpServerName,
+      toolName: toolCall.name,
+    });
+    if (rateLimitError) {
+      return await this.createErrorResult(
+        toolCall,
+        agentId,
+        rateLimitError,
+        mcpServerName,
+        authInfo,
+      );
+    }
+
     const secretsResult = await this.getSecretsForMcpServer({
       targetMcpServerId: targetMcpServerId,
       toolCall,

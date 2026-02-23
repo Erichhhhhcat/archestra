@@ -13959,6 +13959,7 @@ export type GetChatConversationsResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
+        pinnedAt: string | null;
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -14065,6 +14066,7 @@ export type CreateChatConversationResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
+        pinnedAt: string | null;
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -14246,6 +14248,7 @@ export type GetChatConversationResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
+        pinnedAt: string | null;
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -14270,6 +14273,7 @@ export type UpdateChatConversationData = {
         chatApiKeyId?: string | null;
         agentId?: string;
         artifact?: string | null;
+        pinnedAt?: unknown;
     };
     path: {
         id: string;
@@ -14355,6 +14359,7 @@ export type UpdateChatConversationResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
+        pinnedAt: string | null;
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -14545,6 +14550,7 @@ export type GenerateChatConversationTitleResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
+        pinnedAt: string | null;
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -14651,6 +14657,7 @@ export type UpdateChatMessageResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
+        pinnedAt: string | null;
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -20763,6 +20770,7 @@ export type GetLimitsResponses = {
         limitValue: number;
         mcpServerName: string | null;
         toolName: string | null;
+        windowMs: number | null;
         model?: Array<string> | null;
         lastCleanup: string | null;
         createdAt: string;
@@ -20773,6 +20781,7 @@ export type GetLimitsResponses = {
             tokensOut: number;
             cost: number;
         }>;
+        mcpUsage?: number;
     }>;
 };
 
@@ -20786,6 +20795,7 @@ export type CreateLimitData = {
         limitValue: number;
         mcpServerName?: string | null;
         toolName?: string | null;
+        windowMs?: number | null;
         model?: Array<string> | null;
         lastCleanup?: unknown;
     };
@@ -20865,6 +20875,7 @@ export type CreateLimitResponses = {
         limitValue: number;
         mcpServerName: string | null;
         toolName: string | null;
+        windowMs: number | null;
         model?: Array<string> | null;
         lastCleanup: string | null;
         createdAt: string;
@@ -21033,6 +21044,7 @@ export type GetLimitResponses = {
         limitValue: number;
         mcpServerName: string | null;
         toolName: string | null;
+        windowMs: number | null;
         model?: Array<string> | null;
         lastCleanup: string | null;
         createdAt: string;
@@ -21050,6 +21062,7 @@ export type UpdateLimitData = {
         limitValue?: number;
         mcpServerName?: string | null;
         toolName?: string | null;
+        windowMs?: number | null;
         model?: Array<string> | null;
         lastCleanup?: unknown;
     };
@@ -21131,6 +21144,7 @@ export type UpdateLimitResponses = {
         limitValue: number;
         mcpServerName: string | null;
         toolName: string | null;
+        windowMs: number | null;
         model?: Array<string> | null;
         lastCleanup: string | null;
         createdAt: string;

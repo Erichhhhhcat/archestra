@@ -24,6 +24,17 @@ export const LimitTypeSchema = z.enum([
 export type LimitType = z.infer<typeof LimitTypeSchema>;
 
 /**
+ * Common rate limit window presets in milliseconds
+ */
+export const RateLimitWindowMs = {
+  OneMinute: 60_000,
+  OneHour: 3_600_000,
+  OneDay: 86_400_000,
+  OneWeek: 604_800_000,
+  OneMonth: 2_592_000_000,
+} as const;
+
+/**
  * Base database schema derived from Drizzle
  */
 export const SelectLimitSchema = createSelectSchema(schema.limitsTable, {
@@ -55,7 +66,7 @@ export const CreateLimitSchema = InsertLimitSchema.omit({
   updatedAt: true,
 }).refine(
   (data) => {
-    // Validation: mcp_server_calls requires mcpServerName and should not have model
+    // Validation: mcp_server_calls requires mcpServerName, windowMs, and should not have model
     if (data.limitType === "mcp_server_calls") {
       if (!data.mcpServerName) {
         return false;
@@ -63,13 +74,19 @@ export const CreateLimitSchema = InsertLimitSchema.omit({
       if (data.model) {
         return false;
       }
+      if (!data.windowMs || data.windowMs <= 0) {
+        return false;
+      }
     }
-    // Validation: tool_calls requires both mcpServerName and toolName and should not have model
+    // Validation: tool_calls requires mcpServerName, toolName, windowMs, and should not have model
     if (data.limitType === "tool_calls") {
       if (!data.mcpServerName || !data.toolName) {
         return false;
       }
       if (data.model) {
+        return false;
+      }
+      if (!data.windowMs || data.windowMs <= 0) {
         return false;
       }
     }
@@ -136,6 +153,7 @@ export const LimitWithUsageSchema = SelectLimitSchema.extend({
       }),
     )
     .optional(),
+  mcpUsage: z.number().optional(),
 });
 
 export type LimitWithUsage = z.infer<typeof LimitWithUsageSchema>;

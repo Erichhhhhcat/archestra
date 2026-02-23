@@ -37,6 +37,7 @@ The endpoint `http://localhost:9050/metrics` exposes Prometheus-formatted metric
 
 - `mcp_tool_calls_total` - Total MCP tool calls by agent_id, agent_name, agent_type, mcp_server_name, tool_name, and status (success/error)
 - `mcp_tool_call_duration_seconds` - MCP tool call execution duration by agent_id, agent_name, agent_type, mcp_server_name, tool_name, and status
+- `mcp_rate_limit_rejections_total` - MCP tool calls rejected by [rate limits](/docs/platform-mcp-gateway#mcp-rate-limits), by agent_id, agent_name, mcp_server_name, tool_name, limit_type, and entity_type
 
 ### Archestra Application Metrics
 

@@ -5,6 +5,8 @@ import {
   ChevronRight,
   MoreHorizontal,
   Pencil,
+  Pin,
+  PinOff,
   Search,
   Sparkles,
   Trash2,
@@ -53,12 +55,15 @@ import {
   useConversations,
   useDeleteConversation,
   useGenerateConversationTitle,
+  usePinConversation,
   useUpdateConversation,
 } from "@/lib/chat.query";
 import { getConversationDisplayTitle } from "@/lib/chat-utils";
 import { cn } from "@/lib/utils";
 
 const CONVERSATION_QUERY_PARAM = "conversation";
+const MAX_PINNED_CHATS = 3;
+const RECENT_UNPINNED_COUNT = 3;
 const VISIBLE_CHAT_COUNT = 10;
 const MAX_TITLE_LENGTH = 30;
 
@@ -82,6 +87,7 @@ export function ChatSidebarSection() {
   const updateConversationMutation = useUpdateConversation();
   const deleteConversationMutation = useDeleteConversation();
   const generateTitleMutation = useGenerateConversationTitle();
+  const pinConversationMutation = usePinConversation();
 
   const [showAllChats, setShowAllChats] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -105,31 +111,46 @@ export function ChatSidebarSection() {
     ? searchParams.get(CONVERSATION_QUERY_PARAM)
     : null;
 
-  // Stabilize sidebar order: freeze backend order on first render,
-  // prepend new conversations at top, remove deleted ones.
-  // Resets on page refresh (ref remounts).
+  // Split conversations into pinned and unpinned
+  const { pinnedChats, recentUnpinnedChats, allUnpinnedChats } = useMemo(() => {
+    const pinned = conversations
+      .filter((c) => c.pinnedAt)
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      )
+      .slice(0, MAX_PINNED_CHATS);
+
+    const pinnedIds = new Set(pinned.map((c) => c.id));
+    const unpinned = conversations.filter((c) => !pinnedIds.has(c.id));
+
+    return {
+      pinnedChats: pinned,
+      recentUnpinnedChats: unpinned.slice(0, RECENT_UNPINNED_COUNT),
+      allUnpinnedChats: unpinned,
+    };
+  }, [conversations]);
+
+  // Stabilize the "all chats" view order
   const stableOrderRef = useRef<string[] | null>(null);
-  const stableConversations = useMemo(() => {
-    if (conversations.length === 0) {
+  const stableUnpinnedChats = useMemo(() => {
+    if (allUnpinnedChats.length === 0) {
       stableOrderRef.current = null;
-      return conversations;
+      return allUnpinnedChats;
     }
 
-    const currentIds = new Set(conversations.map((c) => c.id));
-    const conversationMap = new Map(conversations.map((c) => [c.id, c]));
+    const currentIds = new Set(allUnpinnedChats.map((c) => c.id));
+    const conversationMap = new Map(allUnpinnedChats.map((c) => [c.id, c]));
 
     if (stableOrderRef.current === null) {
-      // First render: capture backend order as-is
-      stableOrderRef.current = conversations.map((c) => c.id);
-      return conversations;
+      stableOrderRef.current = allUnpinnedChats.map((c) => c.id);
+      return allUnpinnedChats;
     }
 
     const prevIds = new Set(stableOrderRef.current);
-    // New IDs not in previous order — prepend at top
-    const newIds = conversations
+    const newIds = allUnpinnedChats
       .filter((c) => !prevIds.has(c.id))
       .map((c) => c.id);
-    // Existing IDs in their original order, excluding deleted
     const keptIds = stableOrderRef.current.filter((id) => currentIds.has(id));
     const orderedIds = [...newIds, ...keptIds];
 
@@ -137,15 +158,20 @@ export function ChatSidebarSection() {
     return orderedIds
       .map((id) => conversationMap.get(id))
       .filter((c): c is NonNullable<typeof c> => c != null);
-  }, [conversations]);
+  }, [allUnpinnedChats]);
 
-  const visibleChats = showAllChats
-    ? stableConversations
-    : stableConversations.slice(0, VISIBLE_CHAT_COUNT);
+  const visibleUnpinnedChats = showAllChats
+    ? stableUnpinnedChats
+    : stableUnpinnedChats.slice(0, VISIBLE_CHAT_COUNT);
   const hiddenChatsCount = Math.max(
     0,
-    stableConversations.length - VISIBLE_CHAT_COUNT,
+    stableUnpinnedChats.length - VISIBLE_CHAT_COUNT,
   );
+
+  // Determine which chats to show in the sidebar
+  // When collapsed: show pinned (up to 3) + recent unpinned (up to 3)
+  // When expanded: show pinned + all unpinned
+  const showExpandedView = showAllChats;
 
   useEffect(() => {
     if (editingId && inputRef.current) {
@@ -212,8 +238,190 @@ export function ChatSidebarSection() {
     await generateTitleMutation.mutateAsync({ id, regenerate: true });
   };
 
+  const handleTogglePin = (id: string, isPinned: boolean) => {
+    pinConversationMutation.mutate({ id, pinned: !isPinned });
+  };
+
   const openConversationSearch = () => {
     window.dispatchEvent(new CustomEvent("open-conversation-search"));
+  };
+
+  const renderConversationItem = (
+    conv: (typeof conversations)[number],
+    showPinIcon = false,
+  ) => {
+    const isCurrentConversation = currentConversationId === conv.id;
+    const displayTitle = getConversationDisplayTitle(conv.title, conv.messages);
+    const hasRecentlyGeneratedTitle = recentlyGeneratedTitles.has(conv.id);
+    const isRegenerating = regeneratingTitles.has(conv.id);
+    const isMenuOpen = openMenuId === conv.id;
+    const isPinned = !!conv.pinnedAt;
+
+    return (
+      <SidebarMenuItem key={conv.id}>
+        <div className="flex items-center justify-between w-full gap-1">
+          {editingId === conv.id ? (
+            <div className="flex items-center gap-1 flex-1">
+              <Input
+                ref={inputRef}
+                value={editingTitle}
+                onChange={(e) => setEditingTitle(e.target.value)}
+                onBlur={() => handleSaveEdit(conv.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSaveEdit(conv.id);
+                  } else if (e.key === "Escape") {
+                    handleCancelEdit();
+                  }
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="h-7 text-sm flex-1"
+              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="ghost"
+                      onMouseDown={(e) => {
+                        // Prevent input blur from triggering handleSaveEdit
+                        e.preventDefault();
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRegenerateTitle(conv.id);
+                      }}
+                      disabled={generateTitleMutation.isPending}
+                      className="h-7 w-7 shrink-0"
+                    >
+                      <AISparkleIcon
+                        isAnimating={generateTitleMutation.isPending}
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    Regenerate title with AI
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          ) : (
+            <SidebarMenuButton
+              onClick={() => handleSelectConversation(conv.id)}
+              isActive={isCurrentConversation}
+              className="cursor-pointer flex-1 group-hover/menu-item:bg-sidebar-accent justify-between"
+            >
+              <span className="flex items-center gap-2 min-w-0 flex-1">
+                {showPinIcon && (
+                  <Pin className="h-3 w-3 shrink-0 text-muted-foreground" />
+                )}
+                {(hasRecentlyGeneratedTitle || isRegenerating) && (
+                  <AISparkleIcon isAnimating />
+                )}
+                {isRegenerating ? (
+                  <span className="text-muted-foreground text-sm truncate">
+                    Generating...
+                  </span>
+                ) : hasRecentlyGeneratedTitle ? (
+                  <span className="truncate">
+                    <TypingText
+                      text={
+                        displayTitle.length > MAX_TITLE_LENGTH
+                          ? `${displayTitle.slice(0, MAX_TITLE_LENGTH)}...`
+                          : displayTitle
+                      }
+                      typingSpeed={35}
+                      showCursor
+                      cursorClassName="bg-primary"
+                    />
+                  </span>
+                ) : (
+                  <TruncatedText
+                    message={displayTitle}
+                    maxLength={MAX_TITLE_LENGTH}
+                    className="truncate"
+                    showTooltip={false}
+                  />
+                )}
+              </span>
+              {(canUpdateConversation || canDeleteConversation) && (
+                <DropdownMenu
+                  open={isMenuOpen}
+                  onOpenChange={(open) => setOpenMenuId(open ? conv.id : null)}
+                >
+                  <DropdownMenuTrigger asChild>
+                    <MoreHorizontal
+                      className={cn(
+                        "h-4 w-4 p-0 shrink-0 transition-opacity",
+                        isMenuOpen
+                          ? "opacity-100"
+                          : "opacity-0 group-hover/menu-item:opacity-100",
+                      )}
+                    />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" side="right">
+                    {canUpdateConversation && (
+                      <>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTogglePin(conv.id, isPinned);
+                          }}
+                        >
+                          {isPinned ? (
+                            <>
+                              <PinOff className="h-4 w-4 mr-2" />
+                              Unpin
+                            </>
+                          ) : (
+                            <>
+                              <Pin className="h-4 w-4 mr-2" />
+                              Pin
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartEdit(conv.id, displayTitle);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRegenerateTitle(conv.id);
+                          }}
+                          disabled={generateTitleMutation.isPending}
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Regenerate title
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {canDeleteConversation && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirmId(conv.id);
+                        }}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </SidebarMenuButton>
+          )}
+        </div>
+      </SidebarMenuItem>
+    );
   };
 
   return (
@@ -228,11 +436,11 @@ export function ChatSidebarSection() {
                 className="relative top-auto right-auto transform-none h-6 w-6 text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
               >
                 <Search className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span className="sr-only">Search conversations (⌘K)</span>
+                <span className="sr-only">Search conversations</span>
               </SidebarGroupAction>
             </TooltipTrigger>
             <TooltipContent side="right" align="center">
-              Search conversations (⌘K)
+              Search conversations
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -249,191 +457,56 @@ export function ChatSidebarSection() {
                 </span>
               </div>
             </SidebarMenuItem>
-          ) : stableConversations.length === 0 ? (
+          ) : conversations.length === 0 ? (
             <SidebarMenuItem>
               <div className="px-2 py-1.5 text-xs text-muted-foreground">
                 No chats yet
               </div>
             </SidebarMenuItem>
-          ) : (
+          ) : showExpandedView ? (
             <>
-              {visibleChats.map((conv) => {
-                const isCurrentConversation = currentConversationId === conv.id;
-                const displayTitle = getConversationDisplayTitle(
-                  conv.title,
-                  conv.messages,
-                );
-                const hasRecentlyGeneratedTitle = recentlyGeneratedTitles.has(
-                  conv.id,
-                );
-                const isRegenerating = regeneratingTitles.has(conv.id);
-                const isMenuOpen = openMenuId === conv.id;
-
-                return (
-                  <SidebarMenuItem key={conv.id}>
-                    <div className="flex items-center justify-between w-full gap-1">
-                      {editingId === conv.id ? (
-                        <div className="flex items-center gap-1 flex-1">
-                          <Input
-                            ref={inputRef}
-                            value={editingTitle}
-                            onChange={(e) => setEditingTitle(e.target.value)}
-                            onBlur={() => handleSaveEdit(conv.id)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                handleSaveEdit(conv.id);
-                              } else if (e.key === "Escape") {
-                                handleCancelEdit();
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="h-7 text-sm flex-1"
-                          />
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  type="button"
-                                  size="icon-sm"
-                                  variant="ghost"
-                                  onMouseDown={(e) => {
-                                    // Prevent input blur from triggering handleSaveEdit
-                                    e.preventDefault();
-                                  }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRegenerateTitle(conv.id);
-                                  }}
-                                  disabled={generateTitleMutation.isPending}
-                                  className="h-7 w-7 shrink-0"
-                                >
-                                  <AISparkleIcon
-                                    isAnimating={
-                                      generateTitleMutation.isPending
-                                    }
-                                  />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top">
-                                Regenerate title with AI
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      ) : (
-                        <SidebarMenuButton
-                          onClick={() => handleSelectConversation(conv.id)}
-                          isActive={isCurrentConversation}
-                          className="cursor-pointer flex-1 group-hover/menu-item:bg-sidebar-accent justify-between"
-                        >
-                          <span className="flex items-center gap-2 min-w-0 flex-1">
-                            {(hasRecentlyGeneratedTitle || isRegenerating) && (
-                              <AISparkleIcon isAnimating />
-                            )}
-                            {isRegenerating ? (
-                              <span className="text-muted-foreground text-sm truncate">
-                                Generating...
-                              </span>
-                            ) : hasRecentlyGeneratedTitle ? (
-                              <span className="truncate">
-                                <TypingText
-                                  text={
-                                    displayTitle.length > MAX_TITLE_LENGTH
-                                      ? `${displayTitle.slice(0, MAX_TITLE_LENGTH)}...`
-                                      : displayTitle
-                                  }
-                                  typingSpeed={35}
-                                  showCursor
-                                  cursorClassName="bg-primary"
-                                />
-                              </span>
-                            ) : (
-                              <TruncatedText
-                                message={displayTitle}
-                                maxLength={MAX_TITLE_LENGTH}
-                                className="truncate"
-                                showTooltip={false}
-                              />
-                            )}
-                          </span>
-                          {(canUpdateConversation || canDeleteConversation) && (
-                            <DropdownMenu
-                              open={isMenuOpen}
-                              onOpenChange={(open) =>
-                                setOpenMenuId(open ? conv.id : null)
-                              }
-                            >
-                              <DropdownMenuTrigger asChild>
-                                <MoreHorizontal
-                                  className={cn(
-                                    "h-4 w-4 p-0 shrink-0 transition-opacity",
-                                    isMenuOpen
-                                      ? "opacity-100"
-                                      : "opacity-0 group-hover/menu-item:opacity-100",
-                                  )}
-                                />
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start" side="right">
-                                {canUpdateConversation && (
-                                  <>
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleStartEdit(conv.id, displayTitle);
-                                      }}
-                                    >
-                                      <Pencil className="h-4 w-4 mr-2" />
-                                      Rename
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRegenerateTitle(conv.id);
-                                      }}
-                                      disabled={generateTitleMutation.isPending}
-                                    >
-                                      <Sparkles className="h-4 w-4 mr-2" />
-                                      Regenerate title
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                                {canDeleteConversation && (
-                                  <DropdownMenuItem
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDeleteConfirmId(conv.id);
-                                    }}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
-                        </SidebarMenuButton>
-                      )}
-                    </div>
-                  </SidebarMenuItem>
-                );
-              })}
-
+              {/* Expanded view: pinned chats + all unpinned with show more */}
+              {pinnedChats.length > 0 && (
+                <>
+                  {pinnedChats.map((conv) =>
+                    renderConversationItem(conv, true),
+                  )}
+                  {visibleUnpinnedChats.length > 0 && (
+                    <div className="my-1 border-t border-border/50" />
+                  )}
+                </>
+              )}
+              {visibleUnpinnedChats.map((conv) => renderConversationItem(conv))}
               {hiddenChatsCount > 0 && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() => setShowAllChats(!showAllChats)}
                     className="cursor-pointer text-xs text-muted-foreground justify-start"
                   >
-                    {showAllChats ? (
-                      <ChevronDown className="h-3 w-3" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3" />
-                    )}
+                    <ChevronDown className="h-3 w-3" />
+                    <span>Show less</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Default view: pinned (up to 3) + recent unpinned (up to 3) */}
+              {pinnedChats.map((conv) => renderConversationItem(conv, true))}
+              {pinnedChats.length > 0 && recentUnpinnedChats.length > 0 && (
+                <div className="my-1 border-t border-border/50" />
+              )}
+              {recentUnpinnedChats.map((conv) => renderConversationItem(conv))}
+              {allUnpinnedChats.length > RECENT_UNPINNED_COUNT && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => setShowAllChats(true)}
+                    className="cursor-pointer text-xs text-muted-foreground justify-start"
+                  >
+                    <ChevronRight className="h-3 w-3" />
                     <span>
-                      {showAllChats
-                        ? "Show less"
-                        : `Show ${hiddenChatsCount} more`}
+                      Show {allUnpinnedChats.length - RECENT_UNPINNED_COUNT}{" "}
+                      more
                     </span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

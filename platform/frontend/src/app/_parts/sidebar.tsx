@@ -21,14 +21,14 @@ import {
   Settings,
   Slack,
   Star,
+  Timer,
   Wrench,
   Zap,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { DefaultCredentialsWarning } from "@/components/default-credentials-warning";
-import { SecurityEngineWarning } from "@/components/security-engine-warning";
+import { SidebarWarningsAccordion } from "@/components/sidebar-warnings-accordion";
 import {
   Sidebar,
   SidebarContent,
@@ -153,6 +153,11 @@ const getNavigationGroups = (isAuthenticated: boolean): MenuGroup[] => {
           icon: Wrench,
           customIsActive: (pathname: string) =>
             pathname.startsWith("/tool-policies"),
+        },
+        {
+          title: "MCP Rate Limits",
+          url: "/mcp-rate-limits",
+          icon: Timer,
         },
       ],
     },
@@ -330,8 +335,7 @@ const MainSideBarSection = ({
 
 const FooterSideBarSection = ({ pathname }: { pathname: string }) => (
   <SidebarFooter>
-    <SecurityEngineWarning />
-    <DefaultCredentialsWarning />
+    <SidebarWarningsAccordion />
     <SignedIn>
       <SidebarGroup className="mt-auto">
         <SidebarGroupContent>

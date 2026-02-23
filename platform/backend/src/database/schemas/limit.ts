@@ -20,6 +20,9 @@ const limitsTable = pgTable(
     limitValue: integer("limit_value").notNull(),
     mcpServerName: varchar("mcp_server_name", { length: 255 }),
     toolName: varchar("tool_name", { length: 255 }),
+    // Rate limit window in milliseconds. Required for mcp_server_calls and tool_calls limits.
+    // Null for token_cost limits (which use the organization cleanup interval).
+    windowMs: integer("window_ms"),
     // JSONB array stores multiple models for a single limit (e.g., ["gpt-4o", "claude-3-5-sonnet"])
     // This is the "source of truth" for which models a limit covers, enabling:
     // 1. Fast lookups: WHERE model ? 'gpt-4o' to find limits covering this model

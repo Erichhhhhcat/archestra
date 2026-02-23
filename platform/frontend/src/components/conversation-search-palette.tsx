@@ -11,6 +11,7 @@ import {
   MessagesSquare,
   Network,
   Pencil,
+  Pin,
   Router,
   Settings,
   Shield,
@@ -31,11 +32,16 @@ import {
 } from "@/components/ui/command";
 import { usePlatform } from "@/hooks/use-platform";
 import { useIsAuthenticated } from "@/lib/auth.hook";
-import { useConversations, useDeleteConversation } from "@/lib/chat.query";
+import {
+  useConversations,
+  useDeleteConversation,
+  usePinConversation,
+} from "@/lib/chat.query";
 import { getConversationDisplayTitle } from "@/lib/chat-utils";
 import {
   SHORTCUT_DELETE,
   SHORTCUT_NEW_CHAT,
+  SHORTCUT_PIN,
   SHORTCUT_SEARCH,
   SHORTCUT_SIDEBAR,
 } from "@/lib/keyboard-shortcuts";
@@ -64,9 +70,10 @@ function extractTextFromMessages(
 }
 
 /** Groups conversations into time-based buckets for organized display */
-function groupConversationsByDate<T extends { updatedAt: string | Date }>(
-  conversations: T[],
-) {
+function groupConversationsByDate<
+  T extends { updatedAt: string | Date; pinnedAt?: string | Date | null },
+>(conversations: T[]) {
+  const pinned: T[] = [];
   const today: T[] = [];
   const yesterday: T[] = [];
   const previous7Days: T[] = [];
@@ -76,6 +83,10 @@ function groupConversationsByDate<T extends { updatedAt: string | Date }>(
   const sevenDaysAgo = subDays(now, 7);
 
   for (const conv of conversations) {
+    if (conv.pinnedAt) {
+      pinned.push(conv);
+      continue;
+    }
     const updatedAt = new Date(conv.updatedAt);
     if (isToday(updatedAt)) {
       today.push(conv);
@@ -88,7 +99,7 @@ function groupConversationsByDate<T extends { updatedAt: string | Date }>(
     }
   }
 
-  return { today, yesterday, previous7Days, older };
+  return { pinned, today, yesterday, previous7Days, older };
 }
 
 // Product navigation items matching sidebar names
@@ -194,6 +205,7 @@ export function ConversationSearchPalette({
   const { modKey, altKey } = usePlatform();
 
   const deleteMutation = useDeleteConversation();
+  const pinMutation = usePinConversation();
 
   // Debounce search query to reduce API calls while typing
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -270,15 +282,33 @@ export function ConversationSearchPalette({
     [deleteMutation, conversations, searchParams, router],
   );
 
+  const handlePinConversation = useCallback(
+    (conversationId: string) => {
+      const conv = conversations.find((c) => c.id === conversationId);
+      if (!conv) return;
+      const isPinned = !!conv.pinnedAt;
+      pinMutation.mutate({ id: conversationId, pinned: !isPinned });
+    },
+    [pinMutation, conversations],
+  );
+
   // Keyboard shortcuts for search palette
   useEffect(() => {
     if (!open) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // In cmdk, the input always retains focus even during arrow-key navigation.
-      // Only intercept 'd' when the search input is empty (browse mode).
-      // When the user is typing a search query, let 'd' pass through normally.
+      // Only intercept shortcut keys when the search input is empty (browse mode).
+      // When the user is typing a search query, let keys pass through normally.
       if (searchQuery) return;
+
+      // 'p' for pin/unpin when conversation is selected
+      if (e.key === SHORTCUT_PIN.key && selectedValue?.startsWith("conv-")) {
+        e.preventDefault();
+        e.stopPropagation();
+        const conversationId = selectedValue.substring(5);
+        handlePinConversation(conversationId);
+      }
 
       // 'd' for delete when conversation is selected
       if (e.key === SHORTCUT_DELETE.key && selectedValue?.startsWith("conv-")) {
@@ -303,6 +333,7 @@ export function ConversationSearchPalette({
     searchQuery,
     isPendingDeletion,
     handleDeleteConversation,
+    handlePinConversation,
   ]);
 
   /** Generates a contextual preview snippet with search term context */
@@ -387,6 +418,7 @@ export function ConversationSearchPalette({
       ? getPreviewText(conv.messages, debouncedSearch)
       : "";
     const isPending = isPendingDeletion === conv.id;
+    const isPinned = !!conv.pinnedAt;
 
     return (
       <CommandItem
@@ -396,7 +428,11 @@ export function ConversationSearchPalette({
         className="flex flex-col items-start gap-1.5 px-3 py-2.5 cursor-pointer aria-selected:bg-accent rounded-sm w-full relative"
       >
         <div className="flex items-start gap-2 w-full min-w-0">
-          <MessageCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
+          {isPinned ? (
+            <Pin className="h-4 w-4 shrink-0 text-muted-foreground" />
+          ) : (
+            <MessageCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
           <span className="text-sm flex-1 min-w-0 break-words leading-snug line-clamp-2">
             {displayTitle}
           </span>
@@ -405,7 +441,7 @@ export function ConversationSearchPalette({
               variant="destructive"
               className="absolute right-3 top-2.5 text-[10px] shadow-sm animate-in fade-in zoom-in duration-200"
             >
-              Press "{SHORTCUT_DELETE.label}" to confirm
+              Press &quot;{SHORTCUT_DELETE.label}&quot; to confirm
             </Badge>
           )}
         </div>
@@ -516,6 +552,13 @@ export function ConversationSearchPalette({
               )
             ) : groupedConversations ? (
               <>
+                {groupedConversations.pinned.length > 0 && (
+                  <CommandGroup heading="Pinned">
+                    {groupedConversations.pinned.map((conv) =>
+                      renderConversationItem(conv),
+                    )}
+                  </CommandGroup>
+                )}
                 {groupedConversations.today.length > 0 && (
                   <CommandGroup heading="Today">
                     {groupedConversations.today.map((conv) =>
@@ -578,6 +621,12 @@ export function ConversationSearchPalette({
               </kbd>
             </div>
             <span className="text-muted-foreground/70">New Chat</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <kbd className="inline-flex h-5 min-w-[20px] items-center justify-center rounded bg-muted px-1.5 font-sans text-[10px] font-medium text-muted-foreground border border-border/50">
+              {SHORTCUT_PIN.label}
+            </kbd>
+            <span className="text-muted-foreground/70">Pin Chat</span>
           </div>
           <div className="flex items-center gap-2">
             <kbd className="inline-flex h-5 min-w-[20px] items-center justify-center rounded bg-muted px-1.5 font-sans text-[10px] font-medium text-muted-foreground border border-border/50">

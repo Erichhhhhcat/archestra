@@ -608,7 +608,6 @@ function LimitRow({
 export default function LimitsPage() {
   const [editingLimitId, setEditingLimitId] = useState<string | null>(null);
   const [isAddingLlmLimit, setIsAddingLlmLimit] = useState(false);
-  const [isAddingMcpLimit, setIsAddingMcpLimit] = useState(false);
 
   // Data fetching hooks
   const { data: limits = [], isLoading: limitsLoading } = useLimits();
@@ -633,42 +632,6 @@ export default function LimitsPage() {
 
   // Filter limits by type
   const llmLimits = limits.filter((limit) => limit.limitType === "token_cost");
-  const mcpLimits = limits.filter(
-    (limit) => limit.limitType === "mcp_server_calls",
-  );
-
-  // Helper functions for MCP limit validation only
-  const hasOrganizationMcpLimit = useCallback(
-    (mcpServerName?: string) => {
-      return limits.some((limit) => {
-        if (
-          limit.limitType !== "mcp_server_calls" ||
-          limit.entityType !== "organization"
-        ) {
-          return false;
-        }
-        return limit.mcpServerName === mcpServerName;
-      });
-    },
-    [limits],
-  );
-
-  const getTeamsWithMcpLimits = useCallback(
-    (mcpServerName?: string) => {
-      return limits
-        .filter((limit) => {
-          if (
-            limit.limitType !== "mcp_server_calls" ||
-            limit.entityType !== "team"
-          ) {
-            return false;
-          }
-          return limit.mcpServerName === mcpServerName;
-        })
-        .map((limit) => limit.entityId);
-    },
-    [limits],
-  );
 
   // Helper function to get entity name
   const getEntityName = useCallback(
@@ -736,7 +699,6 @@ export default function LimitsPage() {
       try {
         await createLimit.mutateAsync(data);
         setIsAddingLlmLimit(false);
-        setIsAddingMcpLimit(false);
       } catch (error) {
         console.error("Failed to create limit:", error);
       }
@@ -759,7 +721,6 @@ export default function LimitsPage() {
   const handleCancelEdit = useCallback(() => {
     setEditingLimitId(null);
     setIsAddingLlmLimit(false);
-    setIsAddingMcpLimit(false);
   }, []);
 
   return (
@@ -844,8 +805,6 @@ export default function LimitsPage() {
                     teams={teams}
                     mcpServers={mcpServers}
                     tokenPrices={tokenPrices}
-                    hasOrganizationMcpLimit={hasOrganizationMcpLimit}
-                    getTeamsWithMcpLimits={getTeamsWithMcpLimits}
                     organizationId={organizationDetails?.id || ""}
                   />
                 )}
@@ -877,8 +836,6 @@ export default function LimitsPage() {
                       tokenPrices={tokenPrices}
                       getEntityName={getEntityName}
                       getUsageStatus={getUsageStatus}
-                      hasOrganizationMcpLimit={hasOrganizationMcpLimit}
-                      getTeamsWithMcpLimits={getTeamsWithMcpLimits}
                       organizationId={organizationDetails?.id || ""}
                     />
                   ))
@@ -886,104 +843,6 @@ export default function LimitsPage() {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
-
-      <Card className="relative">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl">MCP Limits</CardTitle>
-              <CardDescription>
-                MCP server and tool call limits across teams and organization
-              </CardDescription>
-            </div>
-            <PermissionButton
-              permissions={{ limit: ["create"] }}
-              onClick={() => setIsAddingMcpLimit(true)}
-              size="sm"
-              disabled={true}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Add MCP Limit
-            </PermissionButton>
-          </div>
-        </CardHeader>
-        <CardContent className="relative">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
-            <div className="text-center">
-              <p className="text-lg font-semibold text-muted-foreground">
-                Coming soon
-              </p>
-            </div>
-          </div>
-
-          <div className="opacity-30 pointer-events-none">
-            {limitsLoading ? (
-              <LoadingSkeleton count={3} prefix="mcp-limits" />
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Applied to</TableHead>
-                    <TableHead>MCP Server</TableHead>
-                    <TableHead>Usage</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isAddingMcpLimit && (
-                    <LimitInlineForm
-                      limitType="mcp_server_calls"
-                      onSave={handleCreateLimit}
-                      onCancel={handleCancelEdit}
-                      teams={teams}
-                      mcpServers={mcpServers}
-                      tokenPrices={tokenPrices}
-                      hasOrganizationMcpLimit={hasOrganizationMcpLimit}
-                      getTeamsWithMcpLimits={getTeamsWithMcpLimits}
-                      organizationId={organizationDetails?.id || ""}
-                    />
-                  )}
-                  {mcpLimits.length === 0 && !isAddingMcpLimit ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="text-center py-8 text-muted-foreground"
-                      >
-                        <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p>No MCP limits configured</p>
-                        <p className="text-sm">
-                          Click "Add MCP Limit" to get started
-                        </p>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    mcpLimits.map((limit) => (
-                      <LimitRow
-                        key={limit.id}
-                        limit={limit}
-                        isEditing={editingLimitId === limit.id}
-                        onEdit={() => setEditingLimitId(limit.id)}
-                        onSave={(data) => handleUpdateLimit(limit.id, data)}
-                        onCancel={handleCancelEdit}
-                        onDelete={() => handleDeleteLimit(limit.id)}
-                        teams={teams}
-                        mcpServers={mcpServers}
-                        tokenPrices={tokenPrices}
-                        getEntityName={getEntityName}
-                        getUsageStatus={getUsageStatus}
-                        hasOrganizationMcpLimit={hasOrganizationMcpLimit}
-                        getTeamsWithMcpLimits={getTeamsWithMcpLimits}
-                        organizationId={organizationDetails?.id || ""}
-                      />
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            )}
-          </div>
         </CardContent>
       </Card>
     </div>

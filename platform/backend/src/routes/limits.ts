@@ -1,6 +1,7 @@
 import { RouteId } from "@shared";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
+import { getMcpUsageForLimit } from "@/clients/mcp-rate-limit";
 import { LimitModel, OptimizationRuleModel } from "@/models";
 import {
   ApiError,
@@ -50,7 +51,7 @@ const limitsRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       const limits = await LimitModel.findAll(entityType, entityId, limitType);
 
-      // Add per-model usage breakdown for token_cost limits
+      // Add per-model usage breakdown for token_cost limits and MCP usage for MCP limits
       const limitsWithUsage = await Promise.all(
         limits.map(async (limit) => {
           if (limit.limitType === "token_cost") {
@@ -58,6 +59,13 @@ const limitsRoutes: FastifyPluginAsyncZod = async (fastify) => {
               limit.id,
             );
             return { ...limit, modelUsage };
+          }
+          if (
+            limit.limitType === "mcp_server_calls" ||
+            limit.limitType === "tool_calls"
+          ) {
+            const mcpUsage = await getMcpUsageForLimit(limit.id);
+            return { ...limit, mcpUsage };
           }
           return limit;
         }),

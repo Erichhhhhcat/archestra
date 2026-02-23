@@ -1,0 +1,1 @@
+ALTER TABLE "limits" ADD COLUMN "window_ms" integer;
