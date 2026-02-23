@@ -658,8 +658,8 @@ class InteractionModel {
       // Get agent's teams to update team and organization limits
       // If profileId is null (agent was deleted), we can't update usage - skip silently
       if (!interaction.profileId) {
-        logger.warn(
-          `Interaction ${interaction.id} has null profileId - cannot update limits`,
+        logger.info(
+          `Interaction ${interaction.id} has null profileId (agent deleted) - skipping limit update`,
         );
         return;
       }

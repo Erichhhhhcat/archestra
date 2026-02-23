@@ -7,12 +7,9 @@ import {
   AlertTriangle,
   Bot,
   Edit,
-  Eye,
-  EyeOff,
   FileText,
   Globe,
   Loader2,
-  PanelRightClose,
   Plus,
 } from "lucide-react";
 import Link from "next/link";
@@ -1403,9 +1400,9 @@ export default function ChatPage() {
                       conversationId && conversation?.agent?.id
                         ? (conversation.agent?.llmApiKeyId ?? null)
                         : ((
-                            internalAgents.find((a) => a.id === initialAgentId) as
-                              | Record<string, unknown>
-                              | undefined
+                            internalAgents.find(
+                              (a) => a.id === initialAgentId,
+                            ) as Record<string, unknown> | undefined
                           )?.llmApiKeyId as string | null)
                     }
                     submitDisabled={isPlaywrightSetupVisible}

@@ -43,7 +43,6 @@ import {
   TeamModel,
 } from "@/models";
 import ApiKeyModelModel from "@/models/api-key-model";
-import { getExternalAgentId } from "@/routes/proxy/utils/headers/external-agent-id";
 import { startActiveChatSpan } from "@/routes/proxy/utils/tracing";
 import { getSecretValueForLlmProviderApiKey } from "@/secrets-manager";
 import {
@@ -247,10 +246,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       const { agentId, agent } = conversation;
 
-      // Use agent ID as external agent ID if available, otherwise use header value
-      // This allows agent names to be displayed in LLM proxy logs
-      const headerExternalAgentId = getExternalAgentId(request.headers);
-      const externalAgentId = agentId ?? headerExternalAgentId;
+      const externalAgentId = agentId;
 
       // Fetch enabled tool IDs and custom selection status in parallel
       const [enabledToolIds, hasCustomSelection] = await Promise.all([
