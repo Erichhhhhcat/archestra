@@ -14301,7 +14301,7 @@ export type UpdateChatConversationData = {
         selectedModel?: string;
         selectedProvider?: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'perplexity' | 'vllm' | 'ollama' | 'zhipuai';
         chatApiKeyId?: string | null;
-        agentId?: string | null;
+        agentId?: string;
         artifact?: string | null;
     };
     path: {
