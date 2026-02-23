@@ -494,7 +494,7 @@ export default function ChatPage() {
     : (initialAgentId ?? undefined);
 
   const playwrightSetupAgentId = conversationId
-    ? conversation?.agentId
+    ? (conversation?.agentId ?? undefined)
     : (initialAgentId ?? undefined);
   const {
     isLoading: isPlaywrightCheckLoading,
