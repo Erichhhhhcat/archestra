@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.0.49](https://github.com/archestra-ai/archestra/compare/platform-v1.0.48...platform-v1.0.49) (2026-02-23)
+
+
+### Bug Fixes
+
+* hide Logs button when logs are unavailable ([#2971](https://github.com/archestra-ai/archestra/issues/2971)) ([e89214a](https://github.com/archestra-ai/archestra/commit/e89214a4734d2df58969b38de0bbd93f501fe1f4))
+
+
+### Miscellaneous Chores
+
+* Delete platform/CLAUDE.md ([#2972](https://github.com/archestra-ai/archestra/issues/2972)) ([1350a59](https://github.com/archestra-ai/archestra/commit/1350a598e9812d16fb2d9a86f2f8517a614f23cd))
+
 ## [1.0.48](https://github.com/archestra-ai/archestra/compare/platform-v1.0.46...platform-v1.0.48) (2026-02-23)
 
 
