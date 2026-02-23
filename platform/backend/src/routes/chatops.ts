@@ -773,13 +773,9 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
         return reply.send({ ok: true });
       }
 
-      // Verify agent exists and allows Slack
+      // Verify agent exists
       const agent = await AgentModel.findById(selection.agentId);
       if (!agent) {
-        return reply.send({ ok: true });
-      }
-
-      if (!agent.allowedChatops?.includes("slack")) {
         return reply.send({ ok: true });
       }
 
@@ -1402,18 +1398,11 @@ async function handleAgentSelection(
     return;
   }
 
-  // Verify the agent exists and allows MS Teams
+  // Verify the agent exists
   const agent = await AgentModel.findById(agentId);
   if (!agent) {
     await context.sendActivity(
       "The selected agent no longer exists. Please try again.",
-    );
-    return;
-  }
-
-  if (!agent.allowedChatops?.includes("ms-teams")) {
-    await context.sendActivity(
-      `The agent "${agent.name}" is no longer available for Microsoft Teams. Please select a different agent.`,
     );
     return;
   }

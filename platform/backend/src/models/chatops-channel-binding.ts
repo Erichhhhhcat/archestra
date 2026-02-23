@@ -431,7 +431,6 @@ class ChatOpsChannelBindingModel {
   /**
    * Unbind an agent from all channels for specific providers.
    * Sets agentId to null (preserves the discovered channel binding).
-   * Used when an agent's allowedChatops is updated to remove providers.
    */
   static async unbindAgentFromProviders(
     agentId: string,

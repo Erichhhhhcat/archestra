@@ -5,7 +5,6 @@ import { ExternalLink, Info } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { CopyButton } from "@/components/copy-button";
-import { DefaultAgentSetupDialog } from "@/components/default-agent-setup-dialog";
 import Divider from "@/components/divider";
 import { MsTeamsSetupDialog } from "@/components/ms-teams-setup-dialog";
 import { Button } from "@/components/ui/button";
@@ -19,12 +18,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useProfiles } from "@/lib/agent.query";
-import { useChatOpsBindings, useChatOpsStatus } from "@/lib/chatops.query";
+import { useChatOpsStatus } from "@/lib/chatops.query";
 import config from "@/lib/config";
 import { useFeatures } from "@/lib/config.query";
 import { usePublicBaseUrl } from "@/lib/features.hook";
-import { AgentTilesSection } from "../_components/agent-tiles-section";
+import { ChannelTilesSection } from "../_components/channel-tiles-section";
 import { CollapsibleSetupSection } from "../_components/collapsible-setup-section";
 import { CredentialField } from "../_components/credential-field";
 import { SetupStep } from "../_components/setup-step";
@@ -58,46 +56,21 @@ export default function MsTeamsPage() {
   const publicBaseUrl = usePublicBaseUrl();
   const [msTeamsSetupOpen, setMsTeamsSetupOpen] = useState(false);
   const [ngrokDialogOpen, setNgrokDialogOpen] = useState(false);
-  const [defaultAgentDialogOpen, setDefaultAgentDialogOpen] = useState(false);
   const [refreshDialogOpen, setRefreshDialogOpen] = useState(false);
 
   const { data: features, isLoading: featuresLoading } = useFeatures();
   const { data: chatOpsProviders, isLoading: statusLoading } =
     useChatOpsStatus();
-  const { data: bindings, isLoading: bindingsLoading } = useChatOpsBindings();
-  const { data: agents, isLoading: agentsLoading } = useProfiles({
-    filters: { agentType: "agent" },
-  });
 
   const ngrokDomain = features?.ngrokDomain;
   const msTeams = chatOpsProviders?.find((p) => p.id === "ms-teams");
 
-  const msTeamsAgentIds = new Set(
-    agents
-      ?.filter((a) =>
-        Array.isArray(a.allowedChatops)
-          ? a.allowedChatops.includes("ms-teams")
-          : false,
-      )
-      .map((a) => a.id) ?? [],
-  );
-  const hasBindings =
-    !!bindings &&
-    bindings.some(
-      (b) =>
-        b.provider === "ms-teams" &&
-        !b.isDm &&
-        b.agentId &&
-        msTeamsAgentIds.has(b.agentId),
-    );
-
-  const setupDataLoading =
-    featuresLoading || statusLoading || bindingsLoading || agentsLoading;
+  const setupDataLoading = featuresLoading || statusLoading;
   const isLocalDev =
     features?.isQuickstart || config.environment === "development";
   const allStepsCompleted = isLocalDev
-    ? !!ngrokDomain && !!msTeams?.configured && hasBindings
-    : !!msTeams?.configured && hasBindings;
+    ? !!ngrokDomain && !!msTeams?.configured
+    : !!msTeams?.configured;
 
   return (
     <div className="flex flex-col gap-6">
@@ -177,18 +150,11 @@ export default function MsTeamsPage() {
             />
           </div>
         </SetupStep>
-        <SetupStep
-          title="Enable MS Teams for your Agents and assign channels to them"
-          description="Agents with enabled MS Teams will appear below. Then you can assign channels to them."
-          done={hasBindings}
-          ctaLabel="Configure"
-          onAction={() => setDefaultAgentDialogOpen(true)}
-        />
       </CollapsibleSetupSection>
 
       <Divider />
 
-      <AgentTilesSection
+      <ChannelTilesSection
         providerConfig={msTeamsProviderConfig}
         onRefreshSuccess={() => setRefreshDialogOpen(true)}
       />
@@ -200,10 +166,6 @@ export default function MsTeamsPage() {
       <NgrokSetupDialog
         open={ngrokDialogOpen}
         onOpenChange={setNgrokDialogOpen}
-      />
-      <DefaultAgentSetupDialog
-        open={defaultAgentDialogOpen}
-        onOpenChange={setDefaultAgentDialogOpen}
       />
       <RefreshChannelsDialog
         open={refreshDialogOpen}

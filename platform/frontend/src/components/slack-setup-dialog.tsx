@@ -78,10 +78,6 @@ export function SlackSetupDialog({
       <StepAppearanceAndConnect
         key="appearance-and-connect"
         stepNumber={3}
-        appId={sharedAppId}
-        botToken={sharedBotToken}
-        signingSecret={sharedSigningSecret}
-        creds={creds}
       />,
     ];
 
@@ -152,20 +148,9 @@ export function SlackSetupDialog({
 
 function StepAppearanceAndConnect({
   stepNumber,
-  appId,
-  botToken,
-  signingSecret,
-  creds,
 }: {
   stepNumber: number;
-  appId: string;
-  botToken: string;
-  signingSecret: string;
-  creds?: Record<string, string>;
 }) {
-  const displayAppId = appId || creds?.appId || "";
-  const hasBotToken = Boolean(botToken || creds?.botToken);
-  const hasSigningSecret = Boolean(signingSecret || creds?.signingSecret);
 
   return (
     <div
@@ -216,44 +201,6 @@ function StepAppearanceAndConnect({
             </span>
             <span className="pt-0.5 flex-1">
               Click <strong>Connect</strong> in the bottom right corner
-              <div className="mt-2 space-y-1 rounded-md border bg-muted/50 px-3 py-2 text-xs font-mono">
-                <div className="flex gap-1.5">
-                  <span className="text-muted-foreground shrink-0">
-                    App ID:
-                  </span>
-                  {displayAppId ? (
-                    <span className="break-all">{displayAppId}</span>
-                  ) : (
-                    <span className="italic text-muted-foreground">
-                      Not set
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-1.5">
-                  <span className="text-muted-foreground shrink-0">
-                    Bot Token:
-                  </span>
-                  {hasBotToken ? (
-                    <span>{"••••••••"}</span>
-                  ) : (
-                    <span className="italic text-muted-foreground">
-                      Not set
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-1.5">
-                  <span className="text-muted-foreground shrink-0">
-                    Signing Secret:
-                  </span>
-                  {hasSigningSecret ? (
-                    <span>{"••••••••"}</span>
-                  ) : (
-                    <span className="italic text-muted-foreground">
-                      Not set
-                    </span>
-                  )}
-                </div>
-              </div>
             </span>
           </li>
         </ol>

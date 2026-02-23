@@ -66,9 +66,7 @@ export class ChatOpsManager {
     provider: ChatOpsProviderType;
     senderEmail?: string;
   }): Promise<{ id: string; name: string }[]> {
-    const agents = await AgentModel.findByAllowedChatopsProvider(
-      params.provider,
-    );
+    const agents = await AgentModel.findAllInternalAgents();
 
     if (!params.senderEmail || agents.length === 0) {
       return agents;
@@ -327,19 +325,6 @@ export class ChatOpsManager {
       };
     }
 
-    // Check if the agent allows this chatops provider
-    if (!agent.allowedChatops?.includes(provider.providerId)) {
-      logger.warn(
-        {
-          agentId: binding.agentId,
-          provider: provider.providerId,
-          allowedChatops: agent.allowedChatops,
-        },
-        "[ChatOps] Agent does not allow this chatops provider",
-      );
-      return { success: false, error: "PROVIDER_NOT_ALLOWED" };
-    }
-
     // Resolve inline agent mention
     const { agentToUse, cleanedMessageText, fallbackMessage } =
       await this.resolveInlineAgentMention({
@@ -438,7 +423,7 @@ export class ChatOpsManager {
     cleanedMessageText: string;
     fallbackMessage?: string;
   }> {
-    const { messageText, defaultAgent, provider } = params;
+    const { messageText, defaultAgent } = params;
 
     // Look for ">" delimiter - pattern is "AgentName > message"
     const delimiterIndex = messageText.indexOf(">");
@@ -454,9 +439,7 @@ export class ChatOpsManager {
       return { agentToUse: defaultAgent, cleanedMessageText: messageText };
     }
 
-    const availableAgents = await AgentModel.findByAllowedChatopsProvider(
-      provider.providerId,
-    );
+    const availableAgents = await AgentModel.findAllInternalAgents();
 
     // Try to find a matching agent using tolerant matching
     for (const agent of availableAgents) {
