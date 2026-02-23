@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.47](https://github.com/archestra-ai/archestra/compare/platform-v1.0.46...platform-v1.0.47) (2026-02-23)
+
+
+### Bug Fixes
+
+* add RFC 8707 resource parameter to OAuth authorization URL ([#2957](https://github.com/archestra-ai/archestra/issues/2957)) ([ad86419](https://github.com/archestra-ai/archestra/commit/ad86419157bfced783b4b69753401ea83e19f1d0))
+
 ## [1.0.46](https://github.com/archestra-ai/archestra/compare/platform-v1.0.45...platform-v1.0.46) (2026-02-18)
 
 
