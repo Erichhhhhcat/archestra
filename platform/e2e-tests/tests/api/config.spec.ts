@@ -1,8 +1,9 @@
 import { SupportedProviders } from "@shared";
+import { API_BASE_URL } from "../../consts";
 import { expect, test } from "./fixtures";
 
 test.describe("Config endpoint", () => {
-  test("GET /api/config returns features and providerBaseUrls", async ({
+  test("GET /api/config returns features and providerBaseUrls for authenticated user", async ({
     request,
     makeApiRequest,
   }) => {
@@ -36,6 +37,25 @@ test.describe("Config endpoint", () => {
     const urls = data.providerBaseUrls;
     for (const provider of SupportedProviders) {
       expect(urls).toHaveProperty(provider);
+    }
+  });
+
+  test("GET /api/config returns 401 for unauthenticated user", async ({
+    playwright,
+  }) => {
+    const unauthenticatedContext = await playwright.request.newContext({});
+    try {
+      const response = await unauthenticatedContext.get(
+        `${API_BASE_URL}/api/config`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      expect(response.status()).toBe(401);
+    } finally {
+      await unauthenticatedContext.dispose();
     }
   });
 });

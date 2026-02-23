@@ -55,6 +55,7 @@ import {
   isSupportedChatProvider,
   SelectConversationSchema,
   type SupportedChatProvider,
+  type UpdateConversation,
   UpdateConversationSchema,
   UuidIdSchema,
 } from "@/types";
@@ -849,11 +850,19 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         }
       }
 
+      // Coerce pinnedAt ISO string to Date for database storage
+      const pinnedAtDate =
+        body.pinnedAt != null ? new Date(body.pinnedAt) : body.pinnedAt;
+      const updateData: UpdateConversation = {
+        ...body,
+        pinnedAt: pinnedAtDate,
+      };
+
       const conversation = await ConversationModel.update(
         id,
         user.id,
         organizationId,
-        body,
+        updateData,
       );
 
       if (!conversation) {

@@ -1,8 +1,9 @@
 "use client";
 
-import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD } from "@shared";
+import { DEFAULT_ADMIN_EMAIL } from "@shared";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { DefaultCredentialsWarning } from "@/components/default-credentials-warning";
 import {
   Accordion,
   AccordionContent,
@@ -23,9 +24,9 @@ export function SidebarWarningsAccordion() {
 
   const isPermissive = features?.globalToolPolicy === "permissive";
 
-  // Determine which warnings should be shown
+  // Determine which warnings should be shown (only for authenticated users)
   const showSecurityEngineWarning =
-    !isLoadingFeatures && features !== undefined && isPermissive;
+    !!session && !isLoadingFeatures && features !== undefined && isPermissive;
   const showDefaultCredsWarning =
     !isLoadingCreds &&
     defaultCredentialsEnabled !== undefined &&
@@ -74,38 +75,7 @@ export function SidebarWarningsAccordion() {
               </Alert>
             )}
             {showDefaultCredsWarning && (
-              <Alert variant="destructive" className="text-xs">
-                <AlertTitle className="text-xs font-semibold">
-                  Default Admin Credentials Enabled
-                </AlertTitle>
-                <AlertDescription className="text-xs mt-1">
-                  <div className="space-y-1">
-                    <code className="break-all block">
-                      - {DEFAULT_ADMIN_EMAIL}
-                    </code>
-                    <code className="break-all block">
-                      - {DEFAULT_ADMIN_PASSWORD}
-                    </code>
-                  </div>
-                  <p className="mt-1">
-                    <a
-                      href="https://archestra.ai/docs/platform-deployment#environment-variables"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center underline"
-                    >
-                      Set ENV
-                    </a>{" "}
-                    or{" "}
-                    <a
-                      href="/settings/account"
-                      className="inline-flex items-center underline"
-                    >
-                      Change
-                    </a>
-                  </p>
-                </AlertDescription>
-              </Alert>
+              <DefaultCredentialsWarning alwaysShow showCopyButtons={false} />
             )}
           </AccordionContent>
         </AccordionItem>

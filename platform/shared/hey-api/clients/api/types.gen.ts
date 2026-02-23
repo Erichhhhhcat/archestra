@@ -14273,7 +14273,7 @@ export type UpdateChatConversationData = {
         chatApiKeyId?: string | null;
         agentId?: string;
         artifact?: string | null;
-        pinnedAt?: unknown;
+        pinnedAt?: string | null;
     };
     path: {
         id: string;

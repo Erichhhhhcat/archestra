@@ -1,5 +1,5 @@
 "use client";
-import { SignedIn, SignedOut, UserButton } from "@daveyplate/better-auth-ui";
+import { SignedIn, UserButton } from "@daveyplate/better-auth-ui";
 import { E2eTestId } from "@shared";
 import { requiredPagePermissionsMap } from "@shared/access-control";
 import {
@@ -10,7 +10,6 @@ import {
   DollarSign,
   Github,
   Key,
-  LogIn,
   type LucideIcon,
   MessageCircle,
   MessagesSquare,
@@ -168,15 +167,6 @@ const getNavigationGroups = (isAuthenticated: boolean): MenuGroup[] => {
   ];
 };
 
-const userItems: MenuItem[] = [
-  {
-    title: "Sign in",
-    url: "/auth/sign-in",
-    icon: LogIn,
-  },
-  // Sign up is disabled - users must use invitation links to join
-];
-
 const CommunitySideBarSection = ({ starCount }: { starCount: string }) => (
   <SidebarGroup className="px-4 py-0">
     <SidebarGroupLabel>Community</SidebarGroupLabel>
@@ -315,7 +305,7 @@ const MainSideBarSection = ({
   );
 };
 
-const FooterSideBarSection = ({ pathname }: { pathname: string }) => (
+const FooterSideBarSection = () => (
   <SidebarFooter>
     <SidebarWarningsAccordion />
     <SignedIn>
@@ -332,23 +322,7 @@ const FooterSideBarSection = ({ pathname }: { pathname: string }) => (
         </SidebarGroupContent>
       </SidebarGroup>
     </SignedIn>
-    <SignedOut>
-      <SidebarGroupContent className="mb-4">
-        <SidebarGroupLabel>User</SidebarGroupLabel>
-        <SidebarMenu>
-          {userItems.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild isActive={item.url === pathname}>
-                <Link href={item.url}>
-                  <item.icon />
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SignedOut>
+    {/* Sign-in link hidden — unauthenticated users are already on the sign-in page */}
   </SidebarFooter>
 );
 
@@ -405,7 +379,7 @@ export function AppSidebar() {
           <CommunitySideBarSection starCount={formattedStarCount} />
         )}
       </SidebarContent>
-      <FooterSideBarSection pathname={pathname} />
+      <FooterSideBarSection />
     </Sidebar>
   );
 }

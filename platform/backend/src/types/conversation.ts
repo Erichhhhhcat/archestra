@@ -56,10 +56,17 @@ export const UpdateConversationSchema = createUpdateSchema(
     pinnedAt: true,
   })
   .extend({
-    // Override pinnedAt to accept ISO strings from the frontend (coerced to Date)
-    pinnedAt: z.coerce.date().nullish(),
+    // Override pinnedAt to accept ISO date strings from the frontend.
+    // Uses z.string().datetime() instead of z.coerce.date() so OpenAPI codegen
+    // emits a proper string type rather than unknown.
+    pinnedAt: z.string().datetime().nullable().optional(),
   });
 
 export type Conversation = z.infer<typeof SelectConversationSchema>;
 export type InsertConversation = z.infer<typeof InsertConversationSchema>;
-export type UpdateConversation = z.infer<typeof UpdateConversationSchema>;
+/** API request body type (pinnedAt as ISO string) */
+export type UpdateConversationInput = z.infer<typeof UpdateConversationSchema>;
+/** Model-level type (pinnedAt coerced to Date) */
+export type UpdateConversation = Omit<UpdateConversationInput, "pinnedAt"> & {
+  pinnedAt?: Date | null;
+};
