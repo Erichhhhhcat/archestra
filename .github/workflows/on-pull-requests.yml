@@ -169,32 +169,27 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "No GPL/AGPL/Unknown licenses found in dependencies." >> $GITHUB_STEP_SUMMARY
 
-  platform-linting-and-tests-pr:
-    name: Platform Linting and Tests (Optional)
-    if: github.event_name == 'pull_request'
+  # Release-please PRs run automatically to auto-commit codegen changes (e.g. docs/openapi.json version bump).
+  # Regular PRs use workflow_dispatch on platform-linting-and-tests.yml for on-demand checks.
+  platform-linting-and-tests-release-please:
+    name: Platform Linting and Tests (Release Please)
+    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'release-please--')
     permissions:
       contents: write
-      packages: write # Required for pushing platform image to GHCR (non-fork PRs only)
+      packages: write
       security-events: write
-      id-token: write # Required for Workload Identity Federation
-      pull-requests: write # Required for Docker Scout to write a comment to a PR
+      id-token: write
+      pull-requests: write
     uses: ./.github/workflows/platform-linting-and-tests.yml
     with:
-      # Enable auto-commit of codegen changes for release-please PRs
-      # This handles the case where release-please bumps the version in package.json,
-      # causing generated files (like docs/openapi.json) to be out of date
-      is-release-please-pr: ${{ startsWith(github.head_ref, 'release-please--') }}
-      # On pull requests we don't skip running but in GH settings those are not required to succeed to hit Merge
+      is-release-please-pr: true
       should-skip-running-and-always-succeed: false
-      # Fork PRs use GitHub artifacts instead of GHCR (no packages:write permission for forks)
-      is-fork-pr: ${{ github.event.pull_request.head.repo.fork == true }}
+      is-fork-pr: false
     secrets:
       TURBOREPO_REMOTE_CACHING_TOKEN: ${{ secrets.TURBOREPO_REMOTE_CACHING_TOKEN }}
       TURBOREPO_REMOTE_CACHING_TEAM: ${{ secrets.TURBOREPO_REMOTE_CACHING_TEAM }}
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      # Pass GitHub App credentials for release-please PRs to enable codegen commit pushes
-      # that trigger workflow re-runs (pushes with GITHUB_TOKEN don't trigger workflows)
       ARCHESTRA_RELEASER_GITHUB_APP_ID: ${{ secrets.ARCHESTRA_RELEASER_GITHUB_APP_ID }}
       ARCHESTRA_RELEASER_GITHUB_APP_PRIVATE_KEY: ${{ secrets.ARCHESTRA_RELEASER_GITHUB_APP_PRIVATE_KEY }}
 

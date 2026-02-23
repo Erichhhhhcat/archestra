@@ -1,6 +1,7 @@
 name: Platform Linting and Tests
 
 on:
+  workflow_dispatch:
   workflow_call:
     inputs:
       should-skip-running-and-always-succeed:
