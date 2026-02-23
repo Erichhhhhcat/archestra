@@ -63,6 +63,7 @@ describe("AuthPageWithInvitationCheck", () => {
     vi.mocked(useBackendConnectivity).mockReturnValue({
       status: "connected",
       attemptCount: 0,
+      estimatedTotalAttempts: 7,
       elapsedMs: 0,
       retry: mockRetry,
     });
@@ -330,13 +331,14 @@ describe("AuthPageWithInvitationCheck", () => {
       vi.mocked(useBackendConnectivity).mockReturnValue({
         status: "connecting",
         attemptCount: 0,
+        estimatedTotalAttempts: 7,
         elapsedMs: 0,
         retry: mockRetry,
       });
 
       render(<AuthPageWithInvitationCheck path="sign-in" />);
 
-      expect(screen.getByText("Connecting to Server")).toBeInTheDocument();
+      expect(screen.getByText("Connecting...")).toBeInTheDocument();
       expect(screen.queryByTestId("auth-view")).not.toBeInTheDocument();
     });
 
@@ -351,6 +353,7 @@ describe("AuthPageWithInvitationCheck", () => {
       vi.mocked(useBackendConnectivity).mockReturnValue({
         status: "connecting",
         attemptCount: 3,
+        estimatedTotalAttempts: 7,
         elapsedMs: 5000,
         retry: mockRetry,
       });
@@ -358,9 +361,8 @@ describe("AuthPageWithInvitationCheck", () => {
       render(<AuthPageWithInvitationCheck path="sign-in" />);
 
       expect(
-        screen.getByText(/Still trying to connect \(attempt 3\)/),
+        screen.getByText(/Still trying to connect, attempt 3 \/ 7/),
       ).toBeInTheDocument();
-      expect(screen.getByText(/5s elapsed/)).toBeInTheDocument();
       expect(screen.queryByTestId("auth-view")).not.toBeInTheDocument();
     });
 
@@ -375,6 +377,7 @@ describe("AuthPageWithInvitationCheck", () => {
       vi.mocked(useBackendConnectivity).mockReturnValue({
         status: "unreachable",
         attemptCount: 5,
+        estimatedTotalAttempts: 7,
         elapsedMs: 60000,
         retry: mockRetry,
       });
@@ -397,6 +400,7 @@ describe("AuthPageWithInvitationCheck", () => {
       vi.mocked(useBackendConnectivity).mockReturnValue({
         status: "unreachable",
         attemptCount: 5,
+        estimatedTotalAttempts: 7,
         elapsedMs: 60000,
         retry: mockRetry,
       });
@@ -420,6 +424,7 @@ describe("AuthPageWithInvitationCheck", () => {
       vi.mocked(useBackendConnectivity).mockReturnValue({
         status: "connected",
         attemptCount: 0,
+        estimatedTotalAttempts: 7,
         elapsedMs: 0,
         retry: mockRetry,
       });
@@ -427,9 +432,7 @@ describe("AuthPageWithInvitationCheck", () => {
       render(<AuthPageWithInvitationCheck path="sign-in" />);
 
       expect(screen.getByTestId("auth-view")).toBeInTheDocument();
-      expect(
-        screen.queryByText("Connecting to Server"),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText("Connecting...")).not.toBeInTheDocument();
       expect(screen.queryByText("Unable to Connect")).not.toBeInTheDocument();
     });
   });

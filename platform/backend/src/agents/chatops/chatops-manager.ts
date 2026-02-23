@@ -1,38 +1,48 @@
 import { executeA2AMessage } from "@/agents/a2a-executor";
 import { userHasPermission } from "@/auth/utils";
+import { type AllowedCacheKey, CacheKey, cacheManager } from "@/cache-manager";
 import logger from "@/logging";
 import {
   AgentModel,
   AgentTeamModel,
   ChatOpsChannelBindingModel,
+  ChatOpsConfigModel,
   ChatOpsProcessedMessageModel,
+  OrganizationModel,
   UserModel,
 } from "@/models";
 import {
-  type ChatOpsProcessingResult,
-  type ChatOpsProvider,
-  type ChatOpsProviderType,
-  ChatOpsProviderTypeSchema,
-  type IncomingChatMessage,
+  RouteCategory,
+  startActiveChatSpan,
+} from "@/routes/proxy/utils/tracing";
+import type {
+  ChatOpsProcessingResult,
+  ChatOpsProvider,
+  ChatOpsProviderType,
+  IncomingChatMessage,
 } from "@/types/chatops";
-import { CHATOPS_MESSAGE_RETENTION } from "./constants";
+import {
+  CHATOPS_CHANNEL_DISCOVERY,
+  CHATOPS_MESSAGE_RETENTION,
+} from "./constants";
 import MSTeamsProvider from "./ms-teams-provider";
+import SlackProvider from "./slack-provider";
+import { errorMessage } from "./utils";
 
 /**
  * ChatOps Manager - handles chatops provider lifecycle and message processing
  */
 export class ChatOpsManager {
   private msTeamsProvider: MSTeamsProvider | null = null;
+  private slackProvider: SlackProvider | null = null;
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   getMSTeamsProvider(): MSTeamsProvider | null {
-    if (!this.msTeamsProvider) {
-      this.msTeamsProvider = new MSTeamsProvider();
-      if (!this.msTeamsProvider.isConfigured()) {
-        return null;
-      }
-    }
     return this.msTeamsProvider;
+  }
+
+  getSlackProvider(): SlackProvider | null {
+    return this.slackProvider;
   }
 
   getChatOpsProvider(
@@ -41,25 +51,164 @@ export class ChatOpsManager {
     switch (providerType) {
       case "ms-teams":
         return this.getMSTeamsProvider();
+      case "slack":
+        return this.getSlackProvider();
     }
+  }
+
+  /**
+   * Get agents available for a chatops provider, filtered by user access.
+   * If senderEmail is provided and resolves to a user, only returns agents
+   * the user has team-based access to. Falls back to all agents if user
+   * cannot be resolved (access check still happens at message processing time).
+   */
+  async getAccessibleChatopsAgents(params: {
+    provider: ChatOpsProviderType;
+    senderEmail?: string;
+  }): Promise<{ id: string; name: string }[]> {
+    const agents = await AgentModel.findByAllowedChatopsProvider(
+      params.provider,
+    );
+
+    if (!params.senderEmail || agents.length === 0) {
+      return agents;
+    }
+
+    const user = await UserModel.findByEmail(params.senderEmail.toLowerCase());
+    if (!user) {
+      return agents;
+    }
+
+    const org = await OrganizationModel.getFirst();
+    if (!org) {
+      return agents;
+    }
+
+    const isAgentAdmin = await userHasPermission(
+      user.id,
+      org.id,
+      "agent",
+      "admin",
+    );
+    const accessibleIds = await AgentTeamModel.getUserAccessibleAgentIds(
+      user.id,
+      isAgentAdmin,
+    );
+    const accessibleSet = new Set(accessibleIds);
+    return agents.filter((a) => accessibleSet.has(a.id));
   }
 
   /**
    * Check if any chatops provider is configured and enabled.
    */
   isAnyProviderConfigured(): boolean {
-    return ChatOpsProviderTypeSchema.options.some((type) =>
-      this.getChatOpsProvider(type)?.isConfigured(),
+    return (
+      (this.msTeamsProvider?.isConfigured() ?? false) ||
+      (this.slackProvider?.isConfigured() ?? false)
     );
   }
 
+  /**
+   * Discover all channels in a workspace and upsert them as bindings.
+   * Uses a distributed TTL cache to avoid rediscovering too frequently.
+   * Providers implement channel listing; this method handles caching, upsert, and stale cleanup.
+   */
+  async discoverChannels(params: {
+    provider: ChatOpsProvider;
+    context: unknown;
+    workspaceId: string;
+    /** Additional workspace ID variants for the same team (e.g. both aadGroupId and thread ID). */
+    allWorkspaceIds?: string[];
+  }): Promise<void> {
+    const { provider, context, workspaceId } = params;
+
+    // TTL check using distributed (PostgreSQL-backed) cache — shared across pods
+    const cacheKey =
+      `${CacheKey.ChannelDiscovery}-${provider.providerId}-${workspaceId}` as AllowedCacheKey;
+    if (await cacheManager.get(cacheKey)) return;
+
+    try {
+      const channels = await provider.discoverChannels(context);
+      if (!channels?.length) {
+        logger.debug(
+          { workspaceId },
+          "[ChatOps] No channels returned by provider",
+        );
+        return;
+      }
+
+      const organizationId = await getDefaultOrganizationId();
+      const activeChannelIds = channels.map((ch) => ch.channelId);
+
+      // Upsert discovered channels (creates with agentId=null, updates names for existing)
+      await ChatOpsChannelBindingModel.ensureChannelsExist({
+        organizationId,
+        provider: provider.providerId,
+        channels,
+      });
+
+      // Remove bindings for channels that no longer exist.
+      // Use all known workspace ID variants (UUID aadGroupId + thread ID) so stale
+      // bindings are cleaned up regardless of which format was used when they were created.
+      const workspaceIds = params.allWorkspaceIds?.length
+        ? params.allWorkspaceIds
+        : [workspaceId];
+      const deletedCount = await ChatOpsChannelBindingModel.deleteStaleChannels(
+        {
+          organizationId,
+          provider: provider.providerId,
+          workspaceIds,
+          activeChannelIds,
+        },
+      );
+
+      // Clean up duplicate bindings for the same channel caused by different
+      // workspaceId formats (UUID vs thread ID) stored at different times.
+      await ChatOpsChannelBindingModel.deduplicateBindings({
+        provider: provider.providerId,
+        channelIds: activeChannelIds,
+      });
+
+      // Set TTL cache only after successful discovery
+      await cacheManager.set(cacheKey, true, CHATOPS_CHANNEL_DISCOVERY.TTL_MS);
+
+      logger.info(
+        { workspaceId, channelCount: channels.length, deletedCount },
+        "[ChatOps] Discovered channels",
+      );
+    } catch (error) {
+      logger.warn(
+        { error: error instanceof Error ? error.message : String(error) },
+        "[ChatOps] Failed to discover channels",
+      );
+    }
+  }
+
   async initialize(): Promise<void> {
+    // Seed DB from env vars on first run (no-op if DB already has config)
+    await this.seedConfigFromEnvVars();
+
+    // Load configs from DB (the single source of truth)
+    const [msTeamsConfig, slackConfig] = await Promise.all([
+      ChatOpsConfigModel.getMsTeamsConfig(),
+      ChatOpsConfigModel.getSlackConfig(),
+    ]);
+
+    // Create providers with their config
+    if (msTeamsConfig) {
+      this.msTeamsProvider = new MSTeamsProvider(msTeamsConfig);
+    }
+    if (slackConfig) {
+      this.slackProvider = new SlackProvider(slackConfig);
+    }
+
     if (!this.isAnyProviderConfigured()) {
       return;
     }
 
     const providers: { name: string; provider: ChatOpsProvider | null }[] = [
-      { name: "MS Teams", provider: this.getMSTeamsProvider() },
+      { name: "MS Teams", provider: this.msTeamsProvider },
+      { name: "Slack", provider: this.slackProvider },
     ];
 
     for (const { name, provider } of providers) {
@@ -76,13 +225,41 @@ export class ChatOpsManager {
       }
     }
 
+    // Eager channel discovery for providers that support it (fire-and-forget).
+    // Providers that can determine their workspace ID without an incoming message
+    // (e.g., Slack via auth.test) get channels discovered immediately on startup.
+    for (const { name, provider } of providers) {
+      const workspaceId = provider?.getWorkspaceId();
+      if (provider && workspaceId) {
+        this.discoverChannels({
+          provider,
+          context: null,
+          workspaceId,
+        }).catch((error) => {
+          logger.warn(
+            { error: errorMessage(error) },
+            `[ChatOps] Initial ${name} channel discovery failed`,
+          );
+        });
+      }
+    }
+
     this.startProcessedMessageCleanup();
+  }
+
+  async reinitialize(): Promise<void> {
+    await this.cleanup();
+    await this.initialize();
   }
 
   async cleanup(): Promise<void> {
     if (this.msTeamsProvider) {
       await this.msTeamsProvider.cleanup();
       this.msTeamsProvider = null;
+    }
+    if (this.slackProvider) {
+      await this.slackProvider.cleanup();
+      this.slackProvider = null;
     }
     this.stopCleanupInterval();
   }
@@ -164,15 +341,12 @@ export class ChatOpsManager {
     }
 
     // Resolve inline agent mention
-    const {
-      agentToUse,
-      cleanedMessageText: _cleanedMessageText,
-      fallbackMessage,
-    } = await this.resolveInlineAgentMention({
-      messageText: message.text,
-      defaultAgent: agent,
-      provider,
-    });
+    const { agentToUse, cleanedMessageText, fallbackMessage } =
+      await this.resolveInlineAgentMention({
+        messageText: message.text,
+        defaultAgent: agent,
+        provider,
+      });
 
     // Security: Validate user has access to the agent
     logger.debug(
@@ -200,10 +374,11 @@ export class ChatOpsManager {
     // Build context from thread history
     const contextMessages = await this.fetchThreadHistory(message, provider);
 
-    // Build the full message with context
-    let fullMessage = message.text;
+    // Build the full message with context — use cleanedMessageText so
+    // the "AgentName >" prefix is stripped from what the LLM sees
+    let fullMessage = cleanedMessageText;
     if (contextMessages.length > 0) {
-      fullMessage = `Previous conversation:\n${contextMessages.join("\n")}\n\nUser: ${message.text}`;
+      fullMessage = `Previous conversation:\n${contextMessages.join("\n")}\n\nUser: ${cleanedMessageText}`;
     }
 
     // Execute the A2A message using the agent
@@ -350,7 +525,7 @@ export class ChatOpsManager {
 
   /**
    * Validate that the MS Teams user has access to the agent.
-   * 1. Resolve user email from MS Teams (requires User.ReadBasic.All Graph permission)
+   * 1. Use pre-resolved email from TeamsInfo (Bot Framework), or fall back to Graph API
    * 2. Look up Archestra user by email
    * 3. Check user has team-based access to the agent
    */
@@ -365,12 +540,16 @@ export class ChatOpsManager {
   > {
     const { message, provider, agentId, agentName, organizationId } = params;
 
-    // Resolve user's email from the chat provider
-    logger.debug(
-      { senderId: message.senderId },
-      "[ChatOps] Resolving user email from provider",
-    );
-    const userEmail = await provider.getUserEmail(message.senderId);
+    // Try pre-resolved email first (from Bot Framework TeamsInfo, no Graph API needed)
+    let userEmail = message.senderEmail || null;
+    if (!userEmail) {
+      // Fall back to Graph API (requires User.Read.All permission)
+      logger.debug(
+        { senderId: message.senderId },
+        "[ChatOps] No pre-resolved email, falling back to Graph API",
+      );
+      userEmail = await provider.getUserEmail(message.senderId);
+    }
     logger.debug(
       { senderId: message.senderId, userEmail },
       "[ChatOps] User email resolved",
@@ -379,17 +558,16 @@ export class ChatOpsManager {
     if (!userEmail) {
       logger.warn(
         { senderId: message.senderId },
-        "[ChatOps] Could not resolve user email - Graph API User.ReadBasic.All permission may be missing",
+        "[ChatOps] Could not resolve user email via TeamsInfo or Graph API",
       );
       await this.sendSecurityErrorReply(
         provider,
         message,
-        "Could not verify your identity. The bot requires the `User.ReadBasic.All` Microsoft Graph API permission to be configured. Please contact your administrator.",
+        "Could not verify your identity. Please ensure the bot is properly installed in your team or chat.",
       );
       return {
         success: false,
-        error:
-          "Could not resolve user email for security validation - User.ReadBasic.All permission may be missing",
+        error: "Could not resolve user email for security validation",
       };
     }
 
@@ -413,16 +591,16 @@ export class ChatOpsManager {
     }
 
     // Check if user has access to this specific agent (via team membership or admin)
-    const isProfileAdmin = await userHasPermission(
+    const isAgentAdmin = await userHasPermission(
       user.id,
       organizationId,
-      "profile",
+      "agent",
       "admin",
     );
     const hasAccess = await AgentTeamModel.userHasAgentAccess(
       user.id,
       agentId,
-      isProfileAdmin,
+      isAgentAdmin,
     );
 
     if (!hasAccess) {
@@ -489,6 +667,72 @@ export class ChatOpsManager {
     }
   }
 
+  /**
+   * Seed chatops config from environment variables into the database.
+   * Only runs on first startup — if DB already has config, this is a no-op.
+   */
+  private async seedConfigFromEnvVars(): Promise<void> {
+    await this.seedMsTeamsConfigFromEnvVars();
+    await this.seedSlackConfigFromEnvVars();
+  }
+
+  private async seedMsTeamsConfigFromEnvVars(): Promise<void> {
+    try {
+      const existing = await ChatOpsConfigModel.getMsTeamsConfig();
+      if (existing) return;
+
+      const appId = process.env.ARCHESTRA_CHATOPS_MS_TEAMS_APP_ID || "";
+      const appSecret = process.env.ARCHESTRA_CHATOPS_MS_TEAMS_APP_SECRET || "";
+      if (!appId || !appSecret) return;
+
+      const tenantId = process.env.ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID || "";
+      await ChatOpsConfigModel.saveMsTeamsConfig({
+        enabled: process.env.ARCHESTRA_CHATOPS_MS_TEAMS_ENABLED === "true",
+        appId,
+        appSecret,
+        tenantId,
+        graphTenantId:
+          process.env.ARCHESTRA_CHATOPS_MS_TEAMS_GRAPH_TENANT_ID || tenantId,
+        graphClientId:
+          process.env.ARCHESTRA_CHATOPS_MS_TEAMS_GRAPH_CLIENT_ID || appId,
+        graphClientSecret:
+          process.env.ARCHESTRA_CHATOPS_MS_TEAMS_GRAPH_CLIENT_SECRET ||
+          appSecret,
+      });
+      logger.info("[ChatOps] Seeded MS Teams config from env vars to DB");
+    } catch (error) {
+      logger.error(
+        { error: errorMessage(error) },
+        "[ChatOps] Failed to seed MS Teams config from env vars",
+      );
+    }
+  }
+
+  private async seedSlackConfigFromEnvVars(): Promise<void> {
+    try {
+      const existing = await ChatOpsConfigModel.getSlackConfig();
+      if (existing) return;
+
+      const botToken = process.env.ARCHESTRA_CHATOPS_SLACK_BOT_TOKEN || "";
+      const signingSecret =
+        process.env.ARCHESTRA_CHATOPS_SLACK_SIGNING_SECRET || "";
+      if (!botToken || !signingSecret) return;
+
+      await ChatOpsConfigModel.saveSlackConfig({
+        enabled: process.env.ARCHESTRA_CHATOPS_SLACK_ENABLED === "true",
+        botToken,
+        signingSecret,
+        appId: process.env.ARCHESTRA_CHATOPS_SLACK_APP_ID || "",
+      });
+      logger.info("[ChatOps] Seeded Slack config from env vars to DB");
+    } catch (error) {
+      logger.error(
+        { error: errorMessage(error) },
+        "[ChatOps] Failed to seed Slack config from env vars",
+      );
+    }
+  }
+
   private async executeAndReply(params: {
     agent: { id: string; name: string };
     binding: { organizationId: string };
@@ -510,11 +754,34 @@ export class ChatOpsManager {
     } = params;
 
     try {
-      const result = await executeA2AMessage({
+      // Resolve user for span attributes
+      const chatOpsUser =
+        userId !== "system" ? await UserModel.getById(userId) : null;
+
+      // Wrap A2A execution with a parent span so all LLM and MCP tool calls
+      // appear as children of a single unified trace. The provider ID (e.g.
+      // "ms-teams", "slack") is recorded as archestra.trigger.source so traces
+      // can be filtered by invocation channel.
+      const result = await startActiveChatSpan({
+        agentName: agent.name,
         agentId: agent.id,
-        organizationId: binding.organizationId,
-        message: fullMessage,
-        userId,
+        routeCategory: RouteCategory.CHATOPS,
+        triggerSource: provider.providerId,
+        user: chatOpsUser
+          ? {
+              id: chatOpsUser.id,
+              email: chatOpsUser.email,
+              name: chatOpsUser.name,
+            }
+          : null,
+        callback: async () => {
+          return executeA2AMessage({
+            agentId: agent.id,
+            organizationId: binding.organizationId,
+            message: fullMessage,
+            userId,
+          });
+        },
       });
 
       const agentResponse = result.text || "";
@@ -558,20 +825,12 @@ export const chatOpsManager = new ChatOpsManager();
 // Internal Helpers
 // =============================================================================
 
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
+async function getDefaultOrganizationId(): Promise<string> {
+  const org = await OrganizationModel.getFirst();
+  if (!org) {
+    throw new Error("No organizations found");
   }
-  // Handle objects that may not convert to string properly
-  try {
-    return String(error);
-  } catch {
-    try {
-      return JSON.stringify(error);
-    } catch {
-      return "Unknown error (could not serialize)";
-    }
-  }
+  return org.id;
 }
 
 /**

@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const { getHealth } = archestraApiSdk;
 
 export type BackendConnectionStatus =
-  | "connecting"
+  | "initializing"
+  | "checking" // First attempt in progress, no UI shown yet
+  | "connecting" // First attempt failed, now retrying with UI
   | "connected"
   | "unreachable";
 
@@ -46,6 +48,10 @@ export interface UseBackendConnectivityResult {
    */
   attemptCount: number;
   /**
+   * Estimated total attempts before timeout is reached
+   */
+  estimatedTotalAttempts: number;
+  /**
    * Time elapsed since starting to connect (in milliseconds)
    */
   elapsedMs: number;
@@ -53,6 +59,25 @@ export interface UseBackendConnectivityResult {
    * Manually retry the connection
    */
   retry: () => void;
+}
+
+/**
+ * Calculate the estimated number of attempts before the timeout is reached,
+ * based on the exponential backoff schedule.
+ */
+export function calculateEstimatedTotalAttempts(
+  timeoutMs: number,
+  initialDelayMs: number,
+  maxDelayMs: number,
+): number {
+  let cumulative = 0;
+  let attempts = 1; // first attempt is immediate
+  for (let i = 0; cumulative < timeoutMs; i++) {
+    const delay = Math.min(initialDelayMs * 2 ** i, maxDelayMs);
+    cumulative += delay;
+    attempts++;
+  }
+  return attempts;
 }
 
 async function defaultCheckHealth(): Promise<boolean> {
@@ -83,9 +108,15 @@ export function useBackendConnectivity(
     checkHealthFn = defaultCheckHealth,
   } = options;
 
-  const [status, setStatus] = useState<BackendConnectionStatus>("connecting");
+  const [status, setStatus] = useState<BackendConnectionStatus>("initializing");
   const [attemptCount, setAttemptCount] = useState(0);
   const [elapsedMs, setElapsedMs] = useState(0);
+
+  const estimatedTotalAttempts = calculateEstimatedTotalAttempts(
+    timeoutMs,
+    initialDelayMs,
+    maxDelayMs,
+  );
 
   // Store options in refs to avoid effect dependency issues
   const optionsRef = useRef({
@@ -130,6 +161,12 @@ export function useBackendConnectivity(
         return;
       }
 
+      // First attempt failed - transition from "checking" to "connecting"
+      // This ensures we only show the connecting UI after the first failure
+      if (currentAttempt === 0) {
+        setStatus("connecting");
+      }
+
       // Check if we've exceeded the timeout
       const now = Date.now();
       const elapsed = startTimeRef.current ? now - startTimeRef.current : 0;
@@ -157,8 +194,8 @@ export function useBackendConnectivity(
   );
 
   const startConnection = useCallback(() => {
-    // Reset state
-    setStatus("connecting");
+    // Reset state - use "checking" for first attempt to avoid flashing UI
+    setStatus("checking");
     setAttemptCount(0);
     setElapsedMs(0);
     clearTimers();
@@ -198,6 +235,7 @@ export function useBackendConnectivity(
   return {
     status,
     attemptCount,
+    estimatedTotalAttempts,
     elapsedMs,
     retry,
   };

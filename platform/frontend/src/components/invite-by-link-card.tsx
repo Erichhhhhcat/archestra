@@ -1,18 +1,16 @@
 "use client";
 
 import {
-  ADMIN_ROLE_NAME,
   type AnyRoleName,
+  DEFAULT_TEAM_NAME,
   E2eTestId,
-  EDITOR_ROLE_NAME,
   MEMBER_ROLE_NAME,
 } from "@shared";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
-import { Check, Copy, Link as LinkIcon, Loader2 } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
+import { Check, Copy, Info, Link as LinkIcon, Loader2 } from "lucide-react";
+import { useCallback, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
-import { LoadingSpinner } from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,15 +22,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PermissionButton } from "@/components/ui/permission-button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { RoleSelect } from "@/components/ui/role-select";
 import { useCreateInvitation } from "@/lib/organization.query";
-import { useRoles } from "@/lib/role.query";
 
 interface InviteByLinkCardProps {
   organizationId?: string;
@@ -49,7 +40,6 @@ function InviteByLinkCardContent({
   const [isCopied, setIsCopied] = useState(false);
 
   const createMutation = useCreateInvitation(organizationId);
-  const { data: roles } = useRoles();
 
   // Validate email format
   const isValidEmail = email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -116,34 +106,27 @@ function InviteByLinkCardContent({
 
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select
+              <RoleSelect
+                id="role"
                 value={role}
-                onValueChange={(value: AnyRoleName) => setRole(value)}
+                onValueChange={(value) => setRole(value as AnyRoleName)}
                 disabled={createMutation.isPending}
-              >
-                <SelectTrigger
-                  id="role"
-                  data-testid={E2eTestId.InviteRoleSelect}
-                >
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ADMIN_ROLE_NAME}>Admin</SelectItem>
-                  <SelectItem value={EDITOR_ROLE_NAME}>Editor</SelectItem>
-                  <SelectItem value={MEMBER_ROLE_NAME}>Member</SelectItem>
-                  {roles
-                    ?.filter((r) => !r.predefined)
-                    .map((r) => (
-                      <SelectItem key={r.id} value={r.name}>
-                        {r.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select a role"
+                data-testid={E2eTestId.InviteRoleSelect}
+              />
               <p className="text-xs text-muted-foreground">
                 The role this person will have in your organization
               </p>
             </div>
+
+            <p className="gap-1 flex text-xs text-muted-foreground">
+              <Info className="h-3.5 w-3.5 shrink-0 mt-[1px]" />
+              <span>
+                New members will be automatically added to the{" "}
+                <span className="font-medium">{DEFAULT_TEAM_NAME}</span> when
+                they accept the invitation.
+              </span>
+            </p>
 
             <PermissionButton
               permissions={{ invitation: ["create"] }}
@@ -238,12 +221,10 @@ export function InviteByLinkCard({
             </Card>
           )}
         >
-          <Suspense fallback={<LoadingSpinner />}>
-            <InviteByLinkCardContent
-              organizationId={organizationId}
-              onInvitationCreated={onInvitationCreated}
-            />
-          </Suspense>
+          <InviteByLinkCardContent
+            organizationId={organizationId}
+            onInvitationCreated={onInvitationCreated}
+          />
         </ErrorBoundary>
       )}
     </QueryErrorResetBoundary>

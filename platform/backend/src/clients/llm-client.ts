@@ -6,8 +6,11 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createVertex } from "@ai-sdk/google-vertex";
 import { createMistral } from "@ai-sdk/mistral";
 import { createOpenAI } from "@ai-sdk/openai";
+import { context, propagation } from "@opentelemetry/api";
 import {
   EXTERNAL_AGENT_ID_HEADER,
+  PROVIDER_BASE_URL_HEADER,
+  PROVIDERS_WITH_OPTIONAL_API_KEY,
   SESSION_ID_HEADER,
   USER_ID_HEADER,
 } from "@shared";
@@ -16,7 +19,7 @@ import { isVertexAiEnabled } from "@/clients/gemini-client";
 import config from "@/config";
 import logger from "@/logging";
 import { ChatApiKeyModel, TeamModel } from "@/models";
-import { secretManager } from "@/secrets-manager";
+import { getSecretValueForLlmProviderApiKey } from "@/secrets-manager";
 import { ApiError, type SupportedChatProvider } from "@/types";
 
 /**
@@ -30,6 +33,7 @@ import { ApiError, type SupportedChatProvider } from "@/types";
 export type LLMModel = Parameters<typeof streamText>[0]["model"];
 
 /**
+ * @deprecated DO NOT USE THIS FUNCTION FOR NEW CODE.
  * Detect which provider a model belongs to based on its name
  * It's a recommended to rely on explicit provider selection whenever possible,
  * Since same models could be served by different providers.
@@ -85,57 +89,103 @@ const envApiKeyGetters: Record<
   mistral: () => config.chat.mistral.apiKey,
   ollama: () => config.chat.ollama.apiKey,
   openai: () => config.chat.openai.apiKey,
+  perplexity: () => config.chat.perplexity.apiKey,
   vllm: () => config.chat.vllm.apiKey,
   zhipuai: () => config.chat.zhipuai.apiKey,
 };
 
 /**
  * Resolve API key for a provider using priority:
- * conversation > personal > team > org_wide > environment variable
+ * agent's configured key > conversation > personal > team > org_wide > environment variable
+ *
+ * When userId is provided: resolves via getCurrentApiKey (agent key > personal > team > org_wide).
+ * When no userId: checks org_wide keys only.
  */
 export async function resolveProviderApiKey(params: {
   organizationId: string;
-  userId: string;
+  userId?: string;
   provider: SupportedChatProvider;
   conversationId?: string | null;
-}): Promise<{ apiKey: string | undefined; source: string }> {
-  const { organizationId, userId, provider, conversationId } = params;
+  agentLlmApiKeyId?: string | null;
+}): Promise<{
+  apiKey: string | undefined;
+  source: string;
+  chatApiKeyId: string | undefined;
+  baseUrl: string | null;
+}> {
+  const { organizationId, userId, provider, conversationId, agentLlmApiKeyId } =
+    params;
 
-  // Get user's team IDs for API key resolution
-  const userTeamIds = await TeamModel.getUserTeamIds(userId);
+  // Try scope-based resolution
+  let resolvedApiKey: {
+    id: string;
+    secretId: string | null;
+    scope: string;
+    baseUrl: string | null;
+  } | null = null;
 
-  // Try scope-based resolution (checks conversation's chatApiKeyId first, then personal > team > org_wide)
-  const resolvedApiKey = await ChatApiKeyModel.getCurrentApiKey({
-    organizationId,
-    userId,
-    userTeamIds,
-    provider,
-    conversationId: conversationId ?? null,
-  });
+  if (userId) {
+    const userTeamIds = await TeamModel.getUserTeamIds(userId);
+    resolvedApiKey = await ChatApiKeyModel.getCurrentApiKey({
+      organizationId,
+      userId,
+      userTeamIds,
+      provider,
+      conversationId: conversationId ?? null,
+      agentLlmApiKeyId,
+    });
+  } else {
+    resolvedApiKey = await ChatApiKeyModel.findByScope(
+      organizationId,
+      provider,
+      "org_wide",
+    );
+  }
 
-  if (resolvedApiKey?.secretId) {
-    const secret = await secretManager().getSecret(resolvedApiKey.secretId);
-    // Support both old format (anthropicApiKey) and new format (apiKey)
-    const secretValue =
-      secret?.secret?.apiKey ??
-      secret?.secret?.anthropicApiKey ??
-      secret?.secret?.geminiApiKey ??
-      secret?.secret?.openaiApiKey ??
-      secret?.secret?.zhipuaiApiKey ??
-      secret?.secret?.cohereApiKey ??
-      secret?.secret?.bedrockApiKey;
-    if (secretValue) {
-      return { apiKey: secretValue as string, source: resolvedApiKey.scope };
+  if (resolvedApiKey) {
+    if (resolvedApiKey.secretId) {
+      const secretValue = await getSecretValueForLlmProviderApiKey(
+        resolvedApiKey.secretId,
+      );
+      if (secretValue) {
+        return {
+          apiKey: secretValue as string,
+          source: resolvedApiKey.scope,
+          chatApiKeyId: resolvedApiKey.id,
+          baseUrl: resolvedApiKey.baseUrl,
+        };
+      }
+    }
+
+    // Key exists but has no secret (e.g. Ollama, vLLM with optional API key).
+    // Return the resolved key so the caller gets the baseUrl and chatApiKeyId.
+    if (PROVIDERS_WITH_OPTIONAL_API_KEY.has(provider)) {
+      return {
+        apiKey: undefined,
+        source: resolvedApiKey.scope,
+        chatApiKeyId: resolvedApiKey.id,
+        baseUrl: resolvedApiKey.baseUrl,
+      };
     }
   }
 
   // Fall back to environment variable
   const envApiKey = envApiKeyGetters[provider]();
   if (envApiKey) {
-    return { apiKey: envApiKey, source: "environment" };
+    return {
+      apiKey: envApiKey,
+      source: "environment",
+      chatApiKeyId: undefined,
+      baseUrl: null,
+    };
   }
 
-  return { apiKey: undefined, source: "environment" };
+  return {
+    apiKey: undefined,
+    source: "environment",
+    chatApiKeyId: undefined,
+    baseUrl: null,
+  };
 }
 
 /**
@@ -154,8 +204,11 @@ export function isApiKeyRequired(
 }
 
 /**
- * Fast models for each provider, used for title generation and other quick operations.
+ * Fast models for each provider, used as fallback for title generation and other quick operations.
  * These are optimized for speed and cost rather than capability.
+ *
+ * Primary resolution uses ApiKeyModelModel.getFastestModel() from the database.
+ * This map serves as a fallback when no database result is available.
  */
 export const FAST_MODELS: Record<SupportedChatProvider, string> = {
   anthropic: "claude-3-5-haiku-20241022",
@@ -168,6 +221,7 @@ export const FAST_MODELS: Record<SupportedChatProvider, string> = {
   zhipuai: "glm-4-flash", // Zhipu's fast model
   bedrock: "amazon.nova-lite-v1:0", // Bedrock's fast model, available in all regions for on-demand inference
   mistral: "mistral-small-latest", // Mistral's fast model
+  perplexity: "sonar", // Perplexity's fast model
 };
 
 /**
@@ -176,6 +230,7 @@ export const FAST_MODELS: Record<SupportedChatProvider, string> = {
 type DirectModelParams = {
   apiKey: string | undefined;
   modelName: string;
+  baseUrl?: string | null;
 };
 
 /**
@@ -190,29 +245,35 @@ type DirectModelCreator = (params: DirectModelParams) => LLMModel;
  * until the corresponding creator is added.
  */
 const directModelCreators: Record<SupportedChatProvider, DirectModelCreator> = {
-  anthropic: ({ apiKey, modelName }) => {
+  anthropic: ({ apiKey, modelName, baseUrl }) => {
     if (!apiKey) {
       throw new ApiError(
         400,
         "Anthropic API key is required. Please configure ANTHROPIC_API_KEY.",
       );
     }
-    const client = createAnthropic({ apiKey });
+    const client = createAnthropic({
+      apiKey,
+      baseURL: baseUrl ?? config.llm.anthropic.baseUrl,
+    });
     return client(modelName);
   },
 
-  openai: ({ apiKey, modelName }) => {
+  openai: ({ apiKey, modelName, baseUrl }) => {
     if (!apiKey) {
       throw new ApiError(
         400,
         "OpenAI API key is required. Please configure OPENAI_API_KEY.",
       );
     }
-    const client = createOpenAI({ apiKey });
+    const client = createOpenAI({
+      apiKey,
+      baseURL: baseUrl ?? config.llm.openai.baseUrl,
+    });
     return client(modelName);
   },
 
-  gemini: ({ apiKey, modelName }) => {
+  gemini: ({ apiKey, modelName, baseUrl }) => {
     // Check if Vertex AI mode is enabled
     if (isVertexAiEnabled()) {
       const { vertexAi } = config.llm.gemini;
@@ -234,11 +295,14 @@ const directModelCreators: Record<SupportedChatProvider, DirectModelCreator> = {
         "Gemini API key is required when Vertex AI is not enabled. Please configure GEMINI_API_KEY or enable Vertex AI.",
       );
     }
-    const client = createGoogleGenerativeAI({ apiKey });
+    const client = createGoogleGenerativeAI({
+      apiKey,
+      baseURL: baseUrl ?? undefined,
+    });
     return client(modelName);
   },
 
-  cerebras: ({ apiKey, modelName }) => {
+  cerebras: ({ apiKey, modelName, baseUrl }) => {
     if (!apiKey) {
       throw new ApiError(
         400,
@@ -247,12 +311,12 @@ const directModelCreators: Record<SupportedChatProvider, DirectModelCreator> = {
     }
     const client = createCerebras({
       apiKey,
-      baseURL: config.chat.cerebras.baseUrl,
+      baseURL: baseUrl ?? config.llm.cerebras.baseUrl,
     });
     return client(modelName);
   },
 
-  cohere: ({ apiKey, modelName }) => {
+  cohere: ({ apiKey, modelName, baseUrl }) => {
     if (!apiKey) {
       throw new ApiError(
         400,
@@ -261,12 +325,12 @@ const directModelCreators: Record<SupportedChatProvider, DirectModelCreator> = {
     }
     const client = createCohere({
       apiKey,
-      baseURL: config.chat.cohere.baseUrl,
+      baseURL: baseUrl ?? config.llm.cohere.baseUrl,
     });
     return client(modelName);
   },
 
-  mistral: ({ apiKey, modelName }) => {
+  mistral: ({ apiKey, modelName, baseUrl }) => {
     if (!apiKey) {
       throw new ApiError(
         400,
@@ -275,30 +339,52 @@ const directModelCreators: Record<SupportedChatProvider, DirectModelCreator> = {
     }
     const client = createMistral({
       apiKey,
-      baseURL: config.chat.mistral.baseUrl,
+      baseURL: baseUrl ?? config.llm.mistral.baseUrl,
     });
     return client(modelName);
   },
 
-  vllm: ({ apiKey, modelName }) => {
+  perplexity: ({ apiKey, modelName, baseUrl }) => {
+    if (!apiKey) {
+      throw new ApiError(
+        400,
+        "Perplexity API key is required. Please configure PERPLEXITY_API_KEY.",
+      );
+    }
+    // Perplexity uses OpenAI-compatible API, so we use the OpenAI SDK
+    // This provides better compatibility than @ai-sdk/perplexity
+    const client = createOpenAI({
+      apiKey,
+      baseURL: baseUrl ?? config.llm.perplexity.baseUrl,
+    });
+    return client.chat(modelName);
+  },
+
+  vllm: ({ apiKey, modelName, baseUrl }) => {
     // vLLM uses OpenAI-compatible API
+    // Use client.chat() to force the Chat Completions API (/chat/completions)
+    // instead of the default Responses API (/responses) which many
+    // OpenAI-compatible providers don't support
     const client = createOpenAI({
       apiKey: apiKey || "EMPTY",
-      baseURL: config.llm.vllm.baseUrl,
+      baseURL: baseUrl ?? config.llm.vllm.baseUrl,
     });
-    return client(modelName);
+    return client.chat(modelName);
   },
 
-  ollama: ({ apiKey, modelName }) => {
+  ollama: ({ apiKey, modelName, baseUrl }) => {
     // Ollama uses OpenAI-compatible API
+    // Use client.chat() to force the Chat Completions API (/chat/completions)
+    // instead of the default Responses API (/responses) which Ollama doesn't
+    // fully support (especially streaming tool calls)
     const client = createOpenAI({
       apiKey: apiKey || "EMPTY",
-      baseURL: config.llm.ollama.baseUrl,
+      baseURL: baseUrl ?? config.llm.ollama.baseUrl,
     });
-    return client(modelName);
+    return client.chat(modelName);
   },
 
-  zhipuai: ({ apiKey, modelName }) => {
+  zhipuai: ({ apiKey, modelName, baseUrl }) => {
     if (!apiKey) {
       throw new ApiError(
         400,
@@ -306,14 +392,16 @@ const directModelCreators: Record<SupportedChatProvider, DirectModelCreator> = {
       );
     }
     // Zhipu AI uses OpenAI-compatible API
+    // Use client.chat() to force the Chat Completions API (/chat/completions)
+    // instead of the default Responses API (/responses)
     const client = createOpenAI({
       apiKey,
-      baseURL: config.chat.zhipuai.baseUrl,
+      baseURL: baseUrl ?? config.llm.zhipuai.baseUrl,
     });
-    return client(modelName);
+    return client.chat(modelName);
   },
 
-  bedrock: ({ apiKey, modelName }) => {
+  bedrock: ({ apiKey, modelName, baseUrl }) => {
     if (!apiKey) {
       throw new ApiError(
         400,
@@ -321,14 +409,16 @@ const directModelCreators: Record<SupportedChatProvider, DirectModelCreator> = {
       );
     }
     // Extract region from Bedrock base URL if configured
-    const baseUrl = config.llm.bedrock.baseUrl;
-    const regionMatch = baseUrl.match(/bedrock-runtime\.([a-z0-9-]+)\./);
+    const effectiveBaseUrl = baseUrl ?? config.llm.bedrock.baseUrl;
+    const regionMatch = effectiveBaseUrl.match(
+      /bedrock-runtime\.([a-z0-9-]+)\./,
+    );
     const region = regionMatch?.[1] || "us-east-1";
 
     const client = createAmazonBedrock({
       apiKey,
       region,
-      baseURL: config.llm.bedrock.baseUrl,
+      baseURL: effectiveBaseUrl,
       secretAccessKey: undefined,
       accessKeyId: undefined,
       sessionToken: undefined,
@@ -346,16 +436,38 @@ export function createDirectLLMModel({
   provider,
   apiKey,
   modelName,
+  baseUrl,
 }: {
   provider: SupportedChatProvider;
   apiKey: string | undefined;
   modelName: string;
+  baseUrl?: string | null;
 }): LLMModel {
   const creator = directModelCreators[provider];
   if (!creator) {
     throw new ApiError(400, `Unsupported provider: ${provider}`);
   }
-  return creator({ apiKey, modelName });
+  return creator({ apiKey, modelName, baseUrl });
+}
+
+/**
+ * Creates a fetch wrapper that injects W3C trace context (traceparent/tracestate)
+ * into outgoing HTTP headers. This enables the LLM proxy handler to extract the
+ * parent context and create child spans, linking chat → LLM proxy traces together.
+ */
+function createTracedFetch(): typeof globalThis.fetch {
+  return (input, init) => {
+    const headers = new Headers(init?.headers);
+    // Inject active trace context (traceparent, tracestate) into outgoing headers.
+    // Uses a carrier object because propagation.inject expects a plain object,
+    // then copies the injected headers into the actual Headers instance.
+    const carrier: Record<string, string> = {};
+    propagation.inject(context.active(), carrier);
+    for (const [key, value] of Object.entries(carrier)) {
+      headers.set(key, value);
+    }
+    return globalThis.fetch(input, { ...init, headers });
+  };
 }
 
 /**
@@ -394,6 +506,7 @@ const proxiedModelCreators: Record<SupportedChatProvider, ProxiedModelCreator> =
         apiKey,
         baseURL: `${buildProxyBaseUrl("anthropic", agentId)}/v1`,
         headers,
+        fetch: createTracedFetch(),
       });
       return client(modelName);
     },
@@ -405,6 +518,7 @@ const proxiedModelCreators: Record<SupportedChatProvider, ProxiedModelCreator> =
         apiKey: apiKey || "vertex-ai-mode",
         baseURL: `${buildProxyBaseUrl("gemini", agentId)}/v1beta`,
         headers,
+        fetch: createTracedFetch(),
       });
       return client(modelName);
     },
@@ -415,6 +529,7 @@ const proxiedModelCreators: Record<SupportedChatProvider, ProxiedModelCreator> =
         apiKey,
         baseURL: buildProxyBaseUrl("openai", agentId),
         headers,
+        fetch: createTracedFetch(),
       });
       // Use .chat() to force Chat Completions API (not Responses API)
       // so our proxy's tool policy evaluation is applied
@@ -428,6 +543,7 @@ const proxiedModelCreators: Record<SupportedChatProvider, ProxiedModelCreator> =
         apiKey,
         baseURL: buildProxyBaseUrl("cohere", agentId),
         headers,
+        fetch: createTracedFetch(),
       });
       return client(modelName);
     },
@@ -438,6 +554,7 @@ const proxiedModelCreators: Record<SupportedChatProvider, ProxiedModelCreator> =
         apiKey,
         baseURL: buildProxyBaseUrl("cerebras", agentId),
         headers,
+        fetch: createTracedFetch(),
       });
       return client(modelName);
     },
@@ -448,8 +565,21 @@ const proxiedModelCreators: Record<SupportedChatProvider, ProxiedModelCreator> =
         apiKey,
         baseURL: buildProxyBaseUrl("mistral", agentId),
         headers,
+        fetch: createTracedFetch(),
       });
       return client(modelName);
+    },
+
+    perplexity: ({ apiKey, agentId, modelName, headers }) => {
+      // URL format: /v1/perplexity/:agentId (SDK appends /chat/completions)
+      // Perplexity uses OpenAI-compatible API, so we use the OpenAI SDK
+      // This provides better compatibility than @ai-sdk/perplexity
+      const client = createOpenAI({
+        apiKey,
+        baseURL: buildProxyBaseUrl("perplexity", agentId),
+        headers,
+      });
+      return client.chat(modelName);
     },
 
     vllm: ({ apiKey, agentId, modelName, headers }) => {
@@ -459,6 +589,7 @@ const proxiedModelCreators: Record<SupportedChatProvider, ProxiedModelCreator> =
         apiKey: apiKey || "EMPTY", // vLLM typically doesn't require API keys
         baseURL: buildProxyBaseUrl("vllm", agentId),
         headers,
+        fetch: createTracedFetch(),
       });
       // Use .chat() to force Chat Completions API
       return client.chat(modelName);
@@ -471,6 +602,7 @@ const proxiedModelCreators: Record<SupportedChatProvider, ProxiedModelCreator> =
         apiKey: apiKey || "EMPTY", // Ollama typically doesn't require API keys
         baseURL: buildProxyBaseUrl("ollama", agentId),
         headers,
+        fetch: createTracedFetch(),
       });
       // Use .chat() to force Chat Completions API
       return client.chat(modelName);
@@ -483,6 +615,7 @@ const proxiedModelCreators: Record<SupportedChatProvider, ProxiedModelCreator> =
         apiKey,
         baseURL: buildProxyBaseUrl("zhipuai", agentId),
         headers,
+        fetch: createTracedFetch(),
       });
       return client.chat(modelName);
     },
@@ -499,6 +632,7 @@ const proxiedModelCreators: Record<SupportedChatProvider, ProxiedModelCreator> =
         sessionToken: undefined,
         credentialProvider: undefined,
         headers,
+        fetch: createTracedFetch(),
       });
       return client(modelName);
     },
@@ -516,6 +650,7 @@ export function createLLMModel(params: {
   userId?: string;
   externalAgentId?: string;
   sessionId?: string;
+  baseUrl?: string | null;
 }): LLMModel {
   const {
     provider,
@@ -525,6 +660,7 @@ export function createLLMModel(params: {
     userId,
     externalAgentId,
     sessionId,
+    baseUrl,
   } = params;
 
   // Build headers for LLM Proxy
@@ -537,6 +673,9 @@ export function createLLMModel(params: {
   }
   if (sessionId) {
     clientHeaders[SESSION_ID_HEADER] = sessionId;
+  }
+  if (baseUrl) {
+    clientHeaders[PROVIDER_BASE_URL_HEADER] = baseUrl;
   }
 
   const headers =
@@ -560,6 +699,7 @@ export async function createLLMModelForAgent(params: {
   conversationId?: string | null;
   externalAgentId?: string;
   sessionId?: string;
+  agentLlmApiKeyId?: string | null;
 }): Promise<{
   model: LLMModel;
   provider: SupportedChatProvider;
@@ -574,13 +714,15 @@ export async function createLLMModelForAgent(params: {
     conversationId,
     externalAgentId,
     sessionId,
+    agentLlmApiKeyId,
   } = params;
 
-  const { apiKey, source } = await resolveProviderApiKey({
+  const { apiKey, source, baseUrl } = await resolveProviderApiKey({
     organizationId,
     userId,
     provider,
     conversationId,
+    agentLlmApiKeyId,
   });
 
   // Check if Gemini with Vertex AI (doesn't require API key)
@@ -597,7 +739,7 @@ export async function createLLMModelForAgent(params: {
   if (!apiKey && !isGeminiWithVertexAi && !isVllm && !isOllama) {
     throw new ApiError(
       400,
-      "LLM Provider API key not configured. Please configure it in Chat Settings.",
+      "LLM Provider API key not configured. Please configure it in Provider Settings.",
     );
   }
 
@@ -609,6 +751,7 @@ export async function createLLMModelForAgent(params: {
     userId,
     externalAgentId,
     sessionId,
+    baseUrl,
   });
 
   return { model, provider, apiKeySource: source };

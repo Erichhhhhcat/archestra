@@ -2,9 +2,9 @@ import AnthropicProvider from "@anthropic-ai/sdk";
 import { encode as toonEncode } from "@toon-format/toon";
 import { get } from "lodash-es";
 import config from "@/config";
-import { getObservableFetch } from "@/llm-metrics";
 import logger from "@/logging";
-import { TokenPriceModel } from "@/models";
+import { ModelModel } from "@/models";
+import { metrics } from "@/observability";
 import { getTokenizer } from "@/tokenizers";
 import type {
   Anthropic,
@@ -559,6 +559,11 @@ class AnthropicResponseAdapter
     return this.response;
   }
 
+  getFinishReasons(): string[] {
+    const reason = this.response.stop_reason;
+    return reason ? [reason] : [];
+  }
+
   toRefusalResponse(
     _refusalMessage: string,
     contentMessage: string,
@@ -1047,12 +1052,11 @@ export async function convertToolResultsToToon(
   let toonCostSavings = 0;
   const tokensSaved = totalTokensBefore - totalTokensAfter;
   if (tokensSaved > 0) {
-    const tokenPrice = await TokenPriceModel.findByModel(model);
-    if (tokenPrice) {
-      const inputPricePerToken =
-        Number(tokenPrice.pricePerMillionInput) / 1000000;
-      toonCostSavings = tokensSaved * inputPricePerToken;
-    }
+    toonCostSavings = await ModelModel.calculateCostSavings(
+      model,
+      tokensSaved,
+      "anthropic",
+    );
   }
 
   return {
@@ -1129,9 +1133,7 @@ export const anthropicAdapterFactory: LLMProvider<
     return config.llm.anthropic.baseUrl;
   },
 
-  getSpanName(): string {
-    return "anthropic.messages";
-  },
+  spanName: "chat",
 
   createClient(
     apiKey: string | undefined,
@@ -1143,7 +1145,11 @@ export const anthropicAdapterFactory: LLMProvider<
 
     // Use observable fetch for request duration metrics if agent is provided
     const customFetch = options?.agent
-      ? getObservableFetch("anthropic", options.agent, options.externalAgentId)
+      ? metrics.llm.getObservableFetch(
+          "anthropic",
+          options.agent,
+          options.externalAgentId,
+        )
       : undefined;
 
     // Check if this is a Bearer token (OAuth) or regular API key

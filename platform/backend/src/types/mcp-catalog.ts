@@ -61,6 +61,12 @@ const LocalConfigSelectSchema = z.object({
   transportType: z.enum(["stdio", "streamable-http"]).optional(),
   httpPort: z.number().optional(),
   httpPath: z.string().optional(),
+  nodePort: z.number().optional(),
+});
+
+const CatalogLabelSchema = z.object({
+  key: z.string().min(1),
+  value: z.string().min(1),
 });
 
 export const SelectInternalMcpCatalogSchema = createSelectSchema(
@@ -71,6 +77,8 @@ export const SelectInternalMcpCatalogSchema = createSelectSchema(
   userConfig: z.record(z.string(), UserConfigFieldSchema).nullable(),
   oauthConfig: OAuthConfigSchema.nullable(),
   localConfig: LocalConfigSelectSchema.nullable(),
+  // Labels are loaded from the junction table, not from the DB row
+  labels: z.array(CatalogLabelSchema).default([]),
 });
 
 export const InsertInternalMcpCatalogSchema = createInsertSchema(
@@ -88,6 +96,8 @@ export const InsertInternalMcpCatalogSchema = createInsertSchema(
       .optional(),
     oauthConfig: OAuthConfigSchema.nullable().optional(),
     localConfig: LocalConfigSchema.nullable().optional(),
+    // Labels are synced separately via McpCatalogLabelModel
+    labels: z.array(CatalogLabelSchema).optional(),
   })
   .omit({
     createdAt: true,
@@ -107,6 +117,8 @@ export const UpdateInternalMcpCatalogSchema = createUpdateSchema(
       .optional(),
     oauthConfig: OAuthConfigSchema.nullable().optional(),
     localConfig: LocalConfigSchema.nullable().optional(),
+    // Labels are synced separately via McpCatalogLabelModel
+    labels: z.array(CatalogLabelSchema).optional(),
   })
   .omit({
     id: true,
@@ -117,6 +129,9 @@ export const UpdateInternalMcpCatalogSchema = createUpdateSchema(
 export type InternalMcpCatalogServerType = z.infer<
   typeof InternalMcpCatalogServerTypeSchema
 >;
+
+// Export LocalConfig type for reuse in database schema
+export type LocalConfig = z.infer<typeof LocalConfigSelectSchema>;
 
 export type InternalMcpCatalog = z.infer<typeof SelectInternalMcpCatalogSchema>;
 export type InsertInternalMcpCatalog = z.infer<

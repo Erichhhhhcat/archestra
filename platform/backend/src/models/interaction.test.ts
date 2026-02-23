@@ -50,6 +50,130 @@ describe("InteractionModel", () => {
     });
   });
 
+  describe("create - null byte sanitization", () => {
+    test("strips null bytes from JSONB fields to avoid PostgreSQL rejection", async () => {
+      // PostgreSQL JSONB rejects \u0000 (null byte) Unicode escape sequences.
+      // These can appear in LLM responses, e.g. Gemini's thoughtSignature fields.
+      const interaction = await InteractionModel.create({
+        profileId,
+        request: {
+          model: "gpt-4",
+          messages: [
+            { role: "user", content: "Hello \u0000 world \u0000 test" },
+          ],
+        },
+        response: {
+          id: "test-nullbytes",
+          object: "chat.completion",
+          created: Date.now(),
+          model: "gpt-4",
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: "assistant",
+                content: "Response \u0000 with \u0000 null bytes",
+                refusal: null,
+              },
+              finish_reason: "stop",
+              logprobs: null,
+            },
+          ],
+        },
+        type: "openai:chatCompletions",
+      });
+
+      expect(interaction).toBeDefined();
+      expect(interaction.id).toBeDefined();
+
+      // Verify the null bytes were stripped by reading back from DB
+      const found = await InteractionModel.findById(interaction.id);
+      expect(found).not.toBeNull();
+
+      const response = found?.response as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      expect(response?.choices?.[0]?.message?.content).toBe(
+        "Response  with  null bytes",
+      );
+
+      const request = found?.request as {
+        messages?: Array<{ content?: string }>;
+      };
+      expect(request?.messages?.[0]?.content).toBe("Hello  world  test");
+    });
+
+    test("throws FK violation when profileId does not exist", async () => {
+      await expect(
+        InteractionModel.create({
+          profileId: "00000000-0000-0000-0000-000000000000",
+          request: {
+            model: "gpt-4",
+            messages: [{ role: "user", content: "Hello" }],
+          },
+          response: {
+            id: "test-response",
+            object: "chat.completion",
+            created: Date.now(),
+            model: "gpt-4",
+            choices: [
+              {
+                index: 0,
+                message: {
+                  role: "assistant",
+                  content: "Hi",
+                  refusal: null,
+                },
+                finish_reason: "stop",
+                logprobs: null,
+              },
+            ],
+          },
+          type: "openai:chatCompletions",
+        }),
+      ).rejects.toThrow();
+    });
+
+    test("handles data without null bytes unchanged", async () => {
+      const interaction = await InteractionModel.create({
+        profileId,
+        request: {
+          model: "gpt-4",
+          messages: [
+            { role: "user", content: "Normal text without null bytes" },
+          ],
+        },
+        response: {
+          id: "test-response",
+          object: "chat.completion",
+          created: Date.now(),
+          model: "gpt-4",
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: "assistant",
+                content: "Normal response",
+                refusal: null,
+              },
+              finish_reason: "stop",
+              logprobs: null,
+            },
+          ],
+        },
+        type: "openai:chatCompletions",
+      });
+
+      const found = await InteractionModel.findById(interaction.id);
+      const request = found?.request as {
+        messages?: Array<{ content?: string }>;
+      };
+      expect(request?.messages?.[0]?.content).toBe(
+        "Normal text without null bytes",
+      );
+    });
+  });
+
   describe("findById", () => {
     test("returns interaction by id", async () => {
       const created = await InteractionModel.create({
@@ -1954,6 +2078,131 @@ describe("InteractionModel", () => {
       );
     });
 
+    test("returns lastInteractionRequest for Gemini with image-only content (no text)", async ({
+      makeAdmin,
+    }) => {
+      const admin = await makeAdmin();
+      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+
+      // Gemini request with only image data (no text parts)
+      await InteractionModel.create({
+        profileId: agent.id,
+        sessionId: "gemini-image-session",
+        request: {
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: "image/png",
+                    data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        response: {
+          candidates: [
+            {
+              content: {
+                role: "model",
+                parts: [{ text: "I see an image" }],
+              },
+              finishReason: "STOP",
+              index: 0,
+            },
+          ],
+          modelVersion: "gemini-2.5-pro",
+        },
+        type: "gemini:generateContent",
+      });
+
+      const sessions = await InteractionModel.getSessions(
+        { limit: 100, offset: 0 },
+        admin.id,
+        true,
+        { sessionId: "gemini-image-session" },
+      );
+
+      expect(sessions.data).toHaveLength(1);
+      expect(sessions.data[0].lastInteractionRequest).not.toBeNull();
+      expect(sessions.data[0].lastInteractionType).toBe(
+        "gemini:generateContent",
+      );
+    });
+
+    test("returns lastInteractionRequest for Gemini with function response (tool result)", async ({
+      makeAdmin,
+    }) => {
+      const admin = await makeAdmin();
+      const agent = await AgentModel.create({ name: "Agent", teams: [] });
+
+      // Gemini request with function response (common in agentic workflows)
+      await InteractionModel.create({
+        profileId: agent.id,
+        sessionId: "gemini-function-session",
+        request: {
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: "Search for weather" }],
+            },
+            {
+              role: "model",
+              parts: [
+                {
+                  functionCall: {
+                    name: "get_weather",
+                    args: { location: "New York" },
+                  },
+                },
+              ],
+            },
+            {
+              role: "user",
+              parts: [
+                {
+                  functionResponse: {
+                    name: "get_weather",
+                    response: { temperature: 72, condition: "sunny" },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        response: {
+          candidates: [
+            {
+              content: {
+                role: "model",
+                parts: [{ text: "The weather in New York is sunny at 72°F" }],
+              },
+              finishReason: "STOP",
+              index: 0,
+            },
+          ],
+          modelVersion: "gemini-2.5-pro",
+        },
+        type: "gemini:generateContent",
+      });
+
+      const sessions = await InteractionModel.getSessions(
+        { limit: 100, offset: 0 },
+        admin.id,
+        true,
+        { sessionId: "gemini-function-session" },
+      );
+
+      expect(sessions.data).toHaveLength(1);
+      expect(sessions.data[0].lastInteractionRequest).not.toBeNull();
+      expect(sessions.data[0].lastInteractionType).toBe(
+        "gemini:generateContent",
+      );
+    });
+
     test("handles single interactions without sessionId (null session)", async ({
       makeAdmin,
     }) => {
@@ -1996,6 +2245,78 @@ describe("InteractionModel", () => {
       expect(ourSession?.sessionId).toBeNull();
       expect(ourSession?.interactionId).toBe(interaction.id);
       expect(ourSession?.lastInteractionRequest).not.toBeNull();
+    });
+  });
+
+  describe("existsByExecutionId", () => {
+    test("returns false when no interaction has the execution id", async () => {
+      const exists = await InteractionModel.existsByExecutionId(
+        "non-existent-exec-id",
+      );
+      expect(exists).toBe(false);
+    });
+
+    test("returns true when an interaction has the execution id", async () => {
+      await InteractionModel.create({
+        profileId,
+        executionId: "test-exec-123",
+        request: {
+          model: "gpt-4",
+          messages: [{ role: "user", content: "Hello" }],
+        },
+        response: {
+          id: "r1",
+          object: "chat.completion",
+          created: Date.now(),
+          model: "gpt-4",
+          choices: [],
+        },
+        type: "openai:chatCompletions",
+      });
+
+      const exists =
+        await InteractionModel.existsByExecutionId("test-exec-123");
+      expect(exists).toBe(true);
+    });
+
+    test("returns true when multiple interactions share the execution id", async () => {
+      await InteractionModel.create({
+        profileId,
+        executionId: "shared-exec-id",
+        request: {
+          model: "gpt-4",
+          messages: [{ role: "user", content: "First" }],
+        },
+        response: {
+          id: "r1",
+          object: "chat.completion",
+          created: Date.now(),
+          model: "gpt-4",
+          choices: [],
+        },
+        type: "openai:chatCompletions",
+      });
+
+      await InteractionModel.create({
+        profileId,
+        executionId: "shared-exec-id",
+        request: {
+          model: "gpt-4",
+          messages: [{ role: "user", content: "Second" }],
+        },
+        response: {
+          id: "r2",
+          object: "chat.completion",
+          created: Date.now(),
+          model: "gpt-4",
+          choices: [],
+        },
+        type: "openai:chatCompletions",
+      });
+
+      const exists =
+        await InteractionModel.existsByExecutionId("shared-exec-id");
+      expect(exists).toBe(true);
     });
   });
 

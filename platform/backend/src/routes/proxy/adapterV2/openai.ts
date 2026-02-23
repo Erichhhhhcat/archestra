@@ -6,9 +6,9 @@ import type {
   ChatCompletionCreateParamsStreaming,
 } from "openai/resources/chat/completions/completions";
 import config from "@/config";
-import { getObservableFetch } from "@/llm-metrics";
 import logger from "@/logging";
-import { TokenPriceModel } from "@/models";
+import { ModelModel } from "@/models";
+import { metrics } from "@/observability";
 import { getTokenizer } from "@/tokenizers";
 import type {
   ChunkProcessingResult,
@@ -718,6 +718,11 @@ export class OpenAIResponseAdapter
     return this.response;
   }
 
+  getFinishReasons(): string[] {
+    const reason = this.response.choices[0]?.finish_reason;
+    return reason ? [reason] : [];
+  }
+
   toRefusalResponse(
     _refusalMessage: string,
     contentMessage: string,
@@ -1089,12 +1094,11 @@ export async function convertToolResultsToToon(
   let toonCostSavings = 0;
   const tokensSaved = totalTokensBefore - totalTokensAfter;
   if (tokensSaved > 0) {
-    const tokenPrice = await TokenPriceModel.findByModel(model);
-    if (tokenPrice) {
-      const inputPricePerToken =
-        Number(tokenPrice.pricePerMillionInput) / 1000000;
-      toonCostSavings = tokensSaved * inputPricePerToken;
-    }
+    toonCostSavings = await ModelModel.calculateCostSavings(
+      model,
+      tokensSaved,
+      "openai",
+    );
   }
 
   return {
@@ -1160,9 +1164,7 @@ export const openaiAdapterFactory: LLMProvider<
     return config.llm.openai.baseUrl;
   },
 
-  getSpanName(): string {
-    return "openai.chat.completions";
-  },
+  spanName: "chat",
 
   createClient(
     apiKey: string | undefined,
@@ -1174,7 +1176,11 @@ export const openaiAdapterFactory: LLMProvider<
 
     // Use observable fetch for request duration metrics if agent is provided
     const customFetch = options?.agent
-      ? getObservableFetch("openai", options.agent, options.externalAgentId)
+      ? metrics.llm.getObservableFetch(
+          "openai",
+          options.agent,
+          options.externalAgentId,
+        )
       : undefined;
 
     return new OpenAIProvider({

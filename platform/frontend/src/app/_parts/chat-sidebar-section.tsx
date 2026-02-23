@@ -10,7 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TruncatedText } from "@/components/truncated-text";
 import {
   AlertDialog,
@@ -55,35 +55,12 @@ import {
   useGenerateConversationTitle,
   useUpdateConversation,
 } from "@/lib/chat.query";
+import { getConversationDisplayTitle } from "@/lib/chat-utils";
 import { cn } from "@/lib/utils";
 
 const CONVERSATION_QUERY_PARAM = "conversation";
 const VISIBLE_CHAT_COUNT = 10;
 const MAX_TITLE_LENGTH = 30;
-
-// Helper to extract display title from conversation
-export function getConversationDisplayTitle(
-  title: string | null,
-  // biome-ignore lint/suspicious/noExplicitAny: UIMessage structure from AI SDK is dynamic
-  messages?: any[],
-): string {
-  if (title) return title;
-
-  // Try to extract from first user message
-  if (messages && messages.length > 0) {
-    for (const msg of messages) {
-      if (msg.role === "user" && msg.parts) {
-        for (const part of msg.parts) {
-          if (part.type === "text" && part.text) {
-            return part.text;
-          }
-        }
-      }
-    }
-  }
-
-  return "New chat";
-}
 
 function AISparkleIcon({ isAnimating = false }: { isAnimating?: boolean }) {
   return (
@@ -128,12 +105,46 @@ export function ChatSidebarSection() {
     ? searchParams.get(CONVERSATION_QUERY_PARAM)
     : null;
 
+  // Stabilize sidebar order: freeze backend order on first render,
+  // prepend new conversations at top, remove deleted ones.
+  // Resets on page refresh (ref remounts).
+  const stableOrderRef = useRef<string[] | null>(null);
+  const stableConversations = useMemo(() => {
+    if (conversations.length === 0) {
+      stableOrderRef.current = null;
+      return conversations;
+    }
+
+    const currentIds = new Set(conversations.map((c) => c.id));
+    const conversationMap = new Map(conversations.map((c) => [c.id, c]));
+
+    if (stableOrderRef.current === null) {
+      // First render: capture backend order as-is
+      stableOrderRef.current = conversations.map((c) => c.id);
+      return conversations;
+    }
+
+    const prevIds = new Set(stableOrderRef.current);
+    // New IDs not in previous order — prepend at top
+    const newIds = conversations
+      .filter((c) => !prevIds.has(c.id))
+      .map((c) => c.id);
+    // Existing IDs in their original order, excluding deleted
+    const keptIds = stableOrderRef.current.filter((id) => currentIds.has(id));
+    const orderedIds = [...newIds, ...keptIds];
+
+    stableOrderRef.current = orderedIds;
+    return orderedIds
+      .map((id) => conversationMap.get(id))
+      .filter((c): c is NonNullable<typeof c> => c != null);
+  }, [conversations]);
+
   const visibleChats = showAllChats
-    ? conversations
-    : conversations.slice(0, VISIBLE_CHAT_COUNT);
+    ? stableConversations
+    : stableConversations.slice(0, VISIBLE_CHAT_COUNT);
   const hiddenChatsCount = Math.max(
     0,
-    conversations.length - VISIBLE_CHAT_COUNT,
+    stableConversations.length - VISIBLE_CHAT_COUNT,
   );
 
   useEffect(() => {
@@ -238,7 +249,7 @@ export function ChatSidebarSection() {
                 </span>
               </div>
             </SidebarMenuItem>
-          ) : conversations.length === 0 ? (
+          ) : stableConversations.length === 0 ? (
             <SidebarMenuItem>
               <div className="px-2 py-1.5 text-xs text-muted-foreground">
                 No chats yet
@@ -353,20 +364,14 @@ export function ChatSidebarSection() {
                               }
                             >
                               <DropdownMenuTrigger asChild>
-                                <Button
-                                  type="button"
-                                  size="icon-sm"
-                                  variant="ghost"
-                                  onClick={(e) => e.stopPropagation()}
+                                <MoreHorizontal
                                   className={cn(
-                                    "h-6 w-6 p-0 shrink-0 transition-opacity",
+                                    "h-4 w-4 p-0 shrink-0 transition-opacity",
                                     isMenuOpen
                                       ? "opacity-100"
                                       : "opacity-0 group-hover/menu-item:opacity-100",
                                   )}
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
+                                />
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="start" side="right">
                                 {canUpdateConversation && (

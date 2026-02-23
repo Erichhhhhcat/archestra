@@ -134,6 +134,13 @@ docker compose -f dev/docker-compose.observability.yml up -d  # Alternative: Sta
 
 ## Environment Variables
 
+**Naming Convention**: All env vars MUST follow the pattern `ARCHESTRA_<PRODUCT_AREA>_<THING>` (e.g., `ARCHESTRA_LLM_PROXY_MAX_VIRTUAL_KEYS`, `ARCHESTRA_OTEL_VERBOSE_TRACING`).
+
+**Adding New Env Vars**:
+1. **Consume in `backend/src/config.ts`** - Parse and validate the env var here. If a custom parse/validation function is needed, export it and add tests in `backend/src/config.test.ts`
+2. **Document in `../docs/pages/platform-deployment.md`** - All new env vars MUST be documented in the Environment Variables section. Use best judgement on whether it warrants a new subsection
+3. **Frontend access via `/api/config`** - If the frontend needs to reference an env var value, expose it through `backend/src/routes/config.ts` response and consume via `useFeatureValue()` or `useFeatureFlag()` hooks
+
 ```bash
 # Database Configuration
 # ARCHESTRA_DATABASE_URL takes precedence over DATABASE_URL
@@ -180,6 +187,10 @@ NEXT_PUBLIC_ARCHESTRA_MCP_SERVER_BASE_IMAGE=europe-west1-docker.pkg.dev/friendly
 ARCHESTRA_OTEL_EXPORTER_OTLP_AUTH_USERNAME=  # Username for OTLP basic auth (requires password)
 ARCHESTRA_OTEL_EXPORTER_OTLP_AUTH_PASSWORD=  # Password for OTLP basic auth (requires username)
 ARCHESTRA_OTEL_EXPORTER_OTLP_AUTH_BEARER=    # Bearer token for OTLP auth (takes precedence over basic auth)
+
+# OpenTelemetry Tracing
+ARCHESTRA_OTEL_VERBOSE_TRACING=false  # Set to true to include Fastify/HTTP/fetch infrastructure spans (default: false, only GenAI spans)
+ARCHESTRA_OTEL_CONTENT_MAX_LENGTH=10000  # Max characters for captured content in span events (default: 10000)
 
 # Logging
 ARCHESTRA_LOGGING_LEVEL=info  # Options: trace, debug, info, warn, error, fatal
@@ -248,9 +259,9 @@ Tool invocation policies and trusted data policies are still enforced by the pro
 
 ## Observability
 
-**Tracing**: LLM proxy routes add profile data via `startActiveLlmSpan()`. Traces include `agent.id`, `agent.name` and dynamic `agent.<label>` attributes. Profile label keys are fetched from database on startup and included as resource attributes. Traces stored in Grafana Tempo.
+**Tracing**: Follows [OTEL GenAI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/). LLM spans use `gen_ai.agent.id`, `gen_ai.agent.name`, `gen_ai.provider.name`, `gen_ai.request.model`, `gen_ai.operation.name`, and `archestra.label.<key>` for dynamic labels. MCP spans use `gen_ai.tool.name`, `mcp.server.name`. Session tracking via `gen_ai.conversation.id` (from `X-Archestra-Session-Id` header). Span names: `chat {model}`, `generate_content {model}`, `execute_tool {tool_name}`. Agent label keys fetched from database on startup and included as resource attributes. Traces stored in Grafana Tempo. User identity tracked via `archestra.user.id`, `archestra.user.email`, `archestra.user.name` (when available). LLM spans include `archestra.cost` (USD) and `gen_ai.usage.total_tokens`.
 
-**Metrics**: Prometheus metrics (`llm_request_duration_seconds`, `llm_tokens_total`) include `agent_name`, `agent_id` and dynamic profile labels as dimensions. Metrics are reinitialized on startup with current label keys from database.
+**Metrics**: Prometheus metrics (`llm_request_duration_seconds`, `llm_tokens_total`) include `agent_id` (internal), `agent_name`, `agent_type`, `external_agent_id` (from header), and dynamic agent labels as dimensions. MCP metrics include `agent_id`, `agent_name`, `agent_type`. Agent execution metrics use `external_agent_id` for the client-provided ID. Metrics are reinitialized on startup with current label keys from database.
 
 **Local Setup**: Use `tilt trigger observability` or `docker compose -f dev/docker-compose.observability.yml up` to start Tempo, Prometheus, and Grafana with pre-configured datasources.
 
@@ -364,10 +375,11 @@ pnpm rebuild <package-name>  # Enable scripts for specific package
 
 **Frontend**:
 
-- Use TanStack Query for data fetching
+- Use TanStack Query for data fetching (prefer `useQuery` over `useSuspenseQuery` with explicit loading states)
 - Use shadcn/ui components only
 - **Use components from `frontend/src/components/ui` over plain HTML elements**: Never use raw `<button>`, `<input>`, `<select>`, etc. when a component exists in `frontend/src/components/ui` (Button over button, Input over input, etc.)
 - **Handle toasts in .query.ts files, not in components**: Toast notifications for mutations (success/error) should be defined in the mutation's `onSuccess`/`onError` callbacks within `.query.ts` files, not in components
+- **Never throw on HTTP errors**: In query/mutation functions, never throw errors on HTTP failures. Use `handleApiError(error)` for user notification and return appropriate default values (`null`, `[]`, `{}`). Components should not have try/catch for API calls - all error handling belongs in `.query.ts` files.
 - Small focused components with extracted business logic
 - Flat file structure, avoid barrel files
 - Only export what's needed externally
@@ -514,7 +526,6 @@ pnpm rebuild <package-name>  # Enable scripts for specific package
 - Smart visibility: Shows first 10 conversations by default with "Show N more" toggle for better UX when many conversations exist
 - Full-width chat interface: Chat page uses entire width without separate conversation sidebar
 - Tool execution: Routes through MCP Gateway, includes response modifiers and logging
-- No manual configuration: Deprecated `ARCHESTRA_CHAT_MCP_SERVER_URL` and `ARCHESTRA_CHAT_MCP_SERVER_HEADERS`
 - Required env var: `ARCHESTRA_CHAT_ANTHROPIC_API_KEY` (used by LLM Proxy for Anthropic calls)
 
 **Archestra MCP Server**:
@@ -523,11 +534,14 @@ pnpm rebuild <package-name>  # Enable scripts for specific package
 - Tools must be explicitly assigned to profiles (not auto-injected)
 - Tools prefixed with `archestra__` to avoid conflicts
 - Available tools:
-  - Profile management: `whoami`, `create_profile`, `get_profile`
-  - Limits: `create_limit`, `get_limits`, `update_limit`, `delete_limit`, `get_profile_token_usage`
+  - Identity: `whoami`
+  - Agents: `create_agent`, `get_agent`
+  - LLM Proxies: `create_llm_proxy`, `get_llm_proxy`
+  - MCP Gateways: `create_mcp_gateway`, `get_mcp_gateway`
+  - Limits: `create_limit`, `get_limits`, `update_limit`, `delete_limit`, `get_agent_token_usage`, `get_llm_proxy_token_usage`
   - Policies: `get/create/update/delete_tool_invocation_policy`, `get/create/update/delete_trusted_data_policy`
   - MCP servers: `search_private_mcp_registry`, `get_mcp_servers`, `get_mcp_server_tools`
-  - Tool assignment: `bulk_assign_tools_to_profiles`
+  - Tool assignment: `bulk_assign_tools_to_agents`, `bulk_assign_tools_to_mcp_gateways`
   - Operators: `get_autonomy_policy_operators`
 - Implementation: `backend/src/archestra-mcp-server.ts`
 - Catalog entry: Created automatically on startup with fixed ID `ARCHESTRA_MCP_CATALOG_ID`

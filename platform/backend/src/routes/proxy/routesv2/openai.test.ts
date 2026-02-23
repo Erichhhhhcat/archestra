@@ -31,7 +31,7 @@ import {
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 import config from "@/config";
-import { TokenPriceModel } from "@/models";
+import { ModelModel } from "@/models";
 import { afterEach, beforeEach, describe, expect, test } from "@/test";
 import type { OpenAi } from "@/types";
 import { MockOpenAIClient } from "../mock-openai-client";
@@ -135,11 +135,15 @@ describe("OpenAI V2 cost tracking", () => {
     await app.register(openAiProxyRoutesV2);
     config.benchmark.mockMode = true;
 
-    await TokenPriceModel.create({
+    await ModelModel.upsert({
+      externalId: "openai/gpt-4o",
       provider: "openai",
-      model: "gpt-4o",
-      pricePerMillionInput: "2.50",
-      pricePerMillionOutput: "10.00",
+      modelId: "gpt-4o",
+      inputModalities: null,
+      outputModalities: null,
+      customPricePerMillionInput: "2.50",
+      customPricePerMillionOutput: "10.00",
+      lastSyncedAt: new Date(),
     });
 
     const agent = await makeAgent({ name: "Test Cost Agent" });
@@ -191,11 +195,15 @@ describe("OpenAI V2 streaming mode", () => {
     await app.register(openAiProxyRoutesV2);
     config.benchmark.mockMode = true;
 
-    await TokenPriceModel.create({
+    await ModelModel.upsert({
+      externalId: "openai/gpt-4o",
       provider: "openai",
-      model: "gpt-4o",
-      pricePerMillionInput: "2.50",
-      pricePerMillionOutput: "10.00",
+      modelId: "gpt-4o",
+      inputModalities: null,
+      outputModalities: null,
+      customPricePerMillionInput: "2.50",
+      customPricePerMillionOutput: "10.00",
+      lastSyncedAt: new Date(),
     });
 
     const agent = await makeAgent({ name: "Test Streaming Agent" });
@@ -262,11 +270,15 @@ describe("OpenAI V2 streaming mode", () => {
       try {
         await app.register(openAiProxyRoutesV2);
 
-        await TokenPriceModel.create({
+        await ModelModel.upsert({
+          externalId: "openai/gpt-4o",
           provider: "openai",
-          model: "gpt-4o",
-          pricePerMillionInput: "2.50",
-          pricePerMillionOutput: "10.00",
+          modelId: "gpt-4o",
+          inputModalities: null,
+          outputModalities: null,
+          customPricePerMillionInput: "2.50",
+          customPricePerMillionOutput: "10.00",
+          lastSyncedAt: new Date(),
         });
 
         const agent = await makeAgent({
@@ -334,11 +346,15 @@ describe("OpenAI V2 streaming mode", () => {
       try {
         await app.register(openAiProxyRoutesV2);
 
-        await TokenPriceModel.create({
+        await ModelModel.upsert({
+          externalId: "openai/gpt-4o",
           provider: "openai",
-          model: "gpt-4o",
-          pricePerMillionInput: "2.50",
-          pricePerMillionOutput: "10.00",
+          modelId: "gpt-4o",
+          inputModalities: null,
+          outputModalities: null,
+          customPricePerMillionInput: "2.50",
+          customPricePerMillionOutput: "10.00",
+          lastSyncedAt: new Date(),
         });
 
         const agent = await makeAgent({
@@ -425,12 +441,19 @@ describe("OpenAI V2 proxy routing", () => {
         upstream: `http://localhost:${upstreamPort}`,
         prefix: API_PREFIX,
         rewritePrefix: "/v1",
-        preHandler: (request, _reply, next) => {
+        preHandler: (request, reply, next) => {
+          const urlPath = request.url.split("?")[0];
           if (
             request.method === "POST" &&
-            request.url.includes(CHAT_COMPLETIONS_SUFFIX)
+            urlPath.endsWith(CHAT_COMPLETIONS_SUFFIX)
           ) {
-            next(new Error("skip"));
+            reply.code(400).send({
+              error: {
+                message:
+                  "Chat completions requests should use the dedicated endpoint",
+                type: "invalid_request_error",
+              },
+            });
             return;
           }
 
@@ -516,8 +539,8 @@ describe("OpenAI V2 proxy routing", () => {
       },
     });
 
-    // Should get 404 or 500 because we didn't register the actual chat/completions handler
-    expect([404, 500]).toContain(response.statusCode);
+    // Should get 400 because the preHandler blocks proxy forwarding with a clean error response
+    expect(response.statusCode).toBe(400);
   });
 
   test("skips proxy for chat/completions routes with UUID", async () => {
@@ -533,7 +556,7 @@ describe("OpenAI V2 proxy routing", () => {
       },
     });
 
-    // Should get 404 or 500 because we didn't register the actual chat/completions handler
-    expect([404, 500]).toContain(response.statusCode);
+    // Should get 400 because the preHandler blocks proxy forwarding with a clean error response
+    expect(response.statusCode).toBe(400);
   });
 });

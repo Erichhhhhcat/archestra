@@ -2,9 +2,9 @@ import { ZhipuaiErrorTypes } from "@shared";
 import { encode as toonEncode } from "@toon-format/toon";
 import { get } from "lodash-es";
 import config from "@/config";
-import { getObservableFetch } from "@/llm-metrics";
 import logger from "@/logging";
-import { TokenPriceModel } from "@/models";
+import { ModelModel } from "@/models";
+import { metrics } from "@/observability";
 import { MockZhipuaiClient } from "@/routes/proxy/mock-zhipuai-client";
 import { getTokenizer } from "@/tokenizers";
 import type {
@@ -535,6 +535,11 @@ class ZhipuaiResponseAdapter implements LLMResponseAdapter<ZhipuaiResponse> {
     return { inputTokens: input, outputTokens: output };
   }
 
+  getFinishReasons(): string[] {
+    const reason = this.response.choices[0]?.finish_reason;
+    return reason ? [reason] : [];
+  }
+
   getOriginalResponse(): ZhipuaiResponse {
     return this.response;
   }
@@ -915,12 +920,11 @@ async function convertToolResultsToToon(
   let toonCostSavings = 0;
   const tokensSaved = totalTokensBefore - totalTokensAfter;
   if (tokensSaved > 0) {
-    const tokenPrice = await TokenPriceModel.findByModel(model);
-    if (tokenPrice) {
-      const inputPricePerToken =
-        Number(tokenPrice.pricePerMillionInput) / 1000000;
-      toonCostSavings = tokensSaved * inputPricePerToken;
-    }
+    toonCostSavings = await ModelModel.calculateCostSavings(
+      model,
+      tokensSaved,
+      "zhipuai",
+    );
   }
 
   return {
@@ -984,9 +988,7 @@ export const zhipuaiAdapterFactory: LLMProvider<
     return config.llm.zhipuai.baseUrl;
   },
 
-  getSpanName(): string {
-    return "zhipuai.chat.completions";
-  },
+  spanName: "chat",
 
   createClient(
     apiKey: string | undefined,
@@ -998,7 +1000,11 @@ export const zhipuaiAdapterFactory: LLMProvider<
     }
 
     const customFetch = options?.agent
-      ? getObservableFetch("zhipuai", options.agent, options.externalAgentId)
+      ? metrics.llm.getObservableFetch(
+          "zhipuai",
+          options.agent,
+          options.externalAgentId,
+        )
       : undefined;
 
     return new ZhipuaiClient(apiKey, options?.baseUrl, customFetch);

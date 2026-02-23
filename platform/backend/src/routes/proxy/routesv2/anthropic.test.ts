@@ -28,7 +28,7 @@ import {
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 import config from "@/config";
-import { TokenPriceModel } from "@/models";
+import { ModelModel } from "@/models";
 import { afterEach, beforeEach, describe, expect, test } from "@/test";
 import { MockAnthropicClient } from "../mock-anthropic-client";
 import anthropicProxyRoutesV2 from "./anthropic";
@@ -46,11 +46,15 @@ describe("Anthropic V2 cost tracking", () => {
     await app.register(anthropicProxyRoutesV2);
     config.benchmark.mockMode = true;
 
-    await TokenPriceModel.create({
+    await ModelModel.upsert({
+      externalId: "anthropic/claude-opus-4-20250514",
       provider: "anthropic",
-      model: "claude-opus-4-20250514",
-      pricePerMillionInput: "15.00",
-      pricePerMillionOutput: "75.00",
+      modelId: "claude-opus-4-20250514",
+      inputModalities: null,
+      outputModalities: null,
+      customPricePerMillionInput: "15.00",
+      customPricePerMillionOutput: "75.00",
+      lastSyncedAt: new Date(),
     });
 
     const agent = await makeAgent({ name: "Test Cost Agent" });
@@ -104,11 +108,15 @@ describe("Anthropic V2 streaming mode", () => {
     await app.register(anthropicProxyRoutesV2);
     config.benchmark.mockMode = true;
 
-    await TokenPriceModel.create({
+    await ModelModel.upsert({
+      externalId: "anthropic/claude-opus-4-20250514",
       provider: "anthropic",
-      model: "claude-opus-4-20250514",
-      pricePerMillionInput: "15.00",
-      pricePerMillionOutput: "75.00",
+      modelId: "claude-opus-4-20250514",
+      inputModalities: null,
+      outputModalities: null,
+      customPricePerMillionInput: "15.00",
+      customPricePerMillionOutput: "75.00",
+      lastSyncedAt: new Date(),
     });
 
     const agent = await makeAgent({ name: "Test Streaming Agent" });
@@ -179,11 +187,15 @@ describe("Anthropic V2 streaming mode", () => {
       try {
         await app.register(anthropicProxyRoutesV2);
 
-        await TokenPriceModel.create({
+        await ModelModel.upsert({
+          externalId: "anthropic/claude-opus-4-20250514",
           provider: "anthropic",
-          model: "claude-opus-4-20250514",
-          pricePerMillionInput: "15.00",
-          pricePerMillionOutput: "75.00",
+          modelId: "claude-opus-4-20250514",
+          inputModalities: null,
+          outputModalities: null,
+          customPricePerMillionInput: "15.00",
+          customPricePerMillionOutput: "75.00",
+          lastSyncedAt: new Date(),
         });
 
         const agent = await makeAgent({
@@ -256,11 +268,15 @@ describe("Anthropic V2 tool call accumulation", () => {
     MockAnthropicClient.setStreamOptions({ includeToolUse: true });
 
     try {
-      await TokenPriceModel.create({
+      await ModelModel.upsert({
+        externalId: "anthropic/claude-opus-4-20250514",
         provider: "anthropic",
-        model: "claude-opus-4-20250514",
-        pricePerMillionInput: "15.00",
-        pricePerMillionOutput: "75.00",
+        modelId: "claude-opus-4-20250514",
+        inputModalities: null,
+        outputModalities: null,
+        customPricePerMillionInput: "15.00",
+        customPricePerMillionOutput: "75.00",
+        lastSyncedAt: new Date(),
       });
 
       const agent = await makeAgent({ name: "Test Tool Call Agent" });
@@ -341,12 +357,16 @@ describe("Anthropic V2 proxy routing", () => {
         upstream: `http://localhost:${upstreamPort}`,
         prefix: API_PREFIX,
         rewritePrefix: "/v1",
-        preHandler: (request, _reply, next) => {
-          if (
-            request.method === "POST" &&
-            request.url.includes(MESSAGES_SUFFIX)
-          ) {
-            next(new Error("skip"));
+        preHandler: (request, reply, next) => {
+          const urlPath = request.url.split("?")[0];
+          if (request.method === "POST" && urlPath.endsWith(MESSAGES_SUFFIX)) {
+            reply.code(400).send({
+              type: "error",
+              error: {
+                type: "invalid_request_error",
+                message: "Messages requests should use the dedicated endpoint",
+              },
+            });
             return;
           }
 
@@ -428,7 +448,8 @@ describe("Anthropic V2 proxy routing", () => {
       },
     });
 
-    expect([404, 500]).toContain(response.statusCode);
+    // Should get 400 because the preHandler blocks proxy forwarding with a clean error response
+    expect(response.statusCode).toBe(400);
   });
 
   test("skips proxy for messages routes with UUID", async () => {
@@ -445,6 +466,7 @@ describe("Anthropic V2 proxy routing", () => {
       },
     });
 
-    expect([404, 500]).toContain(response.statusCode);
+    // Should get 400 because the preHandler blocks proxy forwarding with a clean error response
+    expect(response.statusCode).toBe(400);
   });
 });

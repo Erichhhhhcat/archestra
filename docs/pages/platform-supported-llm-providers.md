@@ -1,6 +1,6 @@
 ---
 title: Supported LLM Providers
-category: Archestra Platform
+category: Agents
 order: 3
 description: LLM providers supported by Archestra Platform
 lastUpdated: 2026-01-14
@@ -186,6 +186,36 @@ See the [Vertex AI authentication guide](https://cloud.google.com/vertex-ai/docs
 
 You can get an API key from the [Mistral AI Console](https://console.mistral.ai/api-keys).
 
+## Perplexity AI
+
+[Perplexity AI](https://www.perplexity.ai/) provides AI-powered search and answer engines with real-time web search capabilities through an OpenAI-compatible API.
+
+### Supported Perplexity APIs
+
+- **Chat Completions API** (`/chat/completions`) - ✅ Fully supported
+
+### Perplexity Connection Details
+
+- **Base URL**: `http://localhost:9000/v1/perplexity/{agent-id}`
+- **Authentication**: Pass your Perplexity API key in the `Authorization` header as `Bearer <your-api-key>`
+
+### Environment Variables
+
+| Variable                            | Required | Description                                                                    |
+| ----------------------------------- | -------- | ------------------------------------------------------------------------------ |
+| `ARCHESTRA_PERPLEXITY_BASE_URL`     | No       | Perplexity API base URL (default: `https://api.perplexity.ai`)                 |
+| `ARCHESTRA_CHAT_PERPLEXITY_API_KEY` | No       | Default API key for Perplexity (can be overridden per conversation/team/org)   |
+
+### Getting an API Key
+
+You can get an API key from the [Perplexity Settings](https://www.perplexity.ai/settings/api).
+
+### Important Notes
+
+- **No tool calling support**: Perplexity does NOT support external tool calling. It performs internal web searches and returns results in the response. Use Perplexity for search-augmented generation, not agentic workflows requiring custom tools.
+- **Search results**: Perplexity responses may include `search_results` and `citations` fields containing web search results used to generate the answer.
+- **Models**: Popular models include `sonar-pro`, `sonar`, and `sonar-deep-research` for different use cases.
+
 ## vLLM
 
 [vLLM](https://github.com/vllm-project/vllm) is a high-throughput and memory-efficient inference and serving engine for LLMs. It's ideal for self-hosted deployments where you want to run open-source models on your own infrastructure.
@@ -197,7 +227,15 @@ You can get an API key from the [Mistral AI Console](https://console.mistral.ai/
 ### vLLM Connection Details
 
 - **Base URL**: `http://localhost:9000/v1/vllm/{profile-id}`
-- **Authentication**: Pass your vLLM API key (if configured) in the `Authorization` header as `Bearer <your-api-key>`. Many vLLM deployments don't require authentication.
+- **Authentication**: API key is **optional**. Pass in `Authorization` header as `Bearer <your-api-key>` if your vLLM deployment requires auth.
+
+### Setup
+
+1. Go to **Settings > LLM API Keys** and add a new key with provider **vLLM**
+2. Set the **Base URL** to your vLLM server (e.g., `http://your-vllm-host:8000/v1`)
+3. API key can be left blank for most self-hosted deployments
+
+The base URL can also be set globally via the `ARCHESTRA_VLLM_BASE_URL` environment variable. Per-key base URLs in the UI take precedence.
 
 ### Environment Variables
 
@@ -208,8 +246,8 @@ You can get an API key from the [Mistral AI Console](https://console.mistral.ai/
 
 ### Important Notes
 
-- **Configure base URL to enable vLLM**: The vLLM provider is only available when `ARCHESTRA_VLLM_BASE_URL` is set. Without it, vLLM won't appear as an option in the platform.
-- **No API key required for most deployments**: Unlike cloud providers, self-hosted vLLM typically doesn't require authentication. The `ARCHESTRA_CHAT_VLLM_API_KEY` is only needed if your vLLM deployment has authentication enabled.
+- **Configure base URL to enable vLLM**: The vLLM provider is only available when `ARCHESTRA_VLLM_BASE_URL` is set or a per-key base URL is configured in the UI. Without either, vLLM won't appear as an option.
+- **No API key required for most deployments**: Unlike cloud providers, self-hosted vLLM typically doesn't require authentication. When adding a vLLM key in the platform, the API key field is marked as optional.
 
 ## Ollama
 
@@ -222,20 +260,27 @@ You can get an API key from the [Mistral AI Console](https://console.mistral.ai/
 ### Ollama Connection Details
 
 - **Base URL**: `http://localhost:9000/v1/ollama/{profile-id}`
-- **Authentication**: Pass your Ollama API key (if configured) in the `Authorization` header as `Bearer <your-api-key>`. Ollama typically doesn't require authentication.
+- **Authentication**: API key is **optional**. Pass in `Authorization` header as `Bearer <your-api-key>` if your Ollama deployment requires auth (e.g., Ollama Cloud).
+
+### Setup
+
+1. Go to **Settings > LLM API Keys** and add a new key with provider **Ollama**
+2. Optionally set the **Base URL** if your Ollama server runs on a non-default host/port
+3. API key can be left blank for self-hosted Ollama
+
+The default base URL is `http://localhost:11434/v1`. Override it per-key in the UI or globally via `ARCHESTRA_OLLAMA_BASE_URL`.
 
 ### Environment Variables
 
-| Variable                        | Required | Description                                                                      |
-| ------------------------------- | -------- | -------------------------------------------------------------------------------- |
-| `ARCHESTRA_OLLAMA_BASE_URL`     | Yes      | Ollama server base URL (e.g., `http://localhost:11434/v1` for default Ollama)    |
-| `ARCHESTRA_CHAT_OLLAMA_API_KEY` | No       | API key for Ollama server (optional, Ollama typically doesn't require auth)      |
+| Variable                        | Required | Description                                                                                  |
+| ------------------------------- | -------- | -------------------------------------------------------------------------------------------- |
+| `ARCHESTRA_OLLAMA_BASE_URL`     | No       | Ollama server base URL (default: `http://localhost:11434/v1`)                                |
+| `ARCHESTRA_CHAT_OLLAMA_API_KEY` | No       | API key for Ollama server (optional, should be used for the Ollama Cloud API)                |
 
 ### Important Notes
 
-- **Configure base URL to enable Ollama**: The Ollama provider is only available when `ARCHESTRA_OLLAMA_BASE_URL` is set. Without it, Ollama won't appear as an option in the platform.
-- **Default Ollama port**: Ollama runs on port `11434` by default. The OpenAI-compatible API is available at `http://localhost:11434/v1`.
-- **No API key required**: Ollama typically doesn't require authentication for local deployments.
+- **Enabled by default**: Ollama is enabled out of the box with a default base URL of `http://localhost:11434/v1`.
+- **No API key required**: Self-hosted Ollama doesn't require authentication. When adding an Ollama key in the platform, the API key field is marked as optional.
 - **Model availability**: Models must be pulled first using `ollama pull <model-name>` before they can be used through Archestra.
 
 ## Zhipu AI

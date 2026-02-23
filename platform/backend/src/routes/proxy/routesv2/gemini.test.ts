@@ -26,7 +26,7 @@ import {
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 import config from "@/config";
-import { TokenPriceModel } from "@/models";
+import { ModelModel } from "@/models";
 import { afterEach, beforeEach, describe, expect, test } from "@/test";
 import { MockGeminiClient } from "../mock-gemini-client";
 import geminiProxyRoutesV2 from "./gemini";
@@ -85,11 +85,15 @@ describe("Gemini V2 cost tracking", () => {
     await app.register(geminiProxyRoutesV2);
     config.benchmark.mockMode = true;
 
-    await TokenPriceModel.create({
+    await ModelModel.upsert({
+      externalId: "gemini/gemini-2.5-pro",
       provider: "gemini",
-      model: "gemini-2.5-pro",
-      pricePerMillionInput: "1.25",
-      pricePerMillionOutput: "5.00",
+      modelId: "gemini-2.5-pro",
+      inputModalities: null,
+      outputModalities: null,
+      customPricePerMillionInput: "1.25",
+      customPricePerMillionOutput: "5.00",
+      lastSyncedAt: new Date(),
     });
 
     const agent = await makeAgent({ name: "Test Cost Agent" });
@@ -143,11 +147,15 @@ describe("Gemini V2 streaming mode", () => {
     await app.register(geminiProxyRoutesV2);
     config.benchmark.mockMode = true;
 
-    await TokenPriceModel.create({
+    await ModelModel.upsert({
+      externalId: "gemini/gemini-2.5-pro",
       provider: "gemini",
-      model: "gemini-2.5-pro",
-      pricePerMillionInput: "1.25",
-      pricePerMillionOutput: "5.00",
+      modelId: "gemini-2.5-pro",
+      inputModalities: null,
+      outputModalities: null,
+      customPricePerMillionInput: "1.25",
+      customPricePerMillionOutput: "5.00",
+      lastSyncedAt: new Date(),
     });
 
     const agent = await makeAgent({ name: "Test Streaming Agent" });
@@ -216,11 +224,15 @@ describe("Gemini V2 streaming mode", () => {
       try {
         await app.register(geminiProxyRoutesV2);
 
-        await TokenPriceModel.create({
+        await ModelModel.upsert({
+          externalId: "gemini/gemini-2.5-pro",
           provider: "gemini",
-          model: "gemini-2.5-pro",
-          pricePerMillionInput: "1.25",
-          pricePerMillionOutput: "5.00",
+          modelId: "gemini-2.5-pro",
+          inputModalities: null,
+          outputModalities: null,
+          customPricePerMillionInput: "1.25",
+          customPricePerMillionOutput: "5.00",
+          lastSyncedAt: new Date(),
         });
 
         const agent = await makeAgent({
@@ -271,11 +283,15 @@ describe("Gemini V2 streaming mode", () => {
       try {
         await app.register(geminiProxyRoutesV2);
 
-        await TokenPriceModel.create({
+        await ModelModel.upsert({
+          externalId: "gemini/gemini-2.5-pro",
           provider: "gemini",
-          model: "gemini-2.5-pro",
-          pricePerMillionInput: "1.25",
-          pricePerMillionOutput: "5.00",
+          modelId: "gemini-2.5-pro",
+          inputModalities: null,
+          outputModalities: null,
+          customPricePerMillionInput: "1.25",
+          customPricePerMillionOutput: "5.00",
+          lastSyncedAt: new Date(),
         });
 
         const agent = await makeAgent({
@@ -345,13 +361,20 @@ describe("Gemini V2 proxy routing", () => {
         upstream: `http://localhost:${upstreamPort}`,
         prefix: `${API_PREFIX}/v1beta`,
         rewritePrefix: "/v1",
-        preHandler: (request, _reply, next) => {
+        preHandler: (request, reply, next) => {
           if (
             request.method === "POST" &&
             (request.url.includes(":generateContent") ||
               request.url.includes(":streamGenerateContent"))
           ) {
-            next(new Error("skip"));
+            reply.code(400).send({
+              error: {
+                code: 400,
+                message:
+                  "generateContent requests should use the dedicated endpoint",
+                status: "INVALID_ARGUMENT",
+              },
+            });
             return;
           }
           next();
@@ -404,8 +427,8 @@ describe("Gemini V2 proxy routing", () => {
       },
     });
 
-    // Should get 404 or 500 because we didn't register the actual generateContent handler
-    expect([404, 500]).toContain(response.statusCode);
+    // Should get 400 because the preHandler blocks proxy forwarding with a clean error response
+    expect(response.statusCode).toBe(400);
   });
 
   test("skips proxy for streamGenerateContent routes", async () => {
@@ -425,8 +448,8 @@ describe("Gemini V2 proxy routing", () => {
       },
     });
 
-    // Should get 404 or 500 because we didn't register the actual streamGenerateContent handler
-    expect([404, 500]).toContain(response.statusCode);
+    // Should get 400 because the preHandler blocks proxy forwarding with a clean error response
+    expect(response.statusCode).toBe(400);
   });
 });
 
@@ -445,11 +468,15 @@ describe("Gemini V2 non-streaming mode", () => {
     await app.register(geminiProxyRoutesV2);
     config.benchmark.mockMode = true;
 
-    await TokenPriceModel.create({
+    await ModelModel.upsert({
+      externalId: "gemini/gemini-2.5-pro",
       provider: "gemini",
-      model: "gemini-2.5-pro",
-      pricePerMillionInput: "1.25",
-      pricePerMillionOutput: "5.00",
+      modelId: "gemini-2.5-pro",
+      inputModalities: null,
+      outputModalities: null,
+      customPricePerMillionInput: "1.25",
+      customPricePerMillionOutput: "5.00",
+      lastSyncedAt: new Date(),
     });
 
     const agent = await makeAgent({ name: "Test Non-Streaming Agent" });

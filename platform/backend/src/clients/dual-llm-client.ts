@@ -386,6 +386,87 @@ export class MistralDualLlmClient implements DualLlmClient {
 }
 
 /**
+ * Perplexity implementation of DualLlmClient (OpenAI-compatible)
+ *
+ * Note: Perplexity does not support external tool calling.
+ * This client is used for dual LLM verification patterns.
+ */
+export class PerplexityDualLlmClient implements DualLlmClient {
+  private client: OpenAI;
+  private model: string;
+
+  constructor(apiKey: string, model = "sonar-pro") {
+    logger.debug({ model }, "[dualLlmClient] Perplexity: initializing client");
+    this.client = new OpenAI({
+      apiKey,
+      baseURL: config.llm.perplexity.baseUrl,
+    });
+    this.model = model;
+  }
+
+  async chat(messages: DualLlmMessage[], temperature = 0): Promise<string> {
+    logger.debug(
+      { model: this.model, messageCount: messages.length, temperature },
+      "[dualLlmClient] Perplexity: starting chat completion",
+    );
+    const response = await this.client.chat.completions.create({
+      model: this.model,
+      messages,
+      temperature,
+    });
+
+    const content = response.choices[0].message.content?.trim() || "";
+    logger.debug(
+      { model: this.model, responseLength: content.length },
+      "[dualLlmClient] Perplexity: chat completion complete",
+    );
+    return content;
+  }
+
+  async chatWithSchema<T>(
+    messages: DualLlmMessage[],
+    schema: {
+      name: string;
+      schema: {
+        type: string;
+        properties: Record<string, unknown>;
+        required: string[];
+        additionalProperties: boolean;
+      };
+    },
+    temperature = 0,
+  ): Promise<T> {
+    logger.debug(
+      {
+        model: this.model,
+        schemaName: schema.name,
+        messageCount: messages.length,
+        temperature,
+      },
+      "[dualLlmClient] Perplexity: starting chat with schema",
+    );
+
+    // Perplexity uses OpenAI-compatible API with JSON schema support
+    const response = await this.client.chat.completions.create({
+      model: this.model,
+      messages,
+      response_format: {
+        type: "json_schema",
+        json_schema: schema,
+      },
+      temperature,
+    });
+
+    const content = response.choices[0].message.content || "";
+    logger.debug(
+      { model: this.model, responseLength: content.length },
+      "[dualLlmClient] Perplexity: chat with schema complete, parsing response",
+    );
+    return JSON.parse(content) as T;
+  }
+}
+
+/**
  * Google Gemini implementation of DualLlmClient
  * Supports both API key authentication and Vertex AI (ADC) mode
  */
@@ -1177,6 +1258,72 @@ Return only the JSON object, no other text.`;
   }
 }
 
+type DualLlmClientFactory = (
+  apiKey: string | undefined,
+  model: string | undefined,
+) => DualLlmClient;
+
+/**
+ * Maps each provider to its DualLlmClient factory.
+ * Using Record<SupportedProvider, ...> ensures TypeScript enforces adding new providers here.
+ */
+const dualLlmClientFactories: Record<SupportedProvider, DualLlmClientFactory> =
+  {
+    anthropic: (apiKey) => {
+      if (!apiKey) throw new Error("API key required for Anthropic dual LLM");
+      return new AnthropicDualLlmClient(apiKey);
+    },
+    cerebras: (apiKey) => {
+      if (!apiKey) throw new Error("API key required for Cerebras dual LLM");
+      return new CerebrasDualLlmClient(apiKey);
+    },
+    cohere: (apiKey, model) => {
+      if (!apiKey) throw new Error("API key required for Cohere dual LLM");
+      return new CohereDualLlmClient(apiKey, model);
+    },
+    mistral: (apiKey, model) => {
+      if (!apiKey) throw new Error("API key required for Mistral dual LLM");
+      return new MistralDualLlmClient(apiKey, model);
+    },
+    perplexity: (apiKey, model) => {
+      if (!apiKey) throw new Error("API key required for Perplexity dual LLM");
+      return new PerplexityDualLlmClient(apiKey, model);
+    },
+    gemini: (apiKey) => {
+      // Gemini supports Vertex AI mode where apiKey may be undefined
+      return new GeminiDualLlmClient(apiKey);
+    },
+    openai: (apiKey) => {
+      if (!apiKey) throw new Error("API key required for OpenAI dual LLM");
+      return new OpenAiDualLlmClient(apiKey);
+    },
+    vllm: (apiKey, model) => {
+      if (!model) throw new Error("Model name required for vLLM dual LLM");
+      return new VllmDualLlmClient(apiKey, model);
+    },
+    ollama: (apiKey, model) => {
+      if (!model) throw new Error("Model name required for Ollama dual LLM");
+      return new OllamaDualLlmClient(apiKey, model);
+    },
+    zhipuai: (apiKey, model) => {
+      if (!apiKey) throw new Error("API key required for Zhipuai dual LLM");
+      return new ZhipuaiDualLlmClient(apiKey, model);
+    },
+    bedrock: (apiKey, model) => {
+      if (!model) throw new Error("Model name required for Bedrock dual LLM");
+      if (!config.llm.bedrock.baseUrl) {
+        throw new Error(
+          "Bedrock base URL not configured (ARCHESTRA_BEDROCK_BASE_URL)",
+        );
+      }
+      return new BedrockDualLlmClient(
+        apiKey,
+        model,
+        config.llm.bedrock.baseUrl,
+      );
+    },
+  };
+
 /**
  * Factory function to create the appropriate LLM client
  *
@@ -1194,71 +1341,9 @@ export function createDualLlmClient(
     { provider },
     "[dualLlmClient] createDualLlmClient: creating client",
   );
-  switch (provider) {
-    case "anthropic":
-      if (!apiKey) {
-        throw new Error("API key required for Anthropic dual LLM");
-      }
-      return new AnthropicDualLlmClient(apiKey);
-    case "cerebras":
-      if (!apiKey) {
-        throw new Error("API key required for Cerebras dual LLM");
-      }
-      return new CerebrasDualLlmClient(apiKey);
-    case "cohere":
-      if (!apiKey) {
-        throw new Error("API key required for Cohere dual LLM");
-      }
-      return new CohereDualLlmClient(apiKey, model);
-    case "mistral":
-      if (!apiKey) {
-        throw new Error("API key required for Mistral dual LLM");
-      }
-      return new MistralDualLlmClient(apiKey, model);
-    case "gemini":
-      // Gemini supports Vertex AI mode where apiKey may be undefined
-      return new GeminiDualLlmClient(apiKey);
-    case "openai":
-      if (!apiKey) {
-        throw new Error("API key required for OpenAI dual LLM");
-      }
-      return new OpenAiDualLlmClient(apiKey);
-    case "vllm":
-      // vLLM typically doesn't require API keys
-      if (!model) {
-        throw new Error("Model name required for vLLM dual LLM");
-      }
-      return new VllmDualLlmClient(apiKey, model);
-    case "ollama":
-      // Ollama typically doesn't require API keys
-      if (!model) {
-        throw new Error("Model name required for Ollama dual LLM");
-      }
-      return new OllamaDualLlmClient(apiKey, model);
-    case "zhipuai":
-      if (!apiKey) {
-        throw new Error("API key required for Zhipuai dual LLM");
-      }
-      return new ZhipuaiDualLlmClient(apiKey, model);
-    case "bedrock":
-      if (!model) {
-        throw new Error("Model name required for Bedrock dual LLM");
-      }
-      if (!config.llm.bedrock.baseUrl) {
-        throw new Error(
-          "Bedrock base URL not configured (ARCHESTRA_BEDROCK_BASE_URL)",
-        );
-      }
-      return new BedrockDualLlmClient(
-        apiKey,
-        model,
-        config.llm.bedrock.baseUrl,
-      );
-    default:
-      logger.debug(
-        { provider },
-        "[dualLlmClient] createDualLlmClient: unsupported provider",
-      );
-      throw new Error(`Unsupported provider for Dual LLM: ${provider}`);
+  const factory = dualLlmClientFactories[provider];
+  if (!factory) {
+    throw new Error(`Unsupported provider for Dual LLM: ${provider}`);
   }
+  return factory(apiKey, model);
 }
