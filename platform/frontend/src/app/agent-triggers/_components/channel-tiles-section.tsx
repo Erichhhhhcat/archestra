@@ -68,8 +68,8 @@ export function ChannelTilesSection({
       <div>
         <h2 className="text-lg font-semibold">Channels</h2>
         <p className="text-xs text-muted-foreground mt-1">
-          Assign a default agent to each channel. Use the picker on each channel card
-          or{" "}
+          Assign a default agent to each channel. Use the picker on each channel
+          card or{" "}
           <code className="bg-muted px-1 py-0.5 rounded text-xs">
             {providerConfig.slashCommand}
           </code>{" "}

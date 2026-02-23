@@ -298,6 +298,25 @@ class ChatOpsChannelBindingModel {
   }
 
   /**
+   * Set workspaceName on all bindings for a provider where it is currently null.
+   * Used to backfill workspace names on DMs and older bindings.
+   */
+  static async backfillWorkspaceName(params: {
+    provider: ChatOpsProviderType;
+    workspaceName: string;
+  }): Promise<void> {
+    await db
+      .update(schema.chatopsChannelBindingsTable)
+      .set({ workspaceName: params.workspaceName, updatedAt: new Date() })
+      .where(
+        and(
+          eq(schema.chatopsChannelBindingsTable.provider, params.provider),
+          isNull(schema.chatopsChannelBindingsTable.workspaceName),
+        ),
+      );
+  }
+
+  /**
    * Remove bindings for channels that no longer exist in Teams.
    * Accepts multiple workspace IDs to handle the case where the same team
    * has bindings stored with different ID formats (UUID aadGroupId vs thread ID).

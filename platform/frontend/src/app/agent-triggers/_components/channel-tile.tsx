@@ -71,13 +71,13 @@ export function ChannelTile({
     : providerConfig.buildDeepLink(binding);
 
   return (
-    <Card
-      className={`h-full overflow-hidden py-4 ${binding.isDm ? "" : ""}`}
-    >
+    <Card className={`h-full overflow-hidden py-4 ${binding.isDm ? "" : ""}`}>
       <CardContent className="flex h-full flex-col gap-3 px-4">
         {/* Top row: channel name + workspace */}
         <div className="flex items-center gap-2 min-w-0">
-          {!binding.isDm && <Hash className="h-4 w-4 shrink-0 text-muted-foreground" />}
+          {!binding.isDm && (
+            <Hash className="h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
           {binding.isDm ? (
             <span className="bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-base font-semibold text-transparent">
               Direct Message

@@ -76,6 +76,10 @@ class SlackProvider implements ChatOpsProvider {
     return this.teamId;
   }
 
+  getWorkspaceName(): string | null {
+    return this.teamName;
+  }
+
   async cleanup(): Promise<void> {
     this.client = null;
     this.botUserId = null;

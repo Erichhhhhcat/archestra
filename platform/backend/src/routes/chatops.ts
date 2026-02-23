@@ -789,6 +789,7 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
         provider: "slack",
         channelId: selection.channelId,
         workspaceId: selection.workspaceId,
+        workspaceName: provider.getWorkspaceName() ?? undefined,
         channelName: isSlackDm ? `Direct Message - ${senderEmail}` : undefined,
         isDm: isSlackDm,
         dmOwnerEmail: isSlackDm ? senderEmail : undefined,
@@ -1262,6 +1263,15 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
           provider,
           context: null,
           workspaceId,
+        });
+      }
+
+      // Backfill workspace name on bindings that are missing it
+      const workspaceName = provider?.getWorkspaceName();
+      if (workspaceName) {
+        await ChatOpsChannelBindingModel.backfillWorkspaceName({
+          provider: providerType,
+          workspaceName,
         });
       }
 
