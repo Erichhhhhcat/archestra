@@ -27,8 +27,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { DefaultCredentialsWarning } from "@/components/default-credentials-warning";
-import { SecurityEngineWarning } from "@/components/security-engine-warning";
+import { SidebarWarningsAccordion } from "@/components/sidebar-warnings-accordion";
 import {
   Sidebar,
   SidebarContent,
@@ -330,8 +329,7 @@ const MainSideBarSection = ({
 
 const FooterSideBarSection = ({ pathname }: { pathname: string }) => (
   <SidebarFooter>
-    <SecurityEngineWarning />
-    <DefaultCredentialsWarning />
+    <SidebarWarningsAccordion />
     <SignedIn>
       <SidebarGroup className="mt-auto">
         <SidebarGroupContent>
