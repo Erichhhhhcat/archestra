@@ -7,7 +7,7 @@ import {
   parseFullToolName,
 } from "@shared";
 import { Loader2, Plus, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PromptInputButton } from "@/components/ai-elements/prompt-input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -28,6 +28,7 @@ import {
   PENDING_TOOL_STATE_CHANGE_EVENT,
   type PendingToolAction,
 } from "@/lib/pending-tool-state";
+import { dispatchOpenMcpAppEvent } from "@/components/chat/mcp-app-panel";
 import { Button } from "../ui/button";
 
 interface ChatToolsDisplayProps {
@@ -172,6 +173,8 @@ export function ChatToolsDisplay({
     id: string;
     name: string;
     description: string | null;
+    // MCP App support - URL for tools that provide a graphical UI
+    mcpAppUrl?: string;
   };
 
   // Use useMemo to prevent recalculating on every render
@@ -270,6 +273,16 @@ export function ChatToolsDisplay({
     });
   };
 
+  // Handle opening an MCP App
+  const handleOpenMcpApp = useCallback((tool: ToolItem) => {
+    if (tool.mcpAppUrl) {
+      dispatchOpenMcpAppEvent({
+        url: tool.mcpAppUrl,
+        title: tool.name,
+      });
+    }
+  }, []);
+
   // Render a single tool row
   const renderToolRow = (
     tool: ToolItem,
@@ -279,11 +292,24 @@ export function ChatToolsDisplay({
     const { toolName: parsedToolName } = parseFullToolName(tool.name);
     const toolName = parsedToolName || tool.name;
     const borderColor = isDisabled ? "border-red-500" : "border-green-500";
+    const isMcpApp = !!tool.mcpAppUrl;
 
     return (
       <div key={tool.id} className={`border-l-2 ${borderColor} pl-2 ml-1 py-1`}>
         <div className="flex items-center gap-2">
           <span className="font-medium text-sm">{toolName}</span>
+          {/* MCP App badge */}
+          {isMcpApp && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-5 px-1.5 text-xs"
+              onClick={() => handleOpenMcpApp(tool)}
+              title={`Open ${toolName} MCP App`}
+            >
+              APP
+            </Button>
+          )}
           <div className="flex-1" />
           {!readOnly &&
             (isDisabled ? (

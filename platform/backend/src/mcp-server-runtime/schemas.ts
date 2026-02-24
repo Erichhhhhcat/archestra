@@ -42,6 +42,8 @@ export const AvailableToolSchema = z.object({
   mcpServerId: z.string(),
   mcpServerName: z.string(),
   analysis: AvailableToolAnalysisSchema,
+  // MCP App support - URL for tools that provide a graphical UI
+  mcpAppUrl: z.string().optional(),
 });
 
 export type AvailableTool = z.infer<typeof AvailableToolSchema>;

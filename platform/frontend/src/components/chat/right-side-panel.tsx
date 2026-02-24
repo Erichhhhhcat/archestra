@@ -4,6 +4,7 @@ import { GripVertical } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BrowserPanel } from "@/components/chat/browser-panel";
 import { ConversationArtifactPanel } from "@/components/chat/conversation-artifact";
+import { McpAppPanel } from "@/components/chat/mcp-app-panel";
 import { cn } from "@/lib/utils";
 
 interface RightSidePanelProps {
@@ -26,6 +27,16 @@ interface RightSidePanelProps {
   initialNavigateUrl?: string;
   /** Called after initial navigation is triggered */
   onInitialNavigateComplete?: () => void;
+
+  // MCP App props
+  /** URL of the MCP App to display */
+  mcpAppUrl?: string | null;
+  /** Title of the MCP App */
+  mcpAppTitle?: string;
+  /** Whether the MCP App panel is open */
+  isMcpAppOpen?: boolean;
+  /** Callback when MCP App panel is closed */
+  onMcpAppClose?: () => void;
 }
 
 export function RightSidePanel({
@@ -40,6 +51,10 @@ export function RightSidePanel({
   isCreatingConversation = false,
   initialNavigateUrl,
   onInitialNavigateComplete,
+  mcpAppUrl,
+  mcpAppTitle,
+  isMcpAppOpen = false,
+  onMcpAppClose,
 }: RightSidePanelProps) {
   const [width, setWidth] = useState(() => {
     if (typeof window !== "undefined") {
@@ -119,7 +134,7 @@ export function RightSidePanel({
   }, [isResizing]);
 
   // Don't render if nothing is open
-  if (!isArtifactOpen && !isBrowserOpen) {
+  if (!isArtifactOpen && !isBrowserOpen && !isMcpAppOpen) {
     return null;
   }
 
@@ -186,6 +201,16 @@ export function RightSidePanel({
             onInitialNavigateComplete={onInitialNavigateComplete}
           />
         </div>
+      )}
+
+      {/* MCP App Panel - renders in place when no other panels are open */}
+      {isMcpAppOpen && mcpAppUrl && (
+        <McpAppPanel
+          appUrl={mcpAppUrl}
+          appTitle={mcpAppTitle}
+          isOpen={isMcpAppOpen}
+          onClose={onMcpAppClose || (() => {})}
+        />
       )}
     </div>
   );

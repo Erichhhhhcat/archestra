@@ -158,6 +158,32 @@ export default function ChatPage() {
     return false;
   });
 
+  // State for MCP App panel
+  const [mcpAppUrl, setMcpAppUrl] = useState<string | null>(null);
+  const [mcpAppTitle, setMcpAppTitle] = useState<string>("MCP App");
+  const [isMcpAppOpen, setIsMcpAppOpen] = useState(false);
+
+  // Handle MCP App events
+  useEffect(() => {
+    const handleOpenMcpApp = (event: CustomEvent<{ url: string; title?: string }>) => {
+      setMcpAppUrl(event.detail.url);
+      setMcpAppTitle(event.detail.title || "MCP App");
+      setIsMcpAppOpen(true);
+    };
+
+    const handleCloseMcpApp = () => {
+      setIsMcpAppOpen(false);
+    };
+
+    window.addEventListener("OPEN_MCP_APP", handleOpenMcpApp as EventListener);
+    window.addEventListener("CLOSE_MCP_APP", handleCloseMcpApp);
+
+    return () => {
+      window.removeEventListener("OPEN_MCP_APP", handleOpenMcpApp as EventListener);
+      window.removeEventListener("CLOSE_MCP_APP", handleCloseMcpApp);
+    };
+  }, []);
+
   // Fetch internal agents for dialog editing
   const { data: internalAgents = [], isPending: isLoadingAgents } =
     useInternalAgents();
@@ -851,6 +877,11 @@ export default function ChatPage() {
     localStorage.setItem(LocalStorageKeys.browserOpen, "false");
   }, []);
 
+  // Close MCP App panel handler
+  const closeMcpAppPanel = useCallback(() => {
+    setIsMcpAppOpen(false);
+  }, []);
+
   // Handle creating conversation from browser URL input (when no conversation exists)
   const handleCreateConversationWithUrl = useCallback(
     (url: string) => {
@@ -1455,6 +1486,10 @@ export default function ChatPage() {
         isCreatingConversation={createConversationMutation.isPending}
         initialNavigateUrl={pendingBrowserUrl}
         onInitialNavigateComplete={handleInitialNavigateComplete}
+        mcpAppUrl={mcpAppUrl}
+        mcpAppTitle={mcpAppTitle}
+        isMcpAppOpen={isMcpAppOpen}
+        onMcpAppClose={closeMcpAppPanel}
       />
 
       <PromptVersionHistoryDialog
