@@ -184,16 +184,12 @@ export function useUpdateConversation() {
 }
 
 export function usePinConversation() {
-  const queryClient = useQueryClient();
   const updateMutation = useUpdateConversation();
 
   return useMutation({
     mutationFn: async ({ id, pinned }: { id: string; pinned: boolean }) => {
       const pinnedAt = pinned ? new Date().toISOString() : null;
       return updateMutation.mutateAsync({ id, pinnedAt });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
 }
